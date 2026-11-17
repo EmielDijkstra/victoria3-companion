@@ -54,8 +54,12 @@ const nl = {
 
 	// panel: advice
 	sectionAdvice: 'Advies',
-	adviceComingSoon:
-		'Je save is ingelezen. Advies op basis van je spel volgt in een volgende versie.',
+	noAdvice: 'Geen advies op dit moment: ik zie niets wat dringend aandacht nodig heeft.',
+	caveatPrefix: 'Let op:',
+	howTo: 'Hoe doe ik dat?',
+	adviceCount: (n: number) => (n === 1 ? '1 advies' : `${n} adviezen`),
+	untestedVersion: (v: string) =>
+		`Spelversie ${v} is nog niet getest met deze app. Het advies kan afwijken; laat het weten als iets niet klopt.`,
 
 	// panel: folders
 	sectionFolders: 'Mappen',
@@ -124,8 +128,12 @@ const en: Messages = {
 	autosaveTip: 'Tip: set Autosave Interval to Every month in the game.',
 
 	sectionAdvice: 'Advice',
-	adviceComingSoon:
-		'Your save has been read. Advice based on your game is coming in a next version.',
+	noAdvice: 'No advice right now: I see nothing that needs urgent attention.',
+	caveatPrefix: 'Mind:',
+	howTo: 'How do I do that?',
+	adviceCount: (n: number) => (n === 1 ? '1 piece of advice' : `${n} pieces of advice`),
+	untestedVersion: (v: string) =>
+		`Game version ${v} has not been tested with this app yet. Advice may be off; let us know if something is wrong.`,
 
 	sectionFolders: 'Folders',
 	pathUserData: 'Saves and settings',
