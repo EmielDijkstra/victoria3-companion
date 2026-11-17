@@ -62,6 +62,9 @@ ironman = { ironman=no  save_interval=three_months }
 
 ## Wat nog níet is getest
 
+> **Besluit Emiel (17-11-2026):** de ironman-test en de opties van het autosave-menu zijn niet nodig om de
+> spike af te ronden. Dat het werkt is het belangrijkste.
+
 - **Een echte ironman-save.** Er staat op deze pc geen ironman-save. Ironman-saves hebben hetzelfde
   binaire formaat, en het omzetten van ironman-saves is juist waar Rakaly voor gemaakt is. Even proberen
   zodra er een ironman-save is (een paar minuten spelen is genoeg).
