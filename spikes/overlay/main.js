@@ -99,6 +99,9 @@ ipcMain.on("set-interactive", (_e, interactive) => setInteractive(Boolean(intera
 // The page reports its size; grow/shrink while keeping the top-left corner,
 // unless that would push the window off screen.
 ipcMain.on("resize", (_e, { width, height }) => {
+  const [curW, curH] = win.getSize();
+  if (curW === width && curH === height) return; // nothing changed: avoid needless redraws
+  if (process.env.OVERLAY_DEBUG) console.log("resize", width, height);
   const [x, y] = win.getPosition();
   const pos = clampToScreen(x, y, width, height);
   win.setBounds({ ...pos, width, height });

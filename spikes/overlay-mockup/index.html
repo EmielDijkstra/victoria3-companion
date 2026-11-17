@@ -48,7 +48,9 @@
     position: fixed; top: 16px; right: 16px; width: 330px;
     display: flex; flex-direction: column; gap: 8px;
   }
-  @media (max-width: 380px) { .overlay { left: 16px; right: 16px; width: auto; } .note { display: none; } }
+  /* Alleen in de browser: smal scherm. Niet in de overlay, want daar is het venster zelf smal
+     en zou dit een terugkoppeling geven (paneel krimpt → venster krimpt → paneel krimpt). */
+  @media (max-width: 380px) { html:not(.overlay-mode) .overlay { left: 16px; right: 16px; width: auto; } .note { display: none; } }
 
   /* Ingeklapt: alleen het tipje. Uitgeklapt: alleen het paneel. */
   .overlay[data-state="collapsed"] .panel { display: none; }
@@ -145,7 +147,7 @@
   /* Overlay-modus (Electron): geen nep-achtergrond, geen mockup-notitie */
   .overlay-mode body { background: transparent; }
   .overlay-mode .note { display: none; }
-  .overlay-mode .overlay { top: 4px; left: 4px; right: auto; bottom: auto; }
+  .overlay-mode .overlay { top: 4px; left: 4px; right: auto; bottom: auto; width: 330px; }
 
   /* Paneel blijft heel; alleen de adviezenlijst scrolt, met een duidelijke schuifbalk. */
   .panel { display: flex; flex-direction: column; max-height: calc(100vh - 40px); }
