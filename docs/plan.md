@@ -165,8 +165,10 @@ Wel:
 | AI (optioneel; S5 beslist wanneer) | **Claude API** (`claude-opus-5-5`; in S5 ook een goedkoper model meten) | Uitleg op verzoek en vrije vragen over je eigen spel, gevoed met de feiten van de regels (4.4a). |
 | Tests | Vitest (logica), Playwright (hoofdflows), `cargo test` (parser) | Zoals in de wandel-app. |
 
-**Besluit (17-11-2026): Tauri.** Emiel heeft geen voorkeur, dus de technisch beste keuze. Electron (alles in
-TypeScript, met jomini als WASM) blijft de terugval als spike S1 of S3 tegenvalt.
+~~Besluit (17-11-2026): Tauri.~~ **Nieuw besluit (17-11-2026, na spike S3): Electron.** Tauri vraagt Rust en
+Microsoft C++ Build Tools (~7–9 GB); daarvoor is te weinig schijfruimte. Electron werkte meteen boven het spel,
+houdt alles in TypeScript en roept Rakaly als los programma aan. De tabel hierboven is daarmee achterhaald
+voor de desktop-schil, het parsen (Rakaly → JSON in Node) en de tests (geen `cargo test`).
 
 ### 4.4 Architectuur
 
@@ -343,7 +345,7 @@ Beantwoord:
 - ~~Mag de app een mod gebruiken?~~ **Niet in ironman-runs.** Wel als terugval in gewone campagnes.
 
 - ~~AI-adviseur?~~ **Twijfel.** Advies: regels én AI op verzoek (4.4a); spike S5 meet of de AI echt helpt.
-- ~~Tauri of Electron?~~ **Maakt niet uit → Tauri.**
+- ~~Tauri of Electron?~~ **Maakt niet uit → Tauri**, na S3 gewijzigd in **Electron** (te weinig schijfruimte voor Tauri).
 - ~~Overlay of tweede scherm?~~ **Overlay.**
 - ~~Taal?~~ **Engelse spelbegrippen, Nederlandse uitleg.**
 - ~~Aparte testcampagne in debugmodus voor de ontwikkeling?~~ **Akkoord.**

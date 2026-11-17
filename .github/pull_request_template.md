@@ -11,7 +11,7 @@ Closes #
 
 ## Gecontroleerd
 
-- [ ] `npm run lint && npm run check && npm run test && npm run build` en `cargo test` groen
+- [ ] `npm run lint && npm run check && npm run test && npm run build` groen
 - [ ] Bekeken als overlay boven het spel (borderless, 1920×1080) en als los venster
 - [ ] Nieuwe of gewijzigde regels en flows hebben een test
 
