@@ -4,7 +4,7 @@ Een kleine overlay-adviseur voor Victoria 3. Hij leest je autosave en vertelt wa
 doen, waarom, en hoe je dat in het spel doet, zodat je het spel beter leert begrijpen. Werkt met gewone
 en ironman-saves en past het spel niet aan.
 
-> Status: fase 1. De overlay vindt je mappen en leest je nieuwste autosave in; advies volgt.
+> Status: fase 1. De overlay leest je nieuwste autosave en geeft advies op basis van je spel (NL/EN).
 
 ## Lokaal starten
 
@@ -56,6 +56,13 @@ Zet in het spel **Autosave Interval** op **Every month**.
 
 ```bash
 npm run lint && npm run check && npm run test && npm run build
+```
+
+`npm run test` draait de unit-tests (Vitest) én de browsertests (Playwright). Eenmalig de testbrowser
+installeren:
+
+```bash
+npx playwright install chromium
 ```
 
 Handig bij het ontwikkelen: `electron . --capture=venster.png [--expanded]` slaat een afbeelding van het

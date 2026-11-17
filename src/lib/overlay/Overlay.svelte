@@ -6,6 +6,10 @@
 	import { locale } from '../i18n/locale.svelte';
 	import { LOCALES, type Messages } from '../i18n/messages';
 	import { formatClock, formatGameDate, formatGameDateShort, formatSeconds } from '../format';
+	import { adviseFor } from '../advice/rules';
+	import { adviceText, LEVEL_LABEL } from '../advice/texts';
+	import AdviceList from './AdviceList.svelte';
+	import GameText from './GameText.svelte';
 
 	const t = $derived(locale.t);
 	const lang = $derived(locale.current);
@@ -15,15 +19,28 @@
 	const summary = $derived(
 		save?.state === 'ready' ? save.summary : save?.state === 'error' ? save.summary : undefined
 	);
+	const snapshot = $derived(
+		save?.state === 'ready' ? save.snapshot : save?.state === 'error' ? save.snapshot : undefined
+	);
+	const advice = $derived(snapshot ? adviseFor(snapshot) : []);
 	const country = $derived(summary ? summary.country || t.unknownCountry : '');
 
-	// What the small tip says
+	const TONE = { urgent: 'bad', warn: 'warn', smart: 'concept', patience: 'good', consider: 'dim' };
+
+	// What the small tip says: the most important advice, or the loading state
 	const tip = $derived.by(() => {
 		if (!save) return { tag: t.tipTagCompanion, title: t.tipStarting, tone: 'dim' };
 		switch (save.state) {
 			case 'reading':
 				return { tag: t.tipTagBusy, title: t.tipReading, tone: 'dim' };
 			case 'ready':
+				if (advice.length > 0) {
+					return {
+						tag: LEVEL_LABEL[lang][advice[0].level],
+						title: adviceText(advice[0], lang).title,
+						tone: TONE[advice[0].level]
+					};
+				}
 				return {
 					tag: t.tipTagLoaded,
 					title: `${country} · ${formatGameDateShort(save.summary.gameDate, lang)}`,
@@ -61,16 +78,6 @@
 	function pathProblem(kind: PathKind, p: PathStatus, m: Messages): string {
 		if (p.problem?.code === 'chosen-missing') return m.chosenMissing(p.problem.path);
 		return { userData: m.notFoundUserData, game: m.notFoundGame, rakaly: m.notFoundRakaly }[kind];
-	}
-
-	// Game terms stay English and are highlighted, as in the game.
-	const GAME_TERMS = ['Autosave Interval', 'Every month', 'Rakaly'];
-	function highlight(text: string): { text: string; term: boolean }[] {
-		const pattern = new RegExp(`(${GAME_TERMS.join('|')})`, 'g');
-		return text
-			.split(pattern)
-			.filter((part) => part !== '')
-			.map((part) => ({ text: part, term: GAME_TERMS.includes(part) }));
 	}
 
 	const pathLabel = (kind: PathKind) =>
@@ -174,7 +181,7 @@
 	{#if view === 'collapsed'}
 		<!-- The tip: small, out of the way, click to open -->
 		<div
-			class="panel grid cursor-pointer grid-cols-[14px_30px_1fr_auto] items-center gap-2 rounded-full py-1.5 pr-2 pl-1.5"
+			class="panel grid cursor-pointer grid-cols-[14px_30px_1fr_auto_auto] items-center gap-2 rounded-full py-1.5 pr-2 pl-1.5"
 			role="button"
 			tabindex="0"
 			title={t.tipOpen}
@@ -189,10 +196,17 @@
 					class="block text-[12.5px] leading-none tracking-wider uppercase"
 					class:text-ink-dim={tip.tone === 'dim'}
 					class:text-good={tip.tone === 'good'}
-					class:text-bad={tip.tone === 'bad'}>{tip.tag}</span
+					class:text-bad={tip.tone === 'bad'}
+					class:text-warn={tip.tone === 'warn'}
+					class:text-concept={tip.tone === 'concept'}>{tip.tag}</span
 				>
-				<span class="block truncate text-base font-semibold text-ink-strong">{tip.title}</span>
+				<span class="block truncate text-base font-semibold text-ink-strong" title={tip.title}
+					>{tip.title}</span
+				>
 			</span>
+			{#if advice.length > 1}
+				<span class="badge" title={t.adviceCount(advice.length)}>{advice.length}</span>
+			{/if}
 			<button
 				type="button"
 				class="icon-btn"
@@ -243,6 +257,14 @@
 				<p class="mt-3 text-[15px] text-ink-dim">{saveMessage(save, t)}</p>
 			{/if}
 
+			{#if snapshot}
+				<div class="band">{t.sectionAdvice}</div>
+				{#if !snapshot.versionTested}
+					<p class="notice mb-2">{t.untestedVersion(snapshot.gameVersion)}</p>
+				{/if}
+				<AdviceList {advice} />
+			{/if}
+
 			{#if summary}
 				<div class="band">{t.sectionGame}</div>
 				<dl class="facts">
@@ -263,15 +285,8 @@
 					<dt>{t.factReadAt}</dt>
 					<dd>{t.readAt(formatClock(summary.readAt), formatSeconds(summary.durationMs, lang))}</dd>
 				</dl>
-
-				<div class="band">{t.sectionAdvice}</div>
-				<p class="text-[15px] leading-snug text-ink-dim">{t.adviceComingSoon}</p>
 			{:else if save?.state !== 'reading'}
-				<p class="mt-2 text-[15px] text-ink-dim">
-					{#each highlight(t.autosaveTip) as part, i (i)}{#if part.term}<span class="text-concept"
-								>{part.text}</span
-							>{:else}{part.text}{/if}{/each}
-				</p>
+				<p class="mt-2 text-[15px] text-ink-dim"><GameText text={t.autosaveTip} /></p>
 			{/if}
 
 			{#if status}
@@ -438,6 +453,19 @@
 
 	.small-btn:hover {
 		filter: brightness(1.12);
+	}
+
+	.badge {
+		display: grid;
+		place-items: center;
+		min-width: 22px;
+		height: 22px;
+		padding: 0 6px;
+		border-radius: 11px;
+		background: var(--color-warn);
+		color: #1d1a15;
+		font-size: 13.5px;
+		font-weight: 700;
 	}
 
 	.icon-btn:hover {
