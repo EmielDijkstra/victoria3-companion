@@ -93,7 +93,7 @@ function registerShortcuts() {
 // Same UI on localhost, to test the Steam overlay browser (Shift+Tab) or a tablet.
 function startLocalhost() {
   const types = { ".html": "text/html; charset=utf-8", ".css": "text/css", ".js": "text/javascript" };
-  createServer(async (req, res) => {
+  const server = createServer(async (req, res) => {
     const name = path.basename(new URL(req.url, "http://x").pathname) || "index.html";
     try {
       const data = await readFile(path.join(MOCKUP_DIR, name));
@@ -101,10 +101,17 @@ function startLocalhost() {
     } catch {
       res.writeHead(404).end("niet gevonden");
     }
-  }).listen(LOCALHOST_PORT, "127.0.0.1", () =>
+  });
+  server.on("error", (err) =>
+    console.warn(`Localhost-server niet gestart (${err.code}); de overlay werkt gewoon door.`),
+  );
+  server.listen(LOCALHOST_PORT, "127.0.0.1", () =>
     console.log(`Overlay ook op http://localhost:${LOCALHOST_PORT}/`),
   );
 }
+
+// Only one overlay at a time: a second start just quits.
+if (!app.requestSingleInstanceLock()) app.quit();
 
 ipcMain.on("set-interactive", (_event, interactive) => setInteractive(Boolean(interactive)));
 
