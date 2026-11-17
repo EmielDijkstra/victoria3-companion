@@ -1,44 +1,68 @@
 // Spike S3 (#3): overlay window above Victoria 3, built with Electron.
-// Transparent, frameless, always on top, with global shortcuts and click-through
-// everywhere except over the panels.
+// Small, transparent, frameless, always on top. Starts as a collapsed "tip",
+// can be dragged anywhere (position is remembered), collapsed or hidden.
 const { app, BrowserWindow, globalShortcut, ipcMain, screen } = require("electron");
 const { createServer } = require("node:http");
-const { readFile } = require("node:fs/promises");
+const { readFile, writeFile } = require("node:fs/promises");
+const { readFileSync } = require("node:fs");
 const path = require("node:path");
 
 const MOCKUP_DIR = path.join(__dirname, "..", "overlay-mockup");
-const WIDTH = 412;
 const LOCALHOST_PORT = 5179;
+const MARGIN = 16;
 
 let win;
-let side = "right"; // "right" | "left"
-let fullyClickThrough = false; // Alt+C: also click through the panels
+let fullyClickThrough = false; // Alt+C: also click through the overlay itself
+const positionFile = () => path.join(app.getPath("userData"), "overlay-position.json");
 
-function place() {
-  const area = screen.getPrimaryDisplay().workArea;
-  const x = side === "right" ? area.x + area.width - WIDTH : area.x;
-  win.setBounds({ x, y: area.y, width: WIDTH, height: area.height });
+function loadPosition() {
+  try {
+    return JSON.parse(readFileSync(positionFile(), "utf8"));
+  } catch {
+    return null;
+  }
+}
+
+function savePosition() {
+  const [x, y] = win.getPosition();
+  writeFile(positionFile(), JSON.stringify({ x, y })).catch(() => {});
+}
+
+// Keep the window fully on a screen.
+function clampToScreen(x, y, width, height) {
+  const area = screen.getDisplayNearestPoint({ x, y }).workArea;
+  return {
+    x: Math.min(Math.max(x, area.x), area.x + area.width - width),
+    y: Math.min(Math.max(y, area.y), area.y + area.height - height),
+  };
 }
 
 function setInteractive(interactive) {
   if (!win) return;
-  // forward: true keeps mousemove events coming, so the page can tell us when
-  // the cursor enters a panel again.
+  // forward: true keeps mousemove events coming, so the page notices when the
+  // cursor enters the overlay again.
   if (interactive && !fullyClickThrough) win.setIgnoreMouseEvents(false);
   else win.setIgnoreMouseEvents(true, { forward: true });
 }
 
+function sendState(extra = {}) {
+  win.webContents.send("state", { fullyClickThrough, ...extra });
+}
+
 function createWindow() {
+  const area = screen.getPrimaryDisplay().workArea;
+  const start = loadPosition() ?? { x: area.x + area.width - 340 - MARGIN, y: area.y + MARGIN };
   win = new BrowserWindow({
-    width: WIDTH,
-    height: 800,
+    x: start.x,
+    y: start.y,
+    width: 340,
+    height: 60,
     transparent: true,
     frame: false,
     resizable: false,
     skipTaskbar: true,
     hasShadow: false,
     alwaysOnTop: true,
-    focusable: true,
     show: false,
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
@@ -49,38 +73,66 @@ function createWindow() {
   });
   // "screen-saver" is the highest level; keeps the window above a borderless game.
   win.setAlwaysOnTop(true, "screen-saver");
-  place();
   setInteractive(false);
   win.loadFile(path.join(MOCKUP_DIR, "index.html"), { query: { overlay: "1" } });
   // showInactive: do not steal focus from the game.
   win.once("ready-to-show", () => win.showInactive());
+
   // For checking the rendering without a screen grab: OVERLAY_CAPTURE=path.png
   if (process.env.OVERLAY_CAPTURE) {
     win.webContents.once("did-finish-load", () =>
       setTimeout(async () => {
+        if (process.env.OVERLAY_EXPAND) {
+          await win.webContents.executeJavaScript('document.querySelector(".overlay").dataset.state="expanded"');
+          await new Promise((r) => setTimeout(r, 800));
+        }
         const image = await win.capturePage();
-        await require("node:fs/promises").writeFile(process.env.OVERLAY_CAPTURE, image.toPNG());
+        await writeFile(process.env.OVERLAY_CAPTURE, image.toPNG());
         console.log("capture opgeslagen:", process.env.OVERLAY_CAPTURE, image.getSize());
       }, 1500),
     );
   }
 }
 
+ipcMain.on("set-interactive", (_e, interactive) => setInteractive(Boolean(interactive)));
+
+// The page reports its size; grow/shrink while keeping the top-left corner,
+// unless that would push the window off screen.
+ipcMain.on("resize", (_e, { width, height }) => {
+  const [x, y] = win.getPosition();
+  const pos = clampToScreen(x, y, width, height);
+  win.setBounds({ ...pos, width, height });
+});
+
+ipcMain.on("move-by", (_e, { dx, dy }) => {
+  const [x, y] = win.getPosition();
+  const [width, height] = win.getSize();
+  const pos = clampToScreen(x + dx, y + dy, width, height);
+  win.setPosition(pos.x, pos.y);
+});
+
+ipcMain.on("drag-end", savePosition);
+
+ipcMain.on("hide", () => {
+  win.hide();
+  setInteractive(false);
+});
+
 function registerShortcuts() {
   const shortcuts = {
     // Show / hide the overlay
-    "Alt+V": () => (win.isVisible() ? win.hide() : win.showInactive()),
-    // Toggle full click-through (also through the panels)
+    "Alt+V": () => {
+      if (win.isVisible()) win.hide();
+      else {
+        win.showInactive();
+        sendState({ shown: true });
+      }
+    },
+    // Toggle full click-through (also through the overlay)
     "Alt+C": () => {
       fullyClickThrough = !fullyClickThrough;
       setInteractive(false);
-      win.webContents.send("state", { fullyClickThrough, side });
-    },
-    // Move the overlay to the other side of the screen
-    "Alt+P": () => {
-      side = side === "right" ? "left" : "right";
-      place();
-      win.webContents.send("state", { fullyClickThrough, side });
+      sendState();
     },
   };
   for (const [accelerator, handler] of Object.entries(shortcuts)) {
@@ -113,13 +165,11 @@ function startLocalhost() {
 // Only one overlay at a time: a second start just quits.
 if (!app.requestSingleInstanceLock()) app.quit();
 
-ipcMain.on("set-interactive", (_event, interactive) => setInteractive(Boolean(interactive)));
-
 app.whenReady().then(() => {
   createWindow();
   registerShortcuts();
   startLocalhost();
-  console.log("Overlay draait. Alt+V tonen/verbergen · Alt+C klik-door · Alt+P links/rechts");
+  console.log("Overlay draait. Sleep aan ⠿ · klik het tipje open · × wegklikken · Alt+V terughalen · Alt+C klik-door");
 });
 
 app.on("will-quit", () => globalShortcut.unregisterAll());
