@@ -27,15 +27,16 @@ Testbestand: kopie van `autosave_exit.v3`, België, 16 september 1848 (124 MB JS
 | Dashboardveld | Pad (vanaf `C`) | Waarde 16-9-1848 | Opmerking |
 |---|---|---|---|
 | Tag | `definition` | `BEL` | |
-| GDP | `gdp.channels.0.values` → laatste | £3.432.405 | Tijdreeks, elke 28 dagen een punt (`sample_rate`) |
-| Weekly Balance | `budget.balance_trend.weekly.samples` → **laatste** | +£977 | Reeks van 30 weken, oud → nieuw. Niet zelf optellen: `weekly_income` − `weekly_expenses` mist posten |
+| GDP | `gdp.channels.0.values[(index − 1) mod lengte]` | £3.432.405 | Tijdreeks (zie "Tijdreeksen"). **Spel toont 3.7M**, verschil nog niet verklaard |
+| Weekly Balance | som(`budget.weekly_income`) − som(`budget.weekly_expenses`) | +£2.507 | Lopende week. **Spel toont +£2.41K**: ~£100 verschil, nog uitzoeken welke post |
+| Saldo-geschiedenis | `budget.balance_trend.weekly.samples` | nieuwste +£1.551 | Ringbuffer van 30 weken (zie "Tijdreeksen"); loopt achter op de lopende week |
 | Inkomsten/uitgaven per post | `budget.weekly_income`, `budget.weekly_expenses` | | Arrays; de betekenis per index moet nog worden uitgezocht |
 | Schatkist | `budget.money` | £0 | |
 | Debt | `budget.principal` | £2.023.328 | |
 | Credit Limit | `budget.credit` | £4.614.425 | Debt/limiet = 44% |
 | Geldverloop | `budget.money_trend.weekly.samples` | | ≈ money − principal, per week |
 | Standard of Living (gem.) | `avgsoltrend.channels.0.values` → laatste | 8,77 | |
-| Literacy | `literacy.channels.0.values` → laatste | | Tijdreeks |
+| Literacy | `literacy.channels.0.values` → nieuwste | 42,2% | Tijdreeks. Spel toont 42.1% |
 | Prestige | `prestige.channels.0.values` → laatste | | Tijdreeks |
 | Bevolking | `pop_statistics.population_lower_strata` + `_middle_` + `_upper_` | ≈ 5,1 mln | |
 | Radicals / Loyalists | `pop_statistics.population_radicals` / `population_loyalists` | 1.222.155 / 33.692 | |
@@ -43,6 +44,19 @@ Testbestand: kopie van `autosave_exit.v3`, België, 16 september 1848 (124 MB JS
 | Belastingniveau | `tax_level` | `very_high` | |
 | Staten | `states` | `[477, 480, 476]` | Ids in `states.database` |
 | Markt | `market` | `9` | Id in `market_manager.database` (bevat alleen `owner`) |
+
+### Tijdreeksen: let op de ringbuffer
+
+Reeksen worden rondgeschreven: als ze vol zijn, begint het spel weer vooraan. De nieuwste waarde staat dus
+**niet altijd achteraan**.
+
+- `…_trend.weekly`: nieuwste = `samples[(sample_index − 1 + aantal) mod aantal]`, met `latest_sample` als
+  datum. Voorbeeld: in de save van 1 september was `sample_index` 0 (nieuwste achteraan), in die van
+  16 september 2 (nieuwste op plek 1).
+- `channels.0` (GDP, Literacy, SoL): nieuwste = `values[(index − 1) mod lengte]`, met `date` als datum.
+
+Eerste versie van deze kaart pakte gewoon de laatste waarde; dat gaf voor 16 september een verkeerd
+weeksaldo. De extractor (#9) moet dit goed doen en heeft er een test voor nodig.
 
 ## Interest Groups
 
@@ -118,13 +132,17 @@ overschot (< 1).
 
 ## Nog te controleren in het spel (Emiel)
 
-Klopt dit voor België op **16 september 1848** (laatste save)?
+Klopt dit voor België op **16 september 1848** (laatste save)? Gecontroleerd met Emiels schermafbeelding
+van de bovenbalk (17-11-2026):
 
-- [ ] GDP ≈ **£3,43 mln**
-- [ ] Weekly Balance ≈ **+£977**
+- [x] Standard of Living: save 8,77 · spel **8.8** ✅
+- [x] Bevolking: save ≈ 5,06 mln · spel **5.06M** ✅
+- [x] Radicals: save 1.222.155 · spel **1.22M** ✅
+- [x] Loyalists: save 33.692 · spel **33.6K** ✅
+- [x] Literacy: save 42,2% · spel **42.1%** ✅
+- [~] Weekly Balance: save +£2.507 (lopende week) · spel **+£2.41K**. Bijna; ~£100 verschil uitzoeken
+- [ ] GDP: save £3,43 mln · spel **3.7M**? Eerst nagaan of de 3.7M in de bovenbalk echt GDP is (tooltip)
 - [ ] Debt ≈ **£2,02 mln**, Credit Limit ≈ **£4,61 mln**
-- [ ] Standard of Living ≈ **8,8**
-- [ ] Radicals ≈ **1,22 mln**, Loyalists ≈ **34k**
 - [ ] Unemployed ≈ **168k**
 - [ ] Intelligentsia is Influential met approval +5; Trade Unions approval −9
 - [ ] Is er een wet in behandeling, en welke?
