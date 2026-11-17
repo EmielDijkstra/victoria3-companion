@@ -46,23 +46,27 @@ export function belgium(patch: (s: Snapshot) => void = () => {}): Snapshot {
 				population: 2828061,
 				unemployed: 99192,
 				infrastructure: 124,
-				infrastructureUsed: 68
+				infrastructureUsed: 68,
+				sharedWith: []
 			},
 			{
 				state: 'gelre',
 				population: 247030,
 				unemployed: 4322,
 				infrastructure: 32,
-				infrastructureUsed: 12
+				infrastructureUsed: 12,
+				sharedWith: ['NET']
 			},
 			{
 				state: 'wallonia',
 				population: 1986174,
 				unemployed: 64570,
 				infrastructure: 130,
-				infrastructureUsed: 92
+				infrastructureUsed: 92,
+				sharedWith: []
 			}
 		],
+		stateNames: { flanders: 'Flanders', gelre: 'Belgian Gelre', wallonia: 'Wallonia' },
 		prices: [
 			{ good: 'explosives', price: 122.5, base: 50, vsBasePct: 145 },
 			{ good: 'paper', price: 46.7, base: 30, vsBasePct: 56 },

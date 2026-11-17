@@ -4,7 +4,10 @@
 	import { locale } from '../i18n/locale.svelte';
 	import GameText from './GameText.svelte';
 
-	let { advice }: { advice: Advice[] } = $props();
+	let {
+		advice,
+		stateNames = {}
+	}: { advice: Advice[]; stateNames?: Readonly<Record<string, string>> } = $props();
 	const t = $derived(locale.t);
 	const lang = $derived(locale.current);
 </script>
@@ -14,7 +17,7 @@
 {:else}
 	<ol class="flex flex-col">
 		{#each advice as item, i (item.id + i)}
-			{@const text = adviceText(item, lang)}
+			{@const text = adviceText(item, lang, stateNames)}
 			<li class="advice" data-advice={item.id}>
 				<div class="grid grid-cols-[26px_1fr] items-start gap-2">
 					<span class="rank {item.level}">{i + 1}</span>

@@ -2,7 +2,7 @@
 // Input: { savePath, rakalyPath, fileName }. Output: { ok: true, summary } or { ok: false, message }.
 import { spawn } from 'node:child_process';
 import { parentPort, workerData } from 'node:worker_threads';
-import type { GoodDefinition } from './game-data';
+import type { GameNames, GoodDefinition } from './game-data';
 import { summarizeSave } from './save-summary';
 import { buildSnapshot } from './snapshot';
 
@@ -11,6 +11,7 @@ interface Input {
 	rakalyPath: string;
 	fileName: string;
 	goods: GoodDefinition[] | null;
+	names: GameNames | null;
 }
 
 function runRakalyJson(rakalyPath: string, savePath: string): Promise<string> {
@@ -29,12 +30,12 @@ function runRakalyJson(rakalyPath: string, savePath: string): Promise<string> {
 }
 
 async function main() {
-	const { savePath, rakalyPath, fileName, goods } = workerData as Input;
+	const { savePath, rakalyPath, fileName, goods, names } = workerData as Input;
 	const started = Date.now();
 	try {
 		const json = await runRakalyJson(rakalyPath, savePath);
 		const save = JSON.parse(json);
-		const snapshot = buildSnapshot(save, goods);
+		const snapshot = buildSnapshot(save, goods, names);
 		const summary = summarizeSave(save, {
 			fileName,
 			readAt: new Date().toISOString(),

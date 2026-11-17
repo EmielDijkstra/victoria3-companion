@@ -41,3 +41,43 @@ export function readGoods(gameDir: string | null): GoodDefinition[] | null {
 		return null;
 	}
 }
+
+export interface GameNames {
+	/** STATE_GELRE → "Gelre" */
+	states: Record<string, string>;
+	/** BEL → "Belgian" */
+	adjectives: Record<string, string>;
+}
+
+/** Simple reader for Paradox localization lines:  KEY:0 "Text"  (the :0 is optional). */
+export function parseLocalization(text: string, keyPattern: RegExp): Record<string, string> {
+	const out: Record<string, string> = {};
+	for (const line of text.replace(/^\uFEFF/, '').split(/\r?\n/)) {
+		// KEY:0 "Text" or KEY: "Text"
+		const m = line.match(/^\s*([A-Za-z0-9_]+):\d*\s+"(.*)"\s*$/);
+		if (m && keyPattern.test(m[1])) out[m[1]] = m[2];
+	}
+	return out;
+}
+
+export function readGameNames(gameDir: string | null): GameNames | null {
+	if (!gameDir) return null;
+	const loc = path.join(gameDir, 'game', 'localization', 'english');
+	try {
+		const states = parseLocalization(
+			readFileSync(path.join(loc, 'map', 'states_l_english.yml'), 'utf8'),
+			/^STATE_/
+		);
+		const adjectives = Object.fromEntries(
+			Object.entries(
+				parseLocalization(
+					readFileSync(path.join(loc, 'countries_l_english.yml'), 'utf8'),
+					/^[A-Z0-9]{3}_ADJ$/
+				)
+			).map(([k, v]) => [k.slice(0, -4), v])
+		);
+		return { states, adjectives };
+	} catch {
+		return null;
+	}
+}

@@ -25,6 +25,7 @@ export function makeGamestate(overrides: { countryPatch?: Record<string, unknown
 		player_manager: { database: { '0': { user: 'player', country: 25 } } },
 		country_manager: {
 			database: {
+				'29': { definition: 'NET' },
 				'25': {
 					definition: 'BEL',
 					tax_level: 'very_high',
@@ -76,6 +77,7 @@ export function makeGamestate(overrides: { countryPatch?: Record<string, unknown
 			database: {
 				'477': {
 					region: 'STATE_FLANDERS',
+					country: 25,
 					infrastructure: 124,
 					infrastructure_usage: 68,
 					pop_statistics: {
@@ -85,8 +87,10 @@ export function makeGamestate(overrides: { countryPatch?: Record<string, unknown
 						population_unemployed_workforce: 99192
 					}
 				},
+				'479': { region: 'STATE_GELRE', country: 29 },
 				'476': {
 					region: 'STATE_GELRE',
+					country: 25,
 					infrastructure: 32,
 					infrastructure_usage: 12,
 					pop_statistics: {

@@ -44,7 +44,14 @@ const list = (items: string[], l: Locale) =>
 
 // ---- texts per rule ----
 
-type Writer<T extends AdviceId> = (a: Extract<Advice, { id: T }>, l: Locale) => AdviceText;
+/** Turns a state key into a name; marks the player's part of a split state. */
+export type Place = (stateKey: string) => string;
+
+type Writer<T extends AdviceId> = (
+	a: Extract<Advice, { id: T }>,
+	l: Locale,
+	place: Place
+) => AdviceText;
 type Table = { [K in AdviceId]: Writer<K> };
 
 const nl: Table = {
@@ -74,27 +81,27 @@ const nl: Table = {
 			'boven 100% van je Credit Limit ga je in Default: alle bouw stopt en gebouwen produceren minder.',
 		how: ['Houd je weeksaldo positief; het overschot lost automatisch schuld af.']
 	}),
-	'expand-best': (a, l) => ({
-		title: `Breid je ${gameName(a.building)} uit in ${gameName(a.targetState)}`,
+	'expand-best': (a, l, place) => ({
+		title: `Breid je ${gameName(a.building)} uit in ${place(a.targetState)}`,
 		why:
-			`${gameName(a.building)} in ${gameName(a.buildingState)} levert ${money(a.profitPerLevel, l)} winst per level per week. ` +
+			`${gameName(a.building)} in ${place(a.buildingState)} levert ${money(a.profitPerLevel, l)} winst per level per week. ` +
 			`${gameName(a.good)} kost ${decimal(a.price, l)} tegen een basisprijs van ${a.base} (+${a.vsBasePct}%): er is tekort. ` +
-			`In ${gameName(a.targetState)} zoeken ${count(a.unemployed, l)} mensen werk.` +
+			`In ${place(a.targetState)} zoeken ${count(a.unemployed, l)} mensen werk.` +
 			(a.queuedElsewhere.length
-				? ` Je bouwlijst heeft er nu een in ${list(a.queuedElsewhere.map(gameName), l)}, waar minder mensen werk zoeken.`
+				? ` Je bouwlijst heeft er nu een in ${list(a.queuedElsewhere.map(place), l)}, waar minder mensen werk zoeken.`
 				: ''),
 		caveat: 'meer aanbod drukt de prijs. Bouw er één of twee bij en kijk dan opnieuw.',
 		how: [
-			`Klik op ${gameName(a.targetState)} op de kaart en open de tab Buildings.`,
+			`Klik op ${place(a.targetState)} op de kaart en open de tab Buildings.`,
 			`Klik bij ${gameName(a.building)} op + om een level toe te voegen.`
 		]
 	}),
-	unemployment: (a, l) => ({
-		title: `Zorg voor werk in ${gameName(a.targetState)}`,
-		why: `${count(a.unemployed, l)} mensen in je land zoeken werk (${decimal(a.unemployedPct, l)}% van je bevolking), waarvan ${count(a.stateUnemployed, l)} in ${gameName(a.targetState)}. Werklozen verdienen weinig en worden sneller Radical.`,
+	unemployment: (a, l, place) => ({
+		title: `Zorg voor werk in ${place(a.targetState)}`,
+		why: `${count(a.unemployed, l)} mensen in je land zoeken werk (${decimal(a.unemployedPct, l)}% van je bevolking), waarvan ${count(a.stateUnemployed, l)} in ${place(a.targetState)}. Werklozen verdienen weinig en worden sneller Radical.`,
 		caveat: 'bouw iets wat winst maakt; een gebouw met verlies lost werkloosheid maar kort op.',
 		how: [
-			`Klik op ${gameName(a.targetState)} en open de tab Buildings.`,
+			`Klik op ${place(a.targetState)} en open de tab Buildings.`,
 			'Kies een gebouw dat in je land goed verdient en voeg een level toe.'
 		]
 	}),
@@ -104,14 +111,14 @@ const nl: Table = {
 		caveat: 'Construction Sectors kosten elke week bouwmaterialen; houd je weeksaldo positief.',
 		how: ['Klik op een staat met veel werklozen → Buildings → Construction Sector → +.']
 	}),
-	'be-patient': (a, l) => ({
+	'be-patient': (a, l, place) => ({
 		title: `Laat je ${gameName(a.building)} groeien`,
-		why: `${gameName(a.building)} in ${gameName(a.buildingState)} heeft pas ${a.staffingPct}% van zijn personeel en draait daardoor ${money(a.profitPerWeek, l)} per week. ${gameName(a.good)} is schaars (+${a.vsBasePct}% boven de basisprijs). Vol bezet wordt hij winstgevend.`,
+		why: `${gameName(a.building)} in ${place(a.buildingState)} heeft pas ${a.staffingPct}% van zijn personeel en draait daardoor ${money(a.profitPerWeek, l)} per week. ${gameName(a.good)} is schaars (+${a.vsBasePct}% boven de basisprijs). Vol bezet wordt hij winstgevend.`,
 		caveat: 'niet afbreken; geef hem een paar maanden.',
 		how: []
 	}),
-	'losing-building': (a, l) => ({
-		title: `${gameName(a.building)} in ${gameName(a.buildingState)} draait verlies`,
+	'losing-building': (a, l, place) => ({
+		title: `${gameName(a.building)} in ${place(a.buildingState)} draait verlies`,
 		why: `Hij is voor ${a.staffingPct}% bezet maar verliest ${money(a.loss, l)} per week.${a.inputShortagePct ? ` Er is ${a.inputShortagePct}% tekort aan grondstoffen.` : ''}`,
 		caveat: 'kijk eerst of een andere Production Method goedkoper is voordat je afbreekt.',
 		how: [
@@ -119,9 +126,9 @@ const nl: Table = {
 			'Helpt dat niet: verminder levels (Downsize).'
 		]
 	}),
-	'government-inputs': (a) => ({
+	'government-inputs': (a, _l, place) => ({
 		title: `Tekort aan grondstoffen voor je ${gameName(a.building)}`,
-		why: `${gameName(a.building)} in ${gameName(a.buildingState)} mist ${a.inputShortagePct}% van wat hij nodig heeft. Dan werkt hij slechter, terwijl je hem wel betaalt.`,
+		why: `${gameName(a.building)} in ${place(a.buildingState)} mist ${a.inputShortagePct}% van wat hij nodig heeft. Dan werkt hij slechter, terwijl je hem wel betaalt.`,
 		caveat: 'overheidsgebouwen gebruiken vooral Paper; zelf meer Paper maken helpt vaak.',
 		how: [
 			'Open het gebouw en kijk welke grondstof ontbreekt.',
@@ -169,27 +176,27 @@ const en: Table = {
 			'above 100% of your Credit Limit you go into Default: all construction stops and buildings produce less.',
 		how: ['Keep your weekly balance positive; the surplus pays off debt automatically.']
 	}),
-	'expand-best': (a, l) => ({
-		title: `Expand your ${gameName(a.building)} in ${gameName(a.targetState)}`,
+	'expand-best': (a, l, place) => ({
+		title: `Expand your ${gameName(a.building)} in ${place(a.targetState)}`,
 		why:
-			`${gameName(a.building)} in ${gameName(a.buildingState)} makes ${money(a.profitPerLevel, l)} profit per level per week. ` +
+			`${gameName(a.building)} in ${place(a.buildingState)} makes ${money(a.profitPerLevel, l)} profit per level per week. ` +
 			`${gameName(a.good)} costs ${decimal(a.price, l)} against a base price of ${a.base} (+${a.vsBasePct}%): there is a shortage. ` +
-			`In ${gameName(a.targetState)}, ${count(a.unemployed, l)} people are looking for work.` +
+			`In ${place(a.targetState)}, ${count(a.unemployed, l)} people are looking for work.` +
 			(a.queuedElsewhere.length
-				? ` Your queue now has one in ${list(a.queuedElsewhere.map(gameName), l)}, where fewer people need jobs.`
+				? ` Your queue now has one in ${list(a.queuedElsewhere.map(place), l)}, where fewer people need jobs.`
 				: ''),
 		caveat: 'more supply lowers the price. Build one or two more, then check again.',
 		how: [
-			`Click ${gameName(a.targetState)} on the map and open the Buildings tab.`,
+			`Click ${place(a.targetState)} on the map and open the Buildings tab.`,
 			`Click + next to ${gameName(a.building)} to add a level.`
 		]
 	}),
-	unemployment: (a, l) => ({
-		title: `Create jobs in ${gameName(a.targetState)}`,
-		why: `${count(a.unemployed, l)} people in your country are looking for work (${decimal(a.unemployedPct, l)}% of your population), ${count(a.stateUnemployed, l)} of them in ${gameName(a.targetState)}. Unemployed people earn little and become Radical faster.`,
+	unemployment: (a, l, place) => ({
+		title: `Create jobs in ${place(a.targetState)}`,
+		why: `${count(a.unemployed, l)} people in your country are looking for work (${decimal(a.unemployedPct, l)}% of your population), ${count(a.stateUnemployed, l)} of them in ${place(a.targetState)}. Unemployed people earn little and become Radical faster.`,
 		caveat: 'build something profitable; a loss-making building only solves unemployment briefly.',
 		how: [
-			`Click ${gameName(a.targetState)} and open the Buildings tab.`,
+			`Click ${place(a.targetState)} and open the Buildings tab.`,
 			'Pick a building that earns well in your country and add a level.'
 		]
 	}),
@@ -199,21 +206,21 @@ const en: Table = {
 		caveat: 'Construction Sectors cost materials every week; keep your weekly balance positive.',
 		how: ['Click a state with many unemployed → Buildings → Construction Sector → +.']
 	}),
-	'be-patient': (a, l) => ({
+	'be-patient': (a, l, place) => ({
 		title: `Let your ${gameName(a.building)} grow`,
-		why: `${gameName(a.building)} in ${gameName(a.buildingState)} has only ${a.staffingPct}% of its workers and makes ${money(a.profitPerWeek, l)} per week. ${gameName(a.good)} is scarce (+${a.vsBasePct}% above the base price). Fully staffed it will be profitable.`,
+		why: `${gameName(a.building)} in ${place(a.buildingState)} has only ${a.staffingPct}% of its workers and makes ${money(a.profitPerWeek, l)} per week. ${gameName(a.good)} is scarce (+${a.vsBasePct}% above the base price). Fully staffed it will be profitable.`,
 		caveat: 'do not demolish it; give it a few months.',
 		how: []
 	}),
-	'losing-building': (a, l) => ({
-		title: `${gameName(a.building)} in ${gameName(a.buildingState)} loses money`,
+	'losing-building': (a, l, place) => ({
+		title: `${gameName(a.building)} in ${place(a.buildingState)} loses money`,
 		why: `It is ${a.staffingPct}% staffed but loses ${money(a.loss, l)} per week.${a.inputShortagePct ? ` It is ${a.inputShortagePct}% short of inputs.` : ''}`,
 		caveat: 'first check whether another Production Method is cheaper before demolishing.',
 		how: ['Open the building and compare Production Methods.', 'If that does not help: Downsize.']
 	}),
-	'government-inputs': (a) => ({
+	'government-inputs': (a, _l, place) => ({
 		title: `Your ${gameName(a.building)} is short of inputs`,
-		why: `${gameName(a.building)} in ${gameName(a.buildingState)} misses ${a.inputShortagePct}% of what it needs. It works worse while you still pay for it.`,
+		why: `${gameName(a.building)} in ${place(a.buildingState)} misses ${a.inputShortagePct}% of what it needs. It works worse while you still pay for it.`,
 		caveat: 'government buildings mainly use Paper; producing more Paper yourself often helps.',
 		how: [
 			'Open the building and see which input is missing.',
@@ -236,9 +243,18 @@ const en: Table = {
 
 export const ADVICE_TEXTS: Record<Locale, Table> = { nl, en };
 
-export function adviceText(advice: Advice, locale: Locale): AdviceText {
+/**
+ * Texts for one advice. `stateNames` comes from the snapshot: names as the game shows them,
+ * e.g. "Belgian Gelre" for the player's part of a split state.
+ */
+export function adviceText(
+	advice: Advice,
+	locale: Locale,
+	stateNames: Readonly<Record<string, string>> = {}
+): AdviceText {
 	const write = ADVICE_TEXTS[locale][advice.id] as Writer<typeof advice.id>;
-	return write(advice as never, locale);
+	const place: Place = (key) => stateNames[key] ?? gameName(key);
+	return write(advice as never, locale, place);
 }
 
 /** Short label per level, shown above the title. */

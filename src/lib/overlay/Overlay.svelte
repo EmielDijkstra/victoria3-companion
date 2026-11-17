@@ -23,6 +23,8 @@
 		save?.state === 'ready' ? save.snapshot : save?.state === 'error' ? save.snapshot : undefined
 	);
 	const advice = $derived(snapshot ? adviseFor(snapshot) : []);
+	// State names as the game shows them ("Belgian Gelre" for a split state)
+	const stateNames = $derived(snapshot?.stateNames ?? {});
 	const country = $derived(summary ? summary.country || t.unknownCountry : '');
 
 	const TONE = { urgent: 'bad', warn: 'warn', smart: 'concept', patience: 'good', consider: 'dim' };
@@ -37,7 +39,7 @@
 				if (advice.length > 0) {
 					return {
 						tag: LEVEL_LABEL[lang][advice[0].level],
-						title: adviceText(advice[0], lang).title,
+						title: adviceText(advice[0], lang, stateNames).title,
 						tone: TONE[advice[0].level]
 					};
 				}
@@ -262,7 +264,7 @@
 				{#if !snapshot.versionTested}
 					<p class="notice mb-2">{t.untestedVersion(snapshot.gameVersion)}</p>
 				{/if}
-				<AdviceList {advice} />
+				<AdviceList {advice} {stateNames} />
 			{/if}
 
 			{#if summary}

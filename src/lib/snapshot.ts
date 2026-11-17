@@ -30,6 +30,11 @@ export interface StateInfo {
 	unemployed: number;
 	infrastructure: number;
 	infrastructureUsed: number;
+	/**
+	 * Tags of other countries that own part of the same state region ("split state"), e.g. ["NET"]
+	 * for Belgium's part of Gelre. The game shows the same name for every part.
+	 */
+	sharedWith: string[];
 }
 
 export interface Snapshot {
@@ -70,6 +75,11 @@ export interface Snapshot {
 		privateQueueCount: number;
 	};
 	states: StateInfo[];
+	/**
+	 * Names as the game shows them, per state key. A split state gets the country adjective,
+	 * e.g. gelre → "Belgian Gelre". Falls back to a title-cased key without game files.
+	 */
+	stateNames: Record<string, string>;
 	/** Prices in the player's market; null when the goods list from the game files was not available */
 	prices: PriceInfo[] | null;
 	buildings: BuildingInfo[];

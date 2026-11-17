@@ -7,7 +7,7 @@ import {
 	type PriceInfo,
 	type Snapshot
 } from '../src/lib/snapshot';
-import type { GoodDefinition } from './game-data';
+import type { GameNames, GoodDefinition } from './game-data';
 
 type Json = Record<string, unknown>;
 const obj = (v: unknown): Json => (v && typeof v === 'object' ? (v as Json) : {});
@@ -38,7 +38,11 @@ export function newestOfWeekly(trend: unknown): number {
 	return num(samples[(((index - 1) % samples.length) + samples.length) % samples.length]);
 }
 
-export function buildSnapshot(save: unknown, goods: GoodDefinition[] | null): Snapshot {
+export function buildSnapshot(
+	save: unknown,
+	goods: GoodDefinition[] | null,
+	names: GameNames | null = null
+): Snapshot {
 	const g = obj(save);
 	const meta = obj(g.meta_data);
 	const players = Object.values(obj(obj(g.player_manager).database));
@@ -97,6 +101,45 @@ export function buildSnapshot(save: unknown, goods: GoodDefinition[] | null): Sn
 	}
 
 	const gameVersion = str(meta.version);
+	const countries = obj(obj(g.country_manager).database);
+	const states = myStates.map((id) => {
+		const st = obj(stateDb[String(id)]);
+		const sp = obj(st.pop_statistics);
+		const region = str(st.region);
+		const sharedWith = Object.values(stateDb)
+			.map(obj)
+			.filter((other) => region && str(other.region) === region && num(other.country) !== playerId)
+			.map(
+				(other) =>
+					str(obj(countries[String(num(other.country))]).definition) || String(num(other.country))
+			);
+		return {
+			state: stateKey(id),
+			region,
+			population:
+				num(sp.population_lower_strata) +
+				num(sp.population_middle_strata) +
+				num(sp.population_upper_strata),
+			unemployed: num(sp.population_unemployed_workforce),
+			infrastructure: round(num(st.infrastructure)),
+			infrastructureUsed: round(num(st.infrastructure_usage)),
+			sharedWith: [...new Set(sharedWith)]
+		};
+	});
+	const adjective = names?.adjectives[str(c.definition)] ?? str(meta.name);
+	const titleCase = (key: string) =>
+		key
+			.split('_')
+			.map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+			.join(' ');
+	// As the game shows it: "Gelre", or "Belgian Gelre" for the player's part of a split state
+	const stateNames = Object.fromEntries(
+		states.map(({ state, region, sharedWith }) => {
+			const base = names?.states[region] ?? titleCase(state);
+			return [state, sharedWith.length > 0 && adjective ? `${adjective} ${base}` : base];
+		})
+	);
+
 	return {
 		date: str(g.date) || str(meta.game_date),
 		gameVersion,
@@ -144,20 +187,8 @@ export function buildSnapshot(save: unknown, goods: GoodDefinition[] | null): Sn
 			})),
 			privateQueueCount: arr(obj(c.private_queue).construction_elements).length
 		},
-		states: myStates.map((id) => {
-			const s = obj(stateDb[String(id)]);
-			const sp = obj(s.pop_statistics);
-			return {
-				state: stateKey(id),
-				population:
-					num(sp.population_lower_strata) +
-					num(sp.population_middle_strata) +
-					num(sp.population_upper_strata),
-				unemployed: num(sp.population_unemployed_workforce),
-				infrastructure: round(num(s.infrastructure)),
-				infrastructureUsed: round(num(s.infrastructure_usage))
-			};
-		}),
+		states: states.map(({ region, ...rest }) => rest),
+		stateNames,
 		prices,
 		buildings,
 		interestGroups: Object.values(obj(obj(g.interest_groups).database))

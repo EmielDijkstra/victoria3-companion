@@ -5,7 +5,7 @@ import path from 'node:path';
 import { Worker } from 'node:worker_threads';
 import type { Snapshot } from '../src/lib/snapshot';
 import type { AppStatus, PathKind, PathStatus, SaveSummary } from '../src/lib/status';
-import { readGoods, type GoodDefinition } from './game-data';
+import { readGameNames, readGoods, type GameNames, type GoodDefinition } from './game-data';
 import {
 	findGameDir,
 	findUserDataDir,
@@ -39,6 +39,7 @@ export class Companion {
 	private pending = false;
 	private lastRead: { name: string; mtimeMs: number } | null = null;
 	private goods: GoodDefinition[] | null = null;
+	private names: GameNames | null = null;
 
 	constructor(private readonly opts: CompanionOptions) {
 		this.settings = loadSettings(this.settingsFile);
@@ -68,6 +69,7 @@ export class Companion {
 		this.lastRead = null;
 		const paths = this.resolvePaths();
 		this.goods = readGoods(paths.game.path);
+		this.names = readGameNames(paths.game.path);
 		this.status = {
 			...this.status,
 			paths,
@@ -199,7 +201,8 @@ export class Companion {
 					savePath,
 					fileName,
 					rakalyPath: this.status.paths.rakaly.path,
-					goods: this.goods
+					goods: this.goods,
+					names: this.names
 				}
 			});
 			worker.once('message', resolve);

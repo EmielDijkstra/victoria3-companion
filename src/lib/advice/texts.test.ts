@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import type { Advice } from './rules';
 import { ADVICE_TEXTS, adviceText, gameName, LEVEL_LABEL, money } from './texts';
 
+const NAMES = { flanders: 'Flanders', gelre: 'Belgian Gelre', wallonia: 'Wallonia' };
+
 const samples: Advice[] = [
 	{ id: 'construction-paused', level: 'urgent', queued: 10, costPerWeek: 11277, balance: 2508 },
 	{ id: 'deficit', level: 'urgent', balance: -4000, debtPct: 44 },
@@ -97,6 +99,27 @@ describe('advice texts', () => {
 		expect(en.title).toBe('Expand your Paper Mill in Flanders');
 		expect(en.why).toContain('46.7');
 		expect(en.why).toContain('99,192');
+	});
+
+	it('uses the state names as the game shows them, also for a split state', () => {
+		const losing = samples.find((x) => x.id === 'losing-building')!;
+		const gelre = {
+			...losing,
+			buildingState: 'gelre',
+			building: 'tooling_workshop'
+		} as typeof losing;
+		expect(adviceText(gelre, 'nl', NAMES).title).toBe(
+			'Tooling Workshop in Belgian Gelre draait verlies'
+		);
+		expect(adviceText(gelre, 'en', NAMES).title).toBe(
+			'Tooling Workshop in Belgian Gelre loses money'
+		);
+		expect(adviceText(samples[3], 'nl', NAMES).why).toContain('Belgian Gelre');
+	});
+
+	it('falls back to a readable name without game files', () => {
+		const losing = samples.find((x) => x.id === 'losing-building')!;
+		expect(adviceText(losing, 'nl').title).toBe('Textile Mill in Flanders draait verlies');
 	});
 
 	it('has a level label in both languages', () => {

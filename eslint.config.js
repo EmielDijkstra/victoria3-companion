@@ -21,7 +21,9 @@ export default defineConfig(
 		languageOptions: { globals: { ...globals.browser, ...globals.node } },
 		rules: {
 			// typescript-eslint recommends turning no-undef off for TypeScript projects.
-			'no-undef': 'off'
+			'no-undef': 'off',
+			// Allow leaving out a field with `{ unwanted, ...rest }`.
+			'@typescript-eslint/no-unused-vars': ['error', { ignoreRestSiblings: true }]
 		}
 	},
 	{

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { GOODS_TXT, makeGamestate } from './fixtures/gamestate';
-import { parseGoods } from './game-data';
+import { parseGoods, parseLocalization } from './game-data';
 import { buildSnapshot, newestOfChannel, newestOfWeekly } from './snapshot';
 
 const goods = parseGoods(GOODS_TXT);
@@ -13,6 +13,18 @@ describe('parseGoods', () => {
 			{ name: 'explosives', cost: 50 },
 			{ name: 'tools', cost: 40 }
 		]);
+	});
+});
+
+describe('parseLocalization', () => {
+	it('reads keys with and without :0, and a byte-order mark', () => {
+		const text =
+			'\uFEFFl_english:\n STATE_GELRE:0 "Gelre"\n STATE_ILE_DE_FRANCE: "Île-de-France"\n BEL_ADJ: "Belgian"\n';
+		expect(parseLocalization(text, /^STATE_/)).toEqual({
+			STATE_GELRE: 'Gelre',
+			STATE_ILE_DE_FRANCE: 'Île-de-France'
+		});
+		expect(parseLocalization(text, /_ADJ$/)).toEqual({ BEL_ADJ: 'Belgian' });
 	});
 });
 
@@ -80,8 +92,25 @@ describe('buildSnapshot', () => {
 			privateQueueCount: 1
 		});
 		expect(s.states.find((x) => x.state === 'flanders')?.unemployed).toBe(99192);
+		// Gelre is split: the Netherlands owns the other part
+		expect(s.states.find((x) => x.state === 'gelre')?.sharedWith).toEqual(['NET']);
+		expect(s.states.find((x) => x.state === 'flanders')?.sharedWith).toEqual([]);
 		expect(s.interestGroups.map((ig) => ig.group)).toEqual(['intelligentsia', 'trade_unions']);
 		expect(s.activeLaws).toEqual(['monarchy', 'no_police']);
+	});
+
+	it('names a split state like the game does: "Belgian Gelre"', () => {
+		const names = {
+			states: { STATE_GELRE: 'Gelre', STATE_FLANDERS: 'Flanders' },
+			adjectives: { BEL: 'Belgian' }
+		};
+		const named = buildSnapshot(makeGamestate(), goods, names);
+		expect(named.stateNames).toEqual({ flanders: 'Flanders', gelre: 'Belgian Gelre' });
+	});
+
+	it('falls back to title-cased keys without game files', () => {
+		expect(s.stateNames.flanders).toBe('Flanders');
+		expect(s.stateNames.gelre).toBe('Belgium Gelre'); // no adjective known: country name
 	});
 
 	it('flags untested game versions instead of failing', () => {
