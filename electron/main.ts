@@ -102,9 +102,11 @@ function createWindow() {
 }
 
 /**
- * Development aid: `electron . --capture=out.png [--expanded] [--capture-wait=ms]` saves an
- * image of the window and quits. Useful to check the rendering without a screen recording.
+ * Development aid: `electron . --capture=out.png [--expanded] [--capture-wait=ms] [--capture-lang=en]`
+ * saves an image of the window and quits. Useful to check the rendering without a screen
+ * recording. `--capture-lang` clicks that language button (and so remembers the choice).
  */
+const captureLang = process.argv.find((a) => a.startsWith('--capture-lang='))?.split('=')[1];
 const capturePath = process.argv.find((a) => a.startsWith('--capture='))?.split('=')[1];
 const captureWait = Number(
 	process.argv.find((a) => a.startsWith('--capture-wait='))?.split('=')[1]
@@ -114,10 +116,14 @@ function captureAndQuit(file: string) {
 		setTimeout(async () => {
 			if (!win) return;
 			if (process.argv.includes('--expanded')) {
-				await win.webContents.executeJavaScript(
-					"document.querySelector('[role=button][title^=Klik]')?.click()"
-				);
+				await win.webContents.executeJavaScript("document.querySelector('[data-tip]')?.click()");
 				await new Promise((r) => setTimeout(r, 800));
+			}
+			if (captureLang && /^[a-z]{2}$/.test(captureLang)) {
+				await win.webContents.executeJavaScript(
+					`[...document.querySelectorAll('.lang-btn')].find((b) => b.textContent.trim() === '${captureLang.toUpperCase()}')?.click()`
+				);
+				await new Promise((r) => setTimeout(r, 500));
 			}
 			const image = await win.capturePage();
 			await writeFile(file, image.toPNG());
