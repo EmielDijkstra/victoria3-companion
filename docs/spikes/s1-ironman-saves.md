@@ -1,6 +1,6 @@
 # Spike S1 – Ironman-saves leesbaar maken
 
-_Issue #1 · Uitgevoerd: 17 november 2026 · Spelversie 1.13.11_
+_Issue #1 · Uitgevoerd: 17 november 2026 · Spelversies 1.13.11 en 1.15.1_
 
 ## Vraag
 
@@ -53,21 +53,25 @@ ironman = { ironman=no  save_interval=three_months }
 ## Hoe vaak autosavet het spel?
 
 - De save bewaart `save_interval=three_months`: je huidige instelling is **elk kwartaal**.
-- Het spel heeft een instelling **"Autosave Interval"** ("Sets how often the game will save
-  automatically"). De mogelijke waarden staan in het spel zelf, niet in de leesbare spelbestanden.
-  **Nog te controleren door Emiel:** welke opties het menu toont (staat "maandelijks" erbij?).
+- Het spel heeft een instelling **"Autosave Interval"** (Settings → Game → Save Games). Volgens Emiels
+  schermafbeelding zijn de opties: *Never, Every month, Every three months, Every half year, Every year,
+  Every five years*. Emiel heeft hem op **Every month** gezet.
 - Het spel houdt maximaal 5 autosaves (`MAX_NUMBER_OF_AUTOSAVES = 5`) plus `autosave_exit.v3`.
-- Met elk kwartaal betekent dit: de app is hooguit drie spelmaanden achter. Dat is prima voor een overzicht
-  en waarschuwingen. Elke maand is beter, als het spel die optie heeft.
+- Met elke maand is de app hooguit één spelmaand achter. De app adviseert die instelling.
+- Let op: de nieuwe ironman-save bewaart zelf `save_interval=three_months`. Of de algemene instelling
+  ook voor ironman geldt, blijkt vanzelf zodra er ironman-autosaves verschijnen.
 
 ## Wat nog níet is getest
 
 > **Besluit Emiel (17-11-2026):** de ironman-test en de opties van het autosave-menu zijn niet nodig om de
 > spike af te ronden. Dat het werkt is het belangrijkste.
 
-- **Een echte ironman-save.** Er staat op deze pc geen ironman-save. Ironman-saves hebben hetzelfde
-  binaire formaat, en het omzetten van ironman-saves is juist waar Rakaly voor gemaakt is. Even proberen
-  zodra er een ironman-save is (een paar minuten spelen is genoeg).
+- ~~Een echte ironman-save.~~ **Toch getest (17-11-2026):** Emiel maakte een ironman-campagne met
+  Nederland (`netherlands_ironman.v3`, 7,9 MB, 1 januari 1836). Omzetten: 1,2 s, 90 MB tekst,
+  **0 onbekende velden**, metadata `ironman=yes`. Ook de nieuwste `autosave_exit.v3` (Belgium,
+  16 september 1848) ging goed: 1,1 s, 0 onbekende velden.
+- **Spelversie intussen 1.15.1.** De saves van vandaag zijn van 1.15.1 (die van oktober waren 1.13.11).
+  Rakaly 0.8.23 kent ook alle velden van 1.15.1.
 - **Of mods en debugmodus achievements blokkeren in 1.13.** De uitleg in het spel noemt alleen
   spelregels, singleplayer en observer-modus. Een Paradox-forumtopic suggereert dat mods achievements
   in Vic3 niet meer blokkeren. Niet bevestigd; tot het zeker is, houden we het spel onaangeroerd.
