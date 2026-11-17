@@ -277,7 +277,7 @@
 					{#if !snapshot.versionTested}
 						<p class="notice mb-2">{t.untestedVersion(snapshot.gameVersion)}</p>
 					{/if}
-					<AdviceList {advice} {stateNames} />
+					<AdviceList {advice} {stateNames} gameVersion={snapshot.gameVersion} />
 				{:else if save?.state !== 'reading'}
 					<p class="mt-2 text-[15px] text-ink-dim"><GameText text={t.autosaveTip} /></p>
 				{/if}

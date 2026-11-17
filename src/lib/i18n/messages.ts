@@ -57,6 +57,11 @@ const nl = {
 	noAdvice: 'Geen advies op dit moment: ik zie niets wat dringend aandacht nodig heeft.',
 	caveatPrefix: 'Let op:',
 	howTo: 'Hoe doe ik dat?',
+	howToChecked: (v: string) => `Stappen gecontroleerd in versie ${v}.`,
+	howToOtherVersion: (checked: string, v: string) =>
+		`Stappen gecontroleerd in versie ${checked}; jij speelt ${v}. Schermen kunnen verschoven zijn.`,
+	howToUnchecked: (v: string) =>
+		`Stappen voor versie ${v}, nog niet in het spel gecontroleerd. Klopt een stap niet? Laat het weten.`,
 	adviceCount: (n: number) => (n === 1 ? '1 advies' : `${n} adviezen`),
 	untestedVersion: (v: string) =>
 		`Spelversie ${v} is nog niet getest met deze app. Het advies kan afwijken; laat het weten als iets niet klopt.`,
@@ -136,6 +141,11 @@ const en: Messages = {
 	noAdvice: 'No advice right now: I see nothing that needs urgent attention.',
 	caveatPrefix: 'Mind:',
 	howTo: 'How do I do that?',
+	howToChecked: (v: string) => `Steps checked in version ${v}.`,
+	howToOtherVersion: (checked: string, v: string) =>
+		`Steps checked in version ${checked}; you are playing ${v}. Screens may have moved.`,
+	howToUnchecked: (v: string) =>
+		`Steps for version ${v}, not yet checked in the game. Is a step wrong? Let us know.`,
 	adviceCount: (n: number) => (n === 1 ? '1 piece of advice' : `${n} pieces of advice`),
 	untestedVersion: (v: string) =>
 		`Game version ${v} has not been tested with this app yet. Advice may be off; let us know if something is wrong.`,

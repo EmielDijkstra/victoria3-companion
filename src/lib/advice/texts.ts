@@ -257,6 +257,37 @@ export function adviceText(
 	return write(advice as never, locale, place);
 }
 
+// ---- game version of the steps ----
+
+/** "1.15.1" → "1.15": patches do not change screens, minor versions can. */
+export const minorVersion = (v: string) => v.split('.').slice(0, 2).join('.');
+
+/**
+ * Game version (major.minor) in which the "how do I do that?" steps were checked by hand in the
+ * game. Missing: written from knowledge, not yet checked. Add a rule here only after clicking
+ * through the steps yourself.
+ */
+export const HOW_TO_CHECKED: Partial<Record<AdviceId, string>> = {};
+
+export type HowToStatus =
+	| { kind: 'checked'; version: string }
+	| { kind: 'other-version'; checked: string; version: string }
+	| { kind: 'unchecked'; version: string };
+
+/** Whether the steps for this advice are known to match the player's game version. */
+export function howToStatus(
+	id: AdviceId,
+	gameVersion: string,
+	checked: Partial<Record<AdviceId, string>> = HOW_TO_CHECKED
+): HowToStatus {
+	const version = minorVersion(gameVersion);
+	const done = checked[id];
+	if (!done) return { kind: 'unchecked', version };
+	return minorVersion(done) === version
+		? { kind: 'checked', version }
+		: { kind: 'other-version', checked: minorVersion(done), version };
+}
+
 /** Short label per level, shown above the title. */
 export const LEVEL_LABEL: Record<Locale, Record<AdviceLevel, string>> = {
 	nl: { urgent: 'Urgent', warn: 'Let op', smart: 'Slim', patience: 'Geduld', consider: 'Overweeg' },

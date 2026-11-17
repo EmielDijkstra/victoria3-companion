@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import type { Advice } from './rules';
-import { ADVICE_TEXTS, adviceText, gameName, LEVEL_LABEL, money } from './texts';
+import {
+	ADVICE_TEXTS,
+	adviceText,
+	gameName,
+	howToStatus,
+	LEVEL_LABEL,
+	minorVersion,
+	money
+} from './texts';
 
 const NAMES = { flanders: 'Flanders', gelre: 'Belgian Gelre', wallonia: 'Wallonia' };
 
@@ -139,5 +147,27 @@ describe('formatting', () => {
 	it('turns game keys into game names', () => {
 		expect(gameName('paper_mill')).toBe('Paper Mill');
 		expect(gameName('very_high')).toBe('Very High');
+	});
+});
+
+describe('howToStatus', () => {
+	it('compares on major.minor, ignoring the patch', () => {
+		expect(minorVersion('1.15.1')).toBe('1.15');
+		expect(howToStatus('deficit', '1.15.3', { deficit: '1.15' })).toEqual({
+			kind: 'checked',
+			version: '1.15'
+		});
+	});
+
+	it('warns when the steps were checked in another version', () => {
+		expect(howToStatus('deficit', '1.16.0', { deficit: '1.15' })).toEqual({
+			kind: 'other-version',
+			checked: '1.15',
+			version: '1.16'
+		});
+	});
+
+	it('says when the steps were never checked', () => {
+		expect(howToStatus('deficit', '1.15.1', {})).toEqual({ kind: 'unchecked', version: '1.15' });
 	});
 });

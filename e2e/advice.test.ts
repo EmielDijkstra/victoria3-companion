@@ -26,6 +26,8 @@ test('the tip shows the most important advice and opens into the full list', asy
 	// Steps in the game, folded away until asked for
 	await paper.getByText('Hoe doe ik dat?').click();
 	await expect(paper).toContainText('open de tab Buildings');
+	// The steps say for which game version they are meant
+	await expect(paper.locator('[data-how-version]')).toContainText('versie 1.15');
 
 	// Last: something to consider
 	await expect(items.last()).toHaveAttribute('data-advice', 'lower-tax');

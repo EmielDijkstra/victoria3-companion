@@ -1,13 +1,19 @@
 <script lang="ts">
 	import type { Advice } from '../advice/rules';
-	import { adviceText, LEVEL_LABEL } from '../advice/texts';
+	import { adviceText, howToStatus, LEVEL_LABEL } from '../advice/texts';
 	import { locale } from '../i18n/locale.svelte';
 	import GameText from './GameText.svelte';
 
 	let {
 		advice,
-		stateNames = {}
-	}: { advice: Advice[]; stateNames?: Readonly<Record<string, string>> } = $props();
+		stateNames = {},
+		gameVersion
+	}: {
+		advice: Advice[];
+		stateNames?: Readonly<Record<string, string>>;
+		/** The player's game version: the steps say for which version they are meant */
+		gameVersion: string;
+	} = $props();
 	const t = $derived(locale.t);
 	const lang = $derived(locale.current);
 </script>
@@ -37,6 +43,7 @@
 						</p>
 					{/if}
 					{#if text.how.length > 0}
+						{@const status = howToStatus(item.id, gameVersion)}
 						<details>
 							<summary>{t.howTo}</summary>
 							<ol class="mt-1.5 list-decimal pl-5 text-[15px] leading-snug">
@@ -44,6 +51,13 @@
 									<li><GameText text={step} /></li>
 								{/each}
 							</ol>
+							<p class="how-version {status.kind}" data-how-version={status.kind}>
+								{status.kind === 'checked'
+									? t.howToChecked(status.version)
+									: status.kind === 'other-version'
+										? t.howToOtherVersion(status.checked, status.version)
+										: t.howToUnchecked(status.version)}
+							</p>
 						</details>
 					{/if}
 				</div>
@@ -102,6 +116,16 @@
 		color: #f1f4e4;
 		font: 500 14.5px/1.5 var(--font-serif);
 	}
+	.how-version {
+		margin-top: 6px;
+		font-size: 13.5px;
+		line-height: 1.35;
+		color: var(--color-ink-dim);
+	}
+	.how-version.other-version {
+		color: var(--color-warn);
+	}
+
 	summary::-webkit-details-marker {
 		display: none;
 	}
