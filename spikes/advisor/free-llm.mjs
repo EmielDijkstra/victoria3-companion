@@ -62,13 +62,21 @@ const questions = JSON.parse(readFileSync(path.join(here, "questions.json"), "ut
 const factsBlock = buildFactsBlock(facts, rules(facts));
 
 mkdirSync(outDir, { recursive: true });
-const outFile = path.join(outDir, "free-results.json");
+// --only=q4 runs one question (handy to run several in parallel; each writes its own file)
+const only = opt("only");
+const outFile = path.join(outDir, only ? `free-results-${only}.json` : "free-results.json");
 const results = existsSync(outFile) ? JSON.parse(readFileSync(outFile, "utf8")) : [];
 
 for (const q of questions) {
+  if (only && q.id !== only) continue;
   if (results.some((r) => r.model === model && r.question_id === q.id && r.answer)) continue; // resume
   const body = {
     model,
+    // Streaming: thinking models can take minutes before the first byte, and a
+    // non-streamed request then hits Node's 5-minute headers timeout.
+    stream: true,
+    stream_options: { include_usage: true },
+    ...(opt("effort") ? { reasoning_effort: opt("effort") } : {}),
     messages: [
       { role: "system", content: SYSTEM },
       { role: "user", content: `${factsBlock}\n\nVRAAG: ${q.question}` },
@@ -78,11 +86,22 @@ for (const q of questions) {
   let data;
   const started = Date.now();
   while (true) {
-    const res = await fetch(`${provider.baseUrl}/chat/completions`, { method: "POST", headers, body: JSON.stringify(body) });
-    if (res.status === 429 && attempt < 4) {
-      // Free tiers: wait for the per-minute limit to reset.
+    let res;
+    try {
+      res = await fetch(`${provider.baseUrl}/chat/completions`, { method: "POST", headers, body: JSON.stringify(body) });
+    } catch (error) {
+      if (attempt < 2) {
+        console.log(`${q.id}: verbinding mislukt (${error.cause?.code ?? error.message}), opnieuw…`);
+        attempt++;
+        continue;
+      }
+      console.error(`${q.id}: verbinding mislukt, overgeslagen`);
+      break;
+    }
+    if ((res.status === 429 || res.status === 503) && attempt < 4) {
+      // Free tiers: wait for the per-minute limit to reset, or for a busy model (503).
       const wait = Number(res.headers.get("retry-after")) * 1000 || 30000 * (attempt + 1);
-      console.log(`${q.id}: limiet bereikt, ${Math.round(wait / 1000)}s wachten…`);
+      console.log(`${q.id}: ${res.status === 503 ? "model druk" : "limiet bereikt"}, ${Math.round(wait / 1000)}s wachten…`);
       await sleep(wait);
       attempt++;
       continue;
@@ -91,14 +110,30 @@ for (const q of questions) {
       console.error(`${q.id}: fout ${res.status}: ${(await res.text()).slice(0, 400)}`);
       break;
     }
-    data = await res.json();
+    // Read the server-sent events and glue the text chunks together.
+    data = { text: "", finish_reason: null, usage: null };
+    const decoder = new TextDecoder();
+    let buffer = "";
+    for await (const chunk of res.body) {
+      buffer += decoder.decode(chunk, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop();
+      for (const line of lines) {
+        const payload = line.replace(/^data:\s*/, "").trim();
+        if (!line.startsWith("data:") || !payload || payload === "[DONE]") continue;
+        const event = JSON.parse(payload);
+        data.text += event.choices?.[0]?.delta?.content ?? "";
+        data.finish_reason = event.choices?.[0]?.finish_reason ?? data.finish_reason;
+        if (event.usage) data.usage = event.usage;
+      }
+    }
     break;
   }
   if (!data) continue;
-  const answer = data.choices?.[0]?.message?.content?.trim() ?? "";
+  const answer = data.text.trim();
   const result = {
     provider: providerName, model, question_id: q.id, question: q.question,
-    finish_reason: data.choices?.[0]?.finish_reason, seconds: Math.round((Date.now() - started) / 100) / 10,
+    finish_reason: data.finish_reason, seconds: Math.round((Date.now() - started) / 100) / 10,
     usage: data.usage ?? null, cost_usd: 0, answer,
   };
   results.push(result);
