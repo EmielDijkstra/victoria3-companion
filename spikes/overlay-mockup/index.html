@@ -145,7 +145,20 @@
   /* Overlay-modus (Electron): geen nep-achtergrond, geen mockup-notitie */
   .overlay-mode body { background: transparent; }
   .overlay-mode .note { display: none; }
-  .overlay-mode .overlay { top: 4px; left: 4px; right: auto; bottom: auto; max-height: calc(100vh - 8px); overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--panel-edge) transparent; }
+  .overlay-mode .overlay { top: 4px; left: 4px; right: auto; bottom: auto; }
+
+  /* Paneel blijft heel; alleen de adviezenlijst scrolt, met een duidelijke schuifbalk. */
+  .panel { display: flex; flex-direction: column; max-height: calc(100vh - 40px); }
+  .overlay-mode .panel { max-height: calc(100vh - 8px); }
+  .panel-head, .band, .meta, .hint { flex: none; }
+  .advice-list {
+    flex: 1 1 auto; min-height: 0; overflow-y: auto; padding-right: 6px; margin-right: -6px;
+    scrollbar-width: auto; scrollbar-color: var(--panel-edge-light, #b5a57e) rgba(0,0,0,.25);
+  }
+  .advice-list::-webkit-scrollbar { width: 9px; }
+  .advice-list::-webkit-scrollbar-track { background: rgba(0,0,0,.25); border-radius: 5px; }
+  .advice-list::-webkit-scrollbar-thumb { background: #b5a57e; border-radius: 5px; border: 2px solid #2a2824; }
+  .meta { border-top: 1px solid rgba(255,240,200,.1); padding-top: 8px; }
   .overlay-mode.click-through .panel { opacity: .8; }
 </style>
 </head>
@@ -196,6 +209,7 @@
     </div>
 
     <div class="band">Doe dit eerst</div>
+    <div class="advice-list">
 
     <article class="advice">
       <div class="advice-head">
@@ -274,6 +288,7 @@
       </div>
     </article>
 
+    </div>
     <div class="meta"><span>Autosave: elke maand</span><span>4 adviezen <span class="arrow">▸</span></span></div>
     <p class="hint">Sleep aan ⠿ om te verplaatsen · – inklappen · × wegklikken · Alt+V terughalen</p>
   </section>
@@ -301,16 +316,21 @@
   function reportSize() {
     if (!bridge) return;
     requestAnimationFrame(() => {
-      // scrollHeight = volledige hoogte van de inhoud, ook als het venster nu nog te klein is
+      // Natuurlijke hoogte = paneel zonder scrollen (ook als het venster nu nog te klein is),
+      // begrensd op de schermhoogte; daarboven scrolt alleen de adviezenlijst.
       const width = overlay.getBoundingClientRect().width;
-      const height = Math.min(overlay.scrollHeight, screen.availHeight - 80);
+      const list = overlay.querySelector(".advice-list");
+      const natural = overlay.dataset.state === "expanded"
+        ? overlay.scrollHeight - list.clientHeight + list.scrollHeight
+        : overlay.scrollHeight;
+      const height = Math.min(natural, screen.availHeight - 16);
       bridge.resize(Math.ceil(width) + 8, Math.ceil(height) + 8); // + rand voor de schaduw
     });
   }
   if (bridge) {
     const ro = new ResizeObserver(reportSize);
     ro.observe(overlay);
-    for (const el of overlay.children) ro.observe(el); // ook bij openklappen van "Hoe doe ik dat?"
+    for (const el of overlay.querySelectorAll(".pill, .panel, .advice")) ro.observe(el); // ook bij openklappen van "Hoe doe ik dat?"
   }
 
   // Klikken: tipje opent, knoppen klappen in of verbergen.
