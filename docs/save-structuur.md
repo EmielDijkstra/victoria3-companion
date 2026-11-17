@@ -27,7 +27,9 @@ Testbestand: kopie van `autosave_exit.v3`, België, 16 september 1848 (124 MB JS
 | Dashboardveld | Pad (vanaf `C`) | Waarde 16-9-1848 | Opmerking |
 |---|---|---|---|
 | Tag | `definition` | `BEL` | |
-| GDP | `gdp.channels.0.values[(index − 1) mod lengte]` | £3.432.405 | Tijdreeks (zie "Tijdreeksen"). **Spel toont 3.7M**, verschil nog niet verklaard |
+| GDP (laatste meting) | `gdp.channels.0.values[(index − 1) mod lengte]` | £3.432.405 | Tijdreeks die ongeveer elke 4 weken een nieuwe waarde krijgt. Het spel toont de **actuele** GDP (£3,73M); die staat niet los in de save. De app toont daarom "GDP (meting van …)" of rekent hem zelf uit |
+| GDP-geschiedenis | `gdp.channels.0.values` | max £4,80M, min £1,57M | Komt precies overeen met de GDP-grafiek in het spel (as 1.56M–4.80M). Geschikt voor trends |
+| Laatste burgeroorlog | `last_civil_war_date` | 1848.6.24 | Verklaart de GDP-dip in juni 1848: goed voor uitleg in de app |
 | Weekly Balance | som(`budget.weekly_income`) − som(`budget.weekly_expenses`) | +£2.507 | Lopende week. **Spel toont +£2.41K**: ~£100 verschil, nog uitzoeken welke post |
 | Saldo-geschiedenis | `budget.balance_trend.weekly.samples` | nieuwste +£1.551 | Ringbuffer van 30 weken (zie "Tijdreeksen"); loopt achter op de lopende week |
 | Inkomsten/uitgaven per post | `budget.weekly_income`, `budget.weekly_expenses` | | Arrays; de betekenis per index moet nog worden uitgezocht |
@@ -141,7 +143,9 @@ van de bovenbalk (17-11-2026):
 - [x] Loyalists: save 33.692 · spel **33.6K** ✅
 - [x] Literacy: save 42,2% · spel **42.1%** ✅
 - [~] Weekly Balance: save +£2.507 (lopende week) · spel **+£2.41K**. Bijna; ~£100 verschil uitzoeken
-- [ ] GDP: save £3,43 mln · spel **3.7M**? Eerst nagaan of de 3.7M in de bovenbalk echt GDP is (tooltip)
+- [x] GDP: tooltip in het spel zegt **£3.73M** actueel. De reeks in de save (laatste meting £3,43M) loopt
+  achter, maar de vorm klopt precies met de grafiek in het spel (4.80M–1.56M, dip door de burgeroorlog
+  van juni 1848) ✅
 - [ ] Debt ≈ **£2,02 mln**, Credit Limit ≈ **£4,61 mln**
 - [ ] Unemployed ≈ **168k**
 - [ ] Intelligentsia is Influential met approval +5; Trade Unions approval −9
