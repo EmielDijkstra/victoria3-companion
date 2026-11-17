@@ -4,7 +4,7 @@ Een kleine overlay-adviseur voor Victoria 3. Hij leest je autosave en vertelt wa
 doen, waarom, en hoe je dat in het spel doet, zodat je het spel beter leert begrijpen. Werkt met gewone
 en ironman-saves en past het spel niet aan.
 
-> Status: fase 1. Het skelet van de app staat (overlay-venster in Vic3-stijl); advies volgt.
+> Status: fase 1. De overlay vindt je mappen en leest je nieuwste autosave in; advies volgt.
 
 ## Lokaal starten
 
@@ -30,6 +30,21 @@ npm start
 ```
 
 Tip: zet Victoria 3 op **Borderless** (Settings → Graphics), anders valt de overlay weg in fullscreen.
+
+### Saves lezen: Rakaly
+
+Saves zijn binair. De app zet ze om met de officiële **Rakaly CLI** (MIT, van de maker van pdx.tools),
+die niet in deze repo zit (zie #13). Eenmalig:
+
+1. Download `rakaly-…-x86_64-pc-windows-msvc.zip` van
+   [github.com/rakaly/cli/releases](https://github.com/rakaly/cli/releases) en pak `rakaly.exe` uit.
+2. Zet hem in `%APPDATA%\victoria3-companion\tools\rakaly.exe`, of kies hem in de overlay onder
+   **Mappen → Rakaly → Kies…**.
+
+De app vindt je savemap (`Documents\Paradox Interactive\Victoria 3`, ook via OneDrive) en de
+spelinstallatie (via Steam) zelf; beide zijn aan te passen onder **Mappen**. Hij leest alleen: een nieuwe
+save wordt eerst gekopieerd naar `%APPDATA%\victoria3-companion\work` en dáár ingelezen.
+Zet in het spel **Autosave Interval** op **Every month**.
 
 ### Bediening
 
