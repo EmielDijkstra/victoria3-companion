@@ -30,10 +30,12 @@ function savePosition() {
 
 // Keep the window fully on a screen.
 function clampToScreen(x, y, width, height) {
-  const area = screen.getDisplayNearestPoint({ x, y }).workArea;
+  // Electron only accepts whole pixels; with display scaling the mouse deltas are fractions.
+  const ix = Math.round(x), iy = Math.round(y), iw = Math.round(width), ih = Math.round(height);
+  const area = screen.getDisplayNearestPoint({ x: ix, y: iy }).workArea;
   return {
-    x: Math.min(Math.max(x, area.x), area.x + area.width - width),
-    y: Math.min(Math.max(y, area.y), area.y + area.height - height),
+    x: Math.round(Math.min(Math.max(ix, area.x), area.x + area.width - iw)),
+    y: Math.round(Math.min(Math.max(iy, area.y), area.y + area.height - ih)),
   };
 }
 
@@ -78,6 +80,19 @@ function createWindow() {
   // showInactive: do not steal focus from the game.
   win.once("ready-to-show", () => win.showInactive());
 
+  // Spike self-check: OVERLAY_DRAGTEST=1 drags by fractional pixels, like a scaled display does.
+  if (process.env.OVERLAY_DRAGTEST) {
+    win.webContents.once("did-finish-load", () =>
+      setTimeout(async () => {
+        const before = win.getPosition();
+        await win.webContents.executeJavaScript(
+          "for (const d of [[-10.4, 5.6], [-0.8, 0.2], [-20.25, 13.75]]) window.overlayBridge.moveBy(...d); true",
+        );
+        setTimeout(() => console.log("dragtest", before, "->", win.getPosition()), 300);
+      }, 1000),
+    );
+  }
+
   // For checking the rendering without a screen grab: OVERLAY_CAPTURE=path.png
   if (process.env.OVERLAY_CAPTURE) {
     win.webContents.once("did-finish-load", () =>
@@ -98,7 +113,9 @@ ipcMain.on("set-interactive", (_e, interactive) => setInteractive(Boolean(intera
 
 // The page reports its size; grow/shrink while keeping the top-left corner,
 // unless that would push the window off screen.
-ipcMain.on("resize", (_e, { width, height }) => {
+ipcMain.on("resize", (_e, size) => {
+  const width = Math.round(size.width), height = Math.round(size.height);
+  if (!(width > 0 && height > 0)) return;
   const [curW, curH] = win.getSize();
   if (curW === width && curH === height) return; // nothing changed: avoid needless redraws
   if (process.env.OVERLAY_DEBUG) console.log("resize", width, height);
@@ -108,6 +125,7 @@ ipcMain.on("resize", (_e, { width, height }) => {
 });
 
 ipcMain.on("move-by", (_e, { dx, dy }) => {
+  if (!Number.isFinite(dx) || !Number.isFinite(dy)) return;
   const [x, y] = win.getPosition();
   const [width, height] = win.getSize();
   const pos = clampToScreen(x + dx, y + dy, width, height);
