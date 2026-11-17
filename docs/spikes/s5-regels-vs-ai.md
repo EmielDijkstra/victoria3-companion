@@ -50,7 +50,8 @@ en de AI leunt op hun bevindingen.
 
 ## Beoordeling Emiel
 
-_Lees per vraag hieronder beide antwoorden en vul in: welke helpt je het meest, en klopt het met het spel?_
+**17-11-2026: "Gemini helpt meer."** De AI-adviseur gaat daarom naar voren in het plan: niet pas in fase 4,
+maar als onderdeel van het adviespaneel (regels direct, AI-uitleg op verzoek).
 
 ## Antwoorden naast elkaar
 

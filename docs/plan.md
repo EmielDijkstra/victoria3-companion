@@ -290,13 +290,18 @@ kan de app dan alleen uitleggen en leren (begrippen, leerpad, "leg dit scherm ui
 - Sneltoets tonen/verbergen, klik-door, positie onthouden.
 - Optioneel: UI via localhost voor Steam-overlay-browser of tablet.
 
-### Fase 4 – AI-adviseur (optioneel, ± 2 weken; kan naar voren als S5 overtuigt)
+### Fase 4 – AI-adviseur → **naar voren gehaald** (besluit 17-11-2026 na spike S5)
 
-- Vraag stellen over je eigen spel ("waarom is mijn levensstandaard gedaald?"); de app stuurt een
-  compacte samenvatting van de snapshot mee plus relevante begripsteksten.
-- "Leg dit scherm uit": screenshot via sneltoets → uitleg (vision).
-- Alleen na expliciete opt-in en met eigen API-sleutel; toont vooraf wat er verstuurd wordt.
-  Kosten per vraag zichtbaar.
+S5 liet zien dat AI vooral helpt bij waarom-vragen en politiek; Emiel: "Gemini helpt meer". Daarom wordt
+AI-uitleg onderdeel van het adviespaneel in fase 1–2, niet een losse latere fase:
+
+- Regels geven altijd direct het tipje en de adviezen; een knop "Vraag de adviseur" haalt AI-uitleg op.
+- Standaard het **gratis** `gemini-3.6-flash` (Google AI Studio-sleutel van de speler); model instelbaar
+  (andere gratis aanbieder, lokaal model, of betaalde API).
+- Label "AI · kan fouten bevatten"; menunamen en stappen komen uit onze eigen regels, niet uit de AI.
+- Vrije vragen over je eigen spel ("waarom is mijn levensstandaard gedaald?").
+- Later: "Leg dit scherm uit" via screenshot (vision).
+- Zie `docs/spikes/s5-regels-vs-ai.md`.
 
 ### Fase 5 – Later
 
