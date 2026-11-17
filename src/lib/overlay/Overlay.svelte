@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import Emblem from './Emblem.svelte';
+	import { InteractionSync } from './interaction';
 
 	type View = 'collapsed' | 'expanded' | 'hidden';
 
@@ -9,6 +10,7 @@
 	let clickThrough = $state(false);
 
 	const bridge = typeof window !== 'undefined' ? window.overlayBridge : undefined;
+	const interaction = new InteractionSync((interactive) => bridge?.setInteractive(interactive));
 
 	// The Electron window follows the size of the tip or panel.
 	function reportSize() {
@@ -22,7 +24,10 @@
 
 	function setView(next: View) {
 		view = next;
-		if (next === 'hidden') bridge?.hide();
+		if (next === 'hidden') {
+			interaction.setHovering(false);
+			bridge?.hide();
+		}
 		reportSize();
 	}
 
@@ -54,6 +59,8 @@
 		bridge.onState(({ fullyClickThrough, shown }) => {
 			clickThrough = fullyClickThrough;
 			if (shown && view === 'hidden') setView('collapsed');
+			// Alt+C or Alt+V changed the window: re-send whether the mouse is over us.
+			interaction.reset();
 		});
 		reportSize();
 		return () => observer.disconnect();
@@ -67,8 +74,9 @@
 	class:hidden={view === 'hidden'}
 	role="complementary"
 	aria-label="Victoria 3 Companion"
-	onmouseenter={() => bridge?.setInteractive(true)}
-	onmouseleave={() => bridge?.setInteractive(false)}
+	onmouseenter={() => interaction.setHovering(true)}
+	onmousemove={() => interaction.setHovering(true)}
+	onmouseleave={() => interaction.setHovering(false)}
 >
 	{#if view === 'collapsed'}
 		<!-- The tip: small, out of the way, click to open -->
