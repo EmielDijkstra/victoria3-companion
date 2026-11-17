@@ -1,0 +1,16 @@
+{
+  "name": "vic3-advisor-spike",
+  "version": "1.0.0",
+  "description": "Spike S5 (#4): fixed rules vs. AI advice",
+  "scripts": {
+    "facts": "node facts.mjs",
+    "ai": "node ai.mjs"
+  },
+  "license": "UNLICENSED",
+  "type": "module",
+  "dependencies": {
+    "@anthropic-ai/sdk": "1.9.0",
+    "dotenv": "18.0.10"
+  },
+  "private": true
+}
