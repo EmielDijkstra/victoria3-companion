@@ -37,6 +37,16 @@ Problemen onderweg:
   Opgelost met één-exemplaar-slot en een nette waarschuwing bij een bezette poort.
 - Het venster groeide eerst niet mee bij openklappen, omdat de hoogte binnen het te kleine venster werd
   gemeten. Opgelost door `scrollHeight` te meten.
+- Uitgeklapt werd het paneel onderaan afgekapt (geen rand, geen schuifbalk). Nu blijven kop en voet staan
+  en scrolt alleen de adviezenlijst, met een duidelijke schuifbalk.
+- Het paneel versprong steeds van breedte: een CSS-regel voor smalle schermen (< 380 px) gold ook in het
+  smalle overlay-venster, waardoor paneel en venster elkaar lieten krimpen. Regel geldt nu alleen in de browser.
+- Verslepen crashte op een scherm met 125% schaal: muisbewegingen zijn dan kommagetallen en
+  `setPosition` accepteert alleen hele pixels. Nu afgerond; zelftest met `OVERLAY_DRAGTEST=1`.
+- Na de fixes door Emiel getest boven het spel: werkt goed (17-11-2026).
+
+**Les voor de echte app:** test op een geschaald scherm (125%) en met de echte venstergrootte. Twee van de
+vier fouten zag je niet in de browser.
 
 ## Koerswijziging: advies in plaats van cijfers
 
