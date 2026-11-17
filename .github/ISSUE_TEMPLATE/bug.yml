@@ -1,0 +1,29 @@
+name: Bug
+description: Iets werkt niet zoals bedoeld
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: Wat gaat er mis?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Stappen om het te zien
+      value: |
+        1.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Wat had je verwacht?
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Spelversie en modus
+      placeholder: bijv. 1.13.11, ironman / gewone campagne
