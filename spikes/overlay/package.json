@@ -1,0 +1,14 @@
+{
+  "name": "vic3-overlay-spike",
+  "version": "1.0.0",
+  "description": "Spike S3 (#3): overlay window above Victoria 3",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "electron": "45.3.3"
+  },
+  "private": true
+}

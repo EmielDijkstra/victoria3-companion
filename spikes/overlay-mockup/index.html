@@ -115,6 +115,12 @@
     cursor: pointer;
   }
   .button:hover { filter: brightness(1.12); }
+  /* Overlay-modus (Electron): geen nep-achtergrond, geen mockup-notitie */
+  .overlay-mode body { background: transparent; }
+  .overlay-mode .note { display: none; }
+  .overlay-mode .overlay { bottom: 16px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--panel-edge) transparent; }
+  .overlay-mode.click-through .panel { opacity: .8; }
+  .hint { margin-top: 8px; font-size: 13.5px; color: var(--text-dim); }
   .meta { margin-top: 10px; font-size: 13.5px; color: var(--text-dim); display: flex; justify-content: space-between; }
   .arrow { color: var(--gold); }
 </style>
@@ -185,6 +191,7 @@
       <dt>Weergave</dt><dd><span class="select" style="min-width:150px">Compact</span></dd>
       <dt>Sneltoets</dt><dd><span class="select" style="min-width:150px">Alt + V</span></dd>
     </dl>
+    <p class="hint">Alt+V tonen/verbergen · Alt+C klik-door · Alt+P links/rechts</p>
   </section>
 
 </div>
@@ -194,5 +201,20 @@
   Cijfers uit de autosave van België, 1 september 1848.
 </div>
 
+<script>
+  // In de Electron-overlay: klik-door overal behalve boven de panelen.
+  if (new URLSearchParams(location.search).has("overlay")) {
+    document.documentElement.classList.add("overlay-mode");
+    const bridge = window.overlayBridge;
+    if (bridge) {
+      for (const panel of document.querySelectorAll(".panel")) {
+        panel.addEventListener("mouseenter", () => bridge.setInteractive(true));
+        panel.addEventListener("mouseleave", () => bridge.setInteractive(false));
+      }
+      bridge.onState(({ fullyClickThrough }) =>
+        document.documentElement.classList.toggle("click-through", fullyClickThrough));
+    }
+  }
+</script>
 </body>
 </html>
