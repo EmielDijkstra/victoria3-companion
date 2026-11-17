@@ -146,7 +146,7 @@ het land van de speler (`pid`):
 | Bewegingen | `political_movement_manager` | `ideology`, `identity.type`, `radicalism` |
 | Institutions, decrees | `institutions` (`country`), `decree_manager` (`owner`) | `investment`; `type`, `state` |
 | Technologie | `technology.database.<id>` met `country` | `research_technology`, `research_queue`, `progressed_technologies`, `acquired_technologies`, `currently_spreading_technologies` |
-| Authority, bureaucratie, innovatie | `ai.database.<id>.spending_variables` met `country` | `authority`, `authority_balance`, `bureaucracy_income/expenses`, `innovation`, `max_innovation`. Nog controleren |
+| Authority, bureaucratie, innovatie | `ai.database.<id>.spending_variables` met `country` | `authority`, `authority_balance` (klopt met het spel), `bureaucracy_income/expenses` (wijkt af, uitzoeken), `innovation`, `max_innovation` (nog controleren) |
 | Relaties | `relations.database.<id>` | `first.country`, `second.country`, `relations`, `improve_relations` |
 | Pacten | `pacts.database.<id>` | `targets.first/second`, `action` (rivalry, support_separatism …) |
 | Verdragen | `treaty_manager`, `treaty_article_manager` | Artikelen per verdrag |

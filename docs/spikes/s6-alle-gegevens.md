@@ -105,7 +105,7 @@ daarmee kunnen beantwoorden. Nut en moeite zijn een inschatting.
 | Bewegingen en radicalisme | `political_movement_manager` | Labor 0,50, Radical 0,44 |
 | Institutions en investering | `institutions` | Schools, level 3 |
 | Decrees | `decree_manager` (`owner`) | Road Maintenance in Wallonia |
-| Authority en bureaucratie | `ai.<speler>.spending_variables` | Authority 812,5, balans +112,5; Bureaucracy +625 en −356. **Nog controleren** |
+| Authority en bureaucratie | `ai.<speler>.spending_variables` | Authority 812,5, balans +112,5: **klopt met het spel** (812 en +112). Bureaucracy +625 en −356 (= +269), spel toont waarschijnlijk +208: **wijkt af**, nog uitzoeken |
 
 **Vragen die we kunnen beantwoorden:**
 - Welke wet kan ik nu het beste invoeren, en wie is ervoor en wie tegen?
@@ -241,7 +241,8 @@ Klopt dit voor Belgium op **1 mei 1850**?
 
 - [ ] Wallonia: Trade Capacity **168 van 175**; Flanders **64 van 64** (vol)
 - [ ] Bouwcapaciteit (Construction) **35** per week
-- [ ] Authority **812** met een overschot van **+112**
+- [x] Authority **812** met een overschot van **+112**: klopt (tooltip in het spel, 17-11-2026) ✅
+- [ ] Bureaucracy: save +269 (625 − 356), bovenbalk toont waarschijnlijk **+208**. Verschil uitzoeken (andere week, of ontbreken er posten?)
 - [ ] Innovation **52** (max 113), onderzoek: **Canneries**
 - [ ] Tutorial-doelen open: Fix Budget Deficit, Grow GDP (£3,92M van £4,90M), Enact Institution Law,
   Earn Obligation, Declare an Interest, Lobbies
