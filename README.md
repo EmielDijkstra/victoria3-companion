@@ -41,6 +41,9 @@ die niet in deze repo zit (zie #13). Eenmalig:
 2. Zet hem in `%APPDATA%\victoria3-companion\tools\rakaly.exe`, of kies hem in de overlay onder
    **Mappen → Rakaly → Kies…**.
 
+Uitleg en tutorial-stappen leest de app tijdens het draaien uit je eigen spelinstallatie; die teksten
+zitten niet in deze repo.
+
 De app vindt je savemap (`Documents\Paradox Interactive\Victoria 3`, ook via OneDrive) en de
 spelinstallatie (via Steam) zelf; beide zijn aan te passen onder **Mappen**. Hij leest alleen: een nieuwe
 save wordt eerst gekopieerd naar `%APPDATA%\victoria3-companion\work` en dáár ingelezen.
@@ -52,6 +55,9 @@ Zet in het spel **Autosave Interval** op **Every month**.
 - **⠿** verslepen (de plek wordt onthouden) · **–** inklappen · **×** wegklikken.
 - **Alt+V** overlay tonen of verbergen · **Alt+C** alles doorklikbaar.
 - **⚙ Instellingen** (onderaan het paneel): je spel, mappen, taal (NL/EN) en bediening.
+- **Doelen van het spel**: wat het spel nu van je vraagt (Journal Entries), met voortgang en de
+  officiële stappen uit de tutorial van je eigen spelversie.
+- **Begrippen**: een onderstreept spelbegrip aanklikken toont de uitleg uit het spel (Esc sluit).
 
 ### Checks (voor elke PR)
 
@@ -67,7 +73,7 @@ npx playwright install chromium
 ```
 
 Handig bij het ontwikkelen: `electron . --capture=venster.png [--expanded]` slaat een afbeelding van het
-venster op en stopt (na `npm run build`).
+venster op en stopt (na `npm run build`). Met `--capture-click="selector|selector"` klikt hij eerst op die elementen.
 
 ## Meer
 
