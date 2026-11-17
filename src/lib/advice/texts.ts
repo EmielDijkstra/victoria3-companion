@@ -105,11 +105,20 @@ const nl: Table = {
 			'Kies een gebouw dat in je land goed verdient en voeg een level toe.'
 		]
 	}),
-	'more-construction': (a, l) => ({
+	'more-construction': (a, l, place) => ({
 		title: 'Bouw meer Construction Sectors',
 		why: `Je Investment Pool bevat ${money(a.investmentPool, l)} die op private bouw wacht, maar je hebt maar ${a.sectorLevels} levels Construction Sector. Daardoor gaat alles langzaam.`,
 		caveat: 'Construction Sectors kosten elke week bouwmaterialen; houd je weeksaldo positief.',
-		how: ['Klik op een staat met veel werklozen → Buildings → Construction Sector → +.']
+		how: [
+			a.targetState
+				? `Bouw ze in ${place(a.targetState)}: daar zoeken ${count(a.stateUnemployed ?? 0, l)} mensen werk, dus de nieuwe levels raken snel bezet.`
+				: 'Kies een staat met veel werklozen, dan raken de nieuwe levels snel bezet.',
+			`Klik op ${a.targetState ? place(a.targetState) : 'die staat'} op de kaart en zoek in het staatvenster bij de gebouwen de Construction Sector. Klik op + om een level toe te voegen.`,
+			'Staat er nog geen Construction Sector? Open het bouwmenu, kies Construction Sector en klik dan op de staat.',
+			'Voeg er twee of drie tegelijk toe: elk level geeft meer Construction per week.',
+			'Open je Construction Queue en zet ze bovenaan, zodat ze eerst gebouwd worden.',
+			'Kijk na een paar weken of je weeksaldo positief blijft.'
+		]
 	}),
 	'be-patient': (a, l, place) => ({
 		title: `Laat je ${gameName(a.building)} groeien`,
@@ -200,11 +209,20 @@ const en: Table = {
 			'Pick a building that earns well in your country and add a level.'
 		]
 	}),
-	'more-construction': (a, l) => ({
+	'more-construction': (a, l, place) => ({
 		title: 'Build more Construction Sectors',
 		why: `Your Investment Pool holds ${money(a.investmentPool, l)} waiting for private construction, but you only have ${a.sectorLevels} levels of Construction Sector. Everything goes slowly.`,
 		caveat: 'Construction Sectors cost materials every week; keep your weekly balance positive.',
-		how: ['Click a state with many unemployed → Buildings → Construction Sector → +.']
+		how: [
+			a.targetState
+				? `Build them in ${place(a.targetState)}: ${count(a.stateUnemployed ?? 0, l)} people are looking for work there, so the new levels fill up quickly.`
+				: 'Pick a state with many unemployed, so the new levels fill up quickly.',
+			`Click ${a.targetState ? place(a.targetState) : 'that state'} on the map and find the Construction Sector among the buildings in the state panel. Click + to add a level.`,
+			'No Construction Sector there yet? Open the build menu, choose Construction Sector and then click the state.',
+			'Add two or three at once: every level gives more Construction per week.',
+			'Open your Construction Queue and move them to the top, so they are built first.',
+			'Check after a few weeks whether your weekly balance stays positive.'
+		]
 	}),
 	'be-patient': (a, l, place) => ({
 		title: `Let your ${gameName(a.building)} grow`,

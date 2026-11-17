@@ -53,7 +53,15 @@ export type Advice =
 			targetState: string;
 			stateUnemployed: number;
 	  }
-	| { id: 'more-construction'; level: 'smart'; investmentPool: number; sectorLevels: number }
+	| {
+			id: 'more-construction';
+			level: 'smart';
+			investmentPool: number;
+			sectorLevels: number;
+			/** Where to build: the state with the most unemployed, so the new levels fill quickly */
+			targetState?: string;
+			stateUnemployed?: number;
+	  }
 	| {
 			id: 'be-patient';
 			level: 'patience';
@@ -211,7 +219,8 @@ export function adviseFor(s: Snapshot): Advice[] {
 			id: 'more-construction',
 			level: 'smart',
 			investmentPool: e.investmentPool,
-			sectorLevels: s.construction.sectorLevels
+			sectorLevels: s.construction.sectorLevels,
+			...(target ? { targetState: target.state, stateUnemployed: target.unemployed } : {})
 		});
 	}
 

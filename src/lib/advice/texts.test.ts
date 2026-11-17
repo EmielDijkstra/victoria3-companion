@@ -38,7 +38,14 @@ const samples: Advice[] = [
 		targetState: 'flanders',
 		stateUnemployed: 99192
 	},
-	{ id: 'more-construction', level: 'smart', investmentPool: 166194, sectorLevels: 3 },
+	{
+		id: 'more-construction',
+		level: 'smart',
+		investmentPool: 166194,
+		sectorLevels: 3,
+		targetState: 'flanders',
+		stateUnemployed: 99192
+	},
 	{
 		id: 'be-patient',
 		level: 'patience',
@@ -169,5 +176,25 @@ describe('howToStatus', () => {
 
 	it('says when the steps were never checked', () => {
 		expect(howToStatus('deficit', '1.15.1', {})).toEqual({ kind: 'unchecked', version: '1.15' });
+	});
+});
+
+describe('more-construction steps', () => {
+	it('names the state to build in, and works without one', () => {
+		const base = {
+			id: 'more-construction',
+			level: 'smart',
+			investmentPool: 1,
+			sectorLevels: 3
+		} as const;
+		const withState = adviceText(
+			{ ...base, targetState: 'gelre', stateUnemployed: 1200 },
+			'nl',
+			NAMES
+		);
+		expect(withState.how[0]).toContain('Belgian Gelre');
+		expect(withState.how[0]).toContain('1.200');
+		expect(withState.how.some((step) => step.includes('Construction Queue'))).toBe(true);
+		expect(adviceText(base, 'en').how[1]).toContain('that state');
 	});
 });
