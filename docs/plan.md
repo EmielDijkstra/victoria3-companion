@@ -347,7 +347,11 @@ Nog open: niets. Na spike S5 beslist Emiel over het moment van de AI-adviseur.
 ## 10. Volgende stappen
 
 1. ~~Antwoorden op de open vragen.~~ Gedaan (17-11-2026).
-2. Repo opzetten (git + GitHub), `CLAUDE.md` met werkafspraken zoals bij de wandel-app.
-3. Issues aanmaken voor fase 0 (S1–S5) en fase 1.
-4. Bericht aan pdx.tools/Rakaly opstellen over de Vic3-tokens (Emiel keurt het goed en verstuurt).
-5. Beginnen met spike S1 (ironman-saves lezen) met een echte autosave; dat is de go/no-go.
+2. ~~Repo opzetten~~ Gedaan: `EmielLabs/victoria3-companion` (privé), met `CLAUDE.md` en sjablonen.
+3. ~~Issues aanmaken~~ Gedaan (17-11-2026):
+   - Fase 0 – Spikes: #1 S1 ironman-saves, #2 S2 gegevenskaart, #3 S3 overlay, #4 S5 regels vs. AI,
+     #5 S4 logger-mod (alleen als S1 faalt), #13 bericht aan pdx.tools.
+   - Fase 1 – MVP: #6 projectskelet, #7 mappen vinden, #8 autosave inlezen, #9 snapshot-extractor,
+     #10 dashboard, #11 waarschuwingen, #12 trends.
+4. Bericht aan pdx.tools/Rakaly opstellen over de Vic3-tokens (#13; Emiel keurt het goed en verstuurt).
+5. Beginnen met spike S1 (#1) met een echte autosave; dat is de go/no-go.
