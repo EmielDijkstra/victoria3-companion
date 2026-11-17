@@ -1,12 +1,24 @@
 // Electron main process: a small, transparent, always-on-top overlay above Victoria 3.
 // Lessons from spike S3 (docs/spikes/s3-overlay.md) are built in: whole-pixel coordinates,
 // a single instance, a remembered position and no focus stealing.
-import { app, BrowserWindow, globalShortcut, ipcMain, net, protocol, screen } from 'electron';
+import {
+	app,
+	BrowserWindow,
+	dialog,
+	globalShortcut,
+	ipcMain,
+	net,
+	protocol,
+	screen
+} from 'electron';
+import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { IPC, type OverlayState } from '../src/lib/overlay/bridge';
+import type { PathKind } from '../src/lib/status';
+import { Companion } from './companion';
 import { clampToArea, defaultPosition, sanitizeSize } from './window-math';
 
 const START_WIDTH = 338;
@@ -90,10 +102,13 @@ function createWindow() {
 }
 
 /**
- * Development aid: `electron . --capture=out.png [--expanded]` saves an image of the window
- * and quits. Useful to check the rendering without a screen recording.
+ * Development aid: `electron . --capture=out.png [--expanded] [--capture-wait=ms]` saves an
+ * image of the window and quits. Useful to check the rendering without a screen recording.
  */
 const capturePath = process.argv.find((a) => a.startsWith('--capture='))?.split('=')[1];
+const captureWait = Number(
+	process.argv.find((a) => a.startsWith('--capture-wait='))?.split('=')[1]
+);
 function captureAndQuit(file: string) {
 	win?.webContents.once('did-finish-load', () =>
 		setTimeout(async () => {
@@ -108,7 +123,7 @@ function captureAndQuit(file: string) {
 			await writeFile(file, image.toPNG());
 			console.log('capture:', file, image.getSize());
 			app.quit();
-		}, 1500)
+		}, captureWait || 1500)
 	);
 }
 
@@ -143,6 +158,69 @@ function registerIpc() {
 		win?.hide();
 		setInteractive(false);
 	});
+
+	ipcMain.handle(IPC.getStatus, () => companion?.getStatus());
+
+	ipcMain.handle(IPC.choosePath, async (_e, kind: PathKind) => {
+		if (!win || !companion || !isPathKind(kind)) return companion?.getStatus();
+		const result = await dialog.showOpenDialog(win, {
+			title:
+				kind === 'rakaly'
+					? 'Kies rakaly.exe'
+					: kind === 'game'
+						? 'Kies de map "Victoria 3" van de spelinstallatie'
+						: 'Kies de map "Documents\\Paradox Interactive\\Victoria 3"',
+			properties: kind === 'rakaly' ? ['openFile'] : ['openDirectory'],
+			filters: kind === 'rakaly' ? [{ name: 'Rakaly', extensions: ['exe'] }] : undefined
+		});
+		if (!result.canceled && result.filePaths[0]) await companion.setPath(kind, result.filePaths[0]);
+		return companion.getStatus();
+	});
+
+	ipcMain.handle(IPC.resetPath, async (_e, kind: PathKind) => {
+		if (companion && isPathKind(kind)) await companion.setPath(kind, null);
+		return companion?.getStatus();
+	});
+}
+
+const isPathKind = (k: unknown): k is PathKind =>
+	k === 'userData' || k === 'game' || k === 'rakaly';
+
+/** Steam folders to try: from the registry first, then the usual install locations. */
+function steamCandidates(): string[] {
+	const dirs: string[] = [];
+	try {
+		const out = execFileSync('reg', ['query', 'HKCU\\Software\\Valve\\Steam', '/v', 'SteamPath'], {
+			encoding: 'utf8',
+			windowsHide: true
+		});
+		const match = out.match(/SteamPath\s+REG_SZ\s+(.+)/);
+		if (match) dirs.push(path.normalize(match[1].trim()));
+	} catch {
+		// no Steam in the registry
+	}
+	for (const base of [process.env['ProgramFiles(x86)'], process.env.ProgramFiles]) {
+		if (base) dirs.push(path.join(base, 'Steam'));
+	}
+	return [...new Set(dirs)];
+}
+
+let companion: Companion | null = null;
+
+function startCompanion() {
+	const appDataDir = app.getPath('userData');
+	companion = new Companion({
+		appDataDir,
+		documentsDir: app.getPath('documents'),
+		steamDirs: steamCandidates(),
+		rakalyCandidates: [
+			path.join(appDataDir, 'tools', 'rakaly.exe'),
+			path.join(process.resourcesPath ?? '', 'rakaly.exe')
+		],
+		workerScript: path.join(__dirname, 'save-reader-worker.cjs'),
+		onStatus: (status) => win?.webContents.send(IPC.status, status)
+	});
+	companion.start();
 }
 
 function registerShortcuts() {
@@ -199,7 +277,11 @@ if (!app.requestSingleInstanceLock()) {
 		registerIpc();
 		createWindow();
 		registerShortcuts();
+		startCompanion();
 	});
-	app.on('will-quit', () => globalShortcut.unregisterAll());
+	app.on('will-quit', () => {
+		globalShortcut.unregisterAll();
+		companion?.stop();
+	});
 	app.on('window-all-closed', () => app.quit());
 }

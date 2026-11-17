@@ -1,5 +1,6 @@
 // Contract between the page and the Electron preload script (window.overlayBridge).
 // Shared by both sides so they cannot drift apart.
+import type { AppStatus, PathKind } from '../status';
 
 export interface OverlayState {
 	/** Alt+C: also click through the overlay itself */
@@ -20,6 +21,14 @@ export interface OverlayBridge {
 	/** × button: hide until Alt+V */
 	hide(): void;
 	onState(callback: (state: OverlayState) => void): void;
+
+	/** Current folders and save status */
+	getStatus(): Promise<AppStatus>;
+	onStatus(callback: (status: AppStatus) => void): void;
+	/** Let the player pick a folder or rakaly.exe; returns the new status */
+	choosePath(kind: PathKind): Promise<AppStatus>;
+	/** Go back to finding the path automatically */
+	resetPath(kind: PathKind): Promise<AppStatus>;
 }
 
 declare global {
@@ -34,5 +43,9 @@ export const IPC = {
 	moveBy: 'overlay:move-by',
 	dragEnd: 'overlay:drag-end',
 	hide: 'overlay:hide',
-	state: 'overlay:state'
+	state: 'overlay:state',
+	getStatus: 'app:get-status',
+	status: 'app:status',
+	choosePath: 'app:choose-path',
+	resetPath: 'app:reset-path'
 } as const;
