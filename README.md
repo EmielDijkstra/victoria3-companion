@@ -51,6 +51,7 @@ Zet in het spel **Autosave Interval** op **Every month**.
 - Het **tipje** rechtsboven: klik om te openen.
 - **⠿** verslepen (de plek wordt onthouden) · **–** inklappen · **×** wegklikken.
 - **Alt+V** overlay tonen of verbergen · **Alt+C** alles doorklikbaar.
+- **⚙ Instellingen** (onderaan het paneel): je spel, mappen, taal (NL/EN) en bediening.
 
 ### Checks (voor elke PR)
 

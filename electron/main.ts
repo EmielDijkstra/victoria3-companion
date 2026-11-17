@@ -102,9 +102,10 @@ function createWindow() {
 }
 
 /**
- * Development aid: `electron . --capture=out.png [--expanded] [--capture-wait=ms] [--capture-lang=en]`
- * saves an image of the window and quits. Useful to check the rendering without a screen
- * recording. `--capture-lang` clicks that language button (and so remembers the choice).
+ * Development aid: `electron . --capture=out.png [--expanded] [--settings] [--capture-wait=ms]
+ * [--capture-lang=en]` saves an image of the window and quits. Useful to check the rendering
+ * without a screen recording. `--capture-lang` clicks that language button (and so remembers
+ * the choice); `--settings` opens the settings view.
  */
 const captureLang = process.argv.find((a) => a.startsWith('--capture-lang='))?.split('=')[1];
 const capturePath = process.argv.find((a) => a.startsWith('--capture='))?.split('=')[1];
@@ -119,11 +120,22 @@ function captureAndQuit(file: string) {
 				await win.webContents.executeJavaScript("document.querySelector('[data-tip]')?.click()");
 				await new Promise((r) => setTimeout(r, 800));
 			}
+			const toggleSettings = async () => {
+				await win?.webContents.executeJavaScript(
+					"document.querySelector('[data-settings-toggle]')?.click()"
+				);
+				await new Promise((r) => setTimeout(r, 500));
+			};
+			// The language buttons live in the settings view
 			if (captureLang && /^[a-z]{2}$/.test(captureLang)) {
+				await toggleSettings();
 				await win.webContents.executeJavaScript(
 					`[...document.querySelectorAll('.lang-btn')].find((b) => b.textContent.trim() === '${captureLang.toUpperCase()}')?.click()`
 				);
 				await new Promise((r) => setTimeout(r, 500));
+				if (!process.argv.includes('--settings')) await toggleSettings();
+			} else if (process.argv.includes('--settings')) {
+				await toggleSettings();
 			}
 			const image = await win.capturePage();
 			await writeFile(file, image.toPNG());

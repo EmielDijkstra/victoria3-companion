@@ -29,6 +29,14 @@ test('the tip shows the most important advice and opens into the full list', asy
 
 	// Last: something to consider
 	await expect(items.last()).toHaveAttribute('data-advice', 'lower-tax');
+
+	// Game facts and folders are not in the advice view, but under Settings
+	await expect(page.getByText('Spelinstallatie')).toHaveCount(0);
+	await page.locator('[data-settings-toggle]').click();
+	await expect(page.getByText('Spelinstallatie')).toBeVisible();
+	await expect(page.locator('[data-advice]')).toHaveCount(0);
+	await page.getByText('← Terug naar advies').click();
+	await expect(page.locator('[data-advice]')).toHaveCount(7);
 });
 
 test('switching to English translates the advice and the tip', async ({ page }) => {
@@ -36,7 +44,10 @@ test('switching to English translates the advice and the tip', async ({ page }) 
 	await page.goto('/');
 	await page.locator('[data-tip]').click();
 
+	// Language is in the settings view
+	await page.locator('[data-settings-toggle]').click();
 	await page.getByRole('button', { name: 'EN', exact: true }).click();
+	await page.locator('[data-settings-toggle]').click();
 	await expect(page.locator('[data-advice="expand-best"]')).toContainText(
 		'Expand your Paper Mill in Flanders'
 	);

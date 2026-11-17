@@ -79,8 +79,13 @@ const nl = {
 	chosenMissing: (path: string) => `Gekozen pad bestaat niet meer: ${path}`,
 	installedVersion: (v: string) => `Geïnstalleerde versie: ${v}`,
 
-	// language
-	language: 'Taal'
+	// language and settings
+	language: 'Taal',
+	settings: 'Instellingen',
+	backToAdvice: '← Terug naar advies',
+	controls: 'Bediening',
+	settingsProblem: 'Er is een probleem met een van de mappen.',
+	openSettings: 'Open instellingen'
 };
 
 export type Messages = typeof nl;
@@ -152,7 +157,12 @@ const en: Messages = {
 	chosenMissing: (path: string) => `Chosen path no longer exists: ${path}`,
 	installedVersion: (v: string) => `Installed version: ${v}`,
 
-	language: 'Language'
+	language: 'Language',
+	settings: 'Settings',
+	backToAdvice: '← Back to advice',
+	controls: 'Controls',
+	settingsProblem: 'There is a problem with one of the folders.',
+	openSettings: 'Open settings'
 };
 
 export const MESSAGES: Record<Locale, Messages> = { nl, en };
