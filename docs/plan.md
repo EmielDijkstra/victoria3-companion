@@ -9,13 +9,21 @@ problemen** en vooral **uitlegt waarom** iets een probleem is en wat je eraan ku
 geen "automatische piloot": de app is een coach die je het spel leert begrijpen. Eerste versie draait alleen
 lokaal op Windows, zonder server.
 
+> **Koerswijziging (17-11-2026, na spike S3):** Emiel wil geen tweede scoreboard. "De gegevens kan ik ook
+> in het spel zien. Het gaat erom hoe ik dingen moet aanpassen en wat slim is om te doen." **Advies staat
+> voorop**; cijfers zijn alleen de onderbouwing. De overlay is standaard een klein tipje, open te klikken,
+> te verslepen en weg te klikken. Zie `docs/spikes/s3-overlay.md`.
+
 ### Doelen
 
-1. **Overzicht** – de belangrijkste cijfers van je land op één plek, met trends over tijd.
-2. **Waarschuwen** – "je begroting loopt leeg", "staal is schaars en duur", "deze fabrieken draaien verlies".
-3. **Leren** – bij elke waarschuwing en elk cijfer een korte uitleg in het Nederlands: wat is dit, waarom
-   doet het ertoe, waar vind je het in het spel, wat zijn je opties.
-4. **Niet storen** – werkt naast het spel (tweede scherm of overlay), zonder het spel te veranderen.
+1. **Adviseren** – concreet zeggen wat slim is om nu te doen, op volgorde van belang: "zet je bouwlijst
+   weer aan", "bouw papierfabrieken in Flanders, niet in Gelre". Elk advies: wat, waarom (met cijfers uit
+   je save), let op, en hoe je het in het spel doet.
+2. **Waarschuwen** – alleen als er iets misgaat, als tipje dat je kunt openklikken.
+3. **Leren** – bij elk advies uitleg in het Nederlands over het waarom, zodat je het spel gaat begrijpen.
+4. **Niet storen** – klein, verschuifbaar, weg te klikken; zonder het spel te veranderen.
+
+~~Overzicht van cijfers~~ is geen doel op zich: die staan al in het spel.
 
 ### Bewust níet (in elk geval niet in v1)
 
