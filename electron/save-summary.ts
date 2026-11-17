@@ -20,7 +20,7 @@ export function summarizeSave(
 		: Object.values(rules);
 
 	return {
-		country: str(m.name) ?? 'Onbekend land',
+		country: str(m.name) ?? '',
 		gameDate: str(g.date) ?? str(m.game_date) ?? '',
 		gameVersion: str(m.version) ?? '',
 		ironman: yes(m.ironman) || yes(ironmanBlock.ironman),

@@ -7,8 +7,8 @@ export interface PathStatus {
 	path: string | null;
 	/** Found automatically or chosen by the player */
 	source: 'auto' | 'manual' | 'none';
-	/** Dutch message when something is wrong */
-	problem?: string;
+	/** What is wrong; the page turns this into text in the chosen language */
+	problem?: { code: 'not-found' } | { code: 'chosen-missing'; path: string };
 }
 
 export interface SaveSummary {
@@ -19,7 +19,10 @@ export interface SaveSummary {
 	gameVersion: string;
 	ironman: boolean;
 	achievementsAllowed: boolean;
-	/** e.g. "three_months"; null if not in the save */
+	/**
+	 * `ironman.save_interval` from the save, e.g. "three_months". NOT the player's Autosave Interval
+	 * setting: monthly autosaves still say "three_months" (checked 17-11-2026). Do not show it as such.
+	 */
 	autosaveInterval: string | null;
 	playthroughId: string | null;
 	/** File name of the save that was read, e.g. "autosave.v3" */
@@ -30,11 +33,22 @@ export interface SaveSummary {
 	durationMs: number;
 }
 
+/** Codes instead of sentences: the main process stays language-neutral, the page translates. */
+export type WaitingReason = 'starting' | 'no-user-data' | 'no-saves';
+export type SaveErrorCode = 'rakaly-missing' | 'unstable' | 'read-failed' | 'unexpected';
+
 export type SaveState =
-	| { state: 'waiting'; message: string }
+	| { state: 'waiting'; reason: WaitingReason }
 	| { state: 'reading'; fileName: string }
 	| { state: 'ready'; summary: SaveSummary }
-	| { state: 'error'; message: string; summary?: SaveSummary };
+	| {
+			state: 'error';
+			code: SaveErrorCode;
+			fileName?: string;
+			/** Technical detail (from Rakaly or the system), shown as-is */
+			detail?: string;
+			summary?: SaveSummary;
+	  };
 
 export interface AppStatus {
 	paths: Record<PathKind, PathStatus>;

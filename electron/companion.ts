@@ -28,14 +28,6 @@ export interface CompanionOptions {
 	onStatus: (status: AppStatus) => void;
 }
 
-const NOT_FOUND: Record<PathKind, string> = {
-	userData:
-		'Map "Documents\\Paradox Interactive\\Victoria 3" niet gevonden. Start het spel één keer, of kies de map zelf.',
-	game: 'Spelinstallatie niet gevonden via Steam. Kies de map "Victoria 3" zelf (alleen nodig voor de spelversie).',
-	rakaly:
-		'Rakaly niet gevonden. Download rakaly.exe van github.com/rakaly/cli/releases en kies het bestand hier.'
-};
-
 export class Companion {
 	private settings: Settings;
 	private status: AppStatus;
@@ -55,7 +47,7 @@ export class Companion {
 			},
 			installedVersion: null,
 			lastPlayed: null,
-			save: { state: 'waiting', message: 'Bezig met opstarten…' }
+			save: { state: 'waiting', reason: 'starting' }
 		};
 	}
 
@@ -81,11 +73,11 @@ export class Companion {
 
 		const saveDir = paths.userData.path ? saveGamesDir(paths.userData.path) : null;
 		if (!saveDir || !existsSync(saveDir)) {
-			this.setSave({ state: 'waiting', message: paths.userData.problem ?? 'Nog geen savemap.' });
+			this.setSave({ state: 'waiting', reason: 'no-user-data' });
 			return;
 		}
 		if (!paths.rakaly.path) {
-			this.setSave({ state: 'error', message: paths.rakaly.problem ?? NOT_FOUND.rakaly });
+			this.setSave({ state: 'error', code: 'rakaly-missing' });
 			return;
 		}
 
@@ -118,7 +110,6 @@ export class Companion {
 
 	private resolvePaths(): Record<PathKind, PathStatus> {
 		const pick = (
-			kind: PathKind,
 			manual: string | null,
 			auto: () => string | null,
 			exists: (p: string) => boolean = existsSync
@@ -126,20 +117,17 @@ export class Companion {
 			if (manual) {
 				return exists(manual)
 					? { path: manual, source: 'manual' }
-					: { path: null, source: 'none', problem: `Gekozen pad bestaat niet meer: ${manual}` };
+					: { path: null, source: 'none', problem: { code: 'chosen-missing', path: manual } };
 			}
 			const found = auto();
 			return found
 				? { path: found, source: 'auto' }
-				: { path: null, source: 'none', problem: NOT_FOUND[kind] };
+				: { path: null, source: 'none', problem: { code: 'not-found' } };
 		};
 		return {
-			userData: pick('userData', this.settings.userDataDir, () =>
-				findUserDataDir(this.opts.documentsDir)
-			),
-			game: pick('game', this.settings.gameDir, () => findGameDir(this.opts.steamDirs)),
+			userData: pick(this.settings.userDataDir, () => findUserDataDir(this.opts.documentsDir)),
+			game: pick(this.settings.gameDir, () => findGameDir(this.opts.steamDirs)),
 			rakaly: pick(
-				'rakaly',
 				this.settings.rakalyPath,
 				() => this.opts.rakalyCandidates.find((p) => existsSync(p)) ?? null
 			)
@@ -155,10 +143,7 @@ export class Companion {
 		try {
 			const newest = newestSave(await listSaves(saveDir));
 			if (!newest) {
-				this.setSave({
-					state: 'waiting',
-					message: 'Nog geen save gevonden. Speel even; bij de eerste autosave lees ik hem in.'
-				});
+				this.setSave({ state: 'waiting', reason: 'no-saves' });
 				return;
 			}
 			if (this.lastRead?.name === newest.name && this.lastRead.mtimeMs === newest.mtimeMs) return;
@@ -166,10 +151,7 @@ export class Companion {
 			this.setSave({ state: 'reading', fileName: newest.name });
 			const original = path.join(saveDir, newest.name);
 			if (!(await waitUntilStable(original))) {
-				this.setSave({
-					state: 'error',
-					message: `${newest.name} bleef veranderen; ik probeer het later opnieuw.`
-				});
+				this.setSave({ state: 'error', code: 'unstable', fileName: newest.name });
 				return;
 			}
 			const copy = await copyToWorkDir(original, path.join(this.opts.appDataDir, 'work'));
@@ -179,13 +161,16 @@ export class Companion {
 			else
 				this.setSave({
 					state: 'error',
-					message: `Kon ${newest.name} niet lezen: ${result.message}`,
+					code: 'read-failed',
+					fileName: newest.name,
+					detail: result.message,
 					summary: this.lastSummary()
 				});
 		} catch (error) {
 			this.setSave({
 				state: 'error',
-				message: `Fout bij het inlezen: ${error instanceof Error ? error.message : String(error)}`,
+				code: 'unexpected',
+				detail: error instanceof Error ? error.message : String(error),
 				summary: this.lastSummary()
 			});
 		} finally {
@@ -208,7 +193,7 @@ export class Companion {
 			worker.once('message', resolve);
 			worker.once('error', (e) => resolve({ ok: false, message: e.message }));
 			worker.once('exit', (code) => {
-				if (code !== 0) resolve({ ok: false, message: `inleesproces stopte (code ${code})` });
+				if (code !== 0) resolve({ ok: false, message: `worker exit code ${code}` });
 			});
 		});
 	}

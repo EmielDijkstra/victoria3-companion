@@ -20,7 +20,7 @@ function runRakalyJson(rakalyPath: string, savePath: string): Promise<string> {
 		child.on('error', reject);
 		child.on('close', (code) => {
 			if (code === 0) resolve(Buffer.concat(chunks).toString('utf8'));
-			else reject(new Error(stderr.trim() || `Rakaly stopte met code ${code}`));
+			else reject(new Error(stderr.trim() || `Rakaly exited with code ${code}`));
 		});
 	});
 }
