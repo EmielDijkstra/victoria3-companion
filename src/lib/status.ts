@@ -1,5 +1,7 @@
 // Status that the main process sends to the overlay page. Shared by both sides.
 
+import type { Snapshot } from './snapshot';
+
 export type PathKind = 'userData' | 'game' | 'rakaly';
 
 export interface PathStatus {
@@ -40,7 +42,7 @@ export type SaveErrorCode = 'rakaly-missing' | 'unstable' | 'read-failed' | 'une
 export type SaveState =
 	| { state: 'waiting'; reason: WaitingReason }
 	| { state: 'reading'; fileName: string }
-	| { state: 'ready'; summary: SaveSummary }
+	| { state: 'ready'; summary: SaveSummary; snapshot: Snapshot }
 	| {
 			state: 'error';
 			code: SaveErrorCode;
@@ -48,6 +50,7 @@ export type SaveState =
 			/** Technical detail (from Rakaly or the system), shown as-is */
 			detail?: string;
 			summary?: SaveSummary;
+			snapshot?: Snapshot;
 	  };
 
 export interface AppStatus {
