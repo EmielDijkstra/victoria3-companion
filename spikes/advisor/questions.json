@@ -1,0 +1,8 @@
+[
+  { "id": "q1", "topic": "eerst", "question": "Wat moet ik nu als eerste doen?" },
+  { "id": "q2", "topic": "bouwen", "question": "Wat moet ik bouwen, en waar?" },
+  { "id": "q3", "topic": "schuld", "question": "Hoe krijg ik mijn schuld omlaag zonder mijn economie af te remmen?" },
+  { "id": "q4", "topic": "radicals", "question": "Waarom zijn zoveel mensen Radical, en wat kan ik eraan doen?" },
+  { "id": "q5", "topic": "wetten", "question": "Welke wet moet ik nu proberen in te voeren, en waarom?" },
+  { "id": "q6", "topic": "sol", "question": "Waarom is mijn Standard of Living zo laag?" }
+]
