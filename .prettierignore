@@ -1,0 +1,14 @@
+# Package Managers
+package-lock.json
+
+# Generated / build output
+/build
+/.svelte-kit
+/dist-electron
+
+# Throw-away spike code and its dependencies
+/spikes
+
+# Docs are hand-formatted
+/docs
+*.md
