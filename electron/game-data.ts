@@ -1,5 +1,5 @@
 // Reference data from the game installation (read at runtime, never copied into the repo).
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
 export interface GoodDefinition {
@@ -47,6 +47,8 @@ export interface GameNames {
 	states: Record<string, string>;
 	/** BEL → "Belgian" */
 	adjectives: Record<string, string>;
+	/** Production method groups and names; null when they could not be read */
+	productionMethods?: ProductionMethodData | null;
 }
 
 /** Simple reader for Paradox localization lines:  KEY:0 "Text"  (the :0 is optional). */
@@ -76,7 +78,88 @@ export function readGameNames(gameDir: string | null): GameNames | null {
 				)
 			).map(([k, v]) => [k.slice(0, -4), v])
 		);
-		return { states, adjectives };
+		return { states, adjectives, productionMethods: readProductionMethods(gameDir) };
+	} catch {
+		return null;
+	}
+}
+
+/**
+ * Production method groups from `common/production_method_groups/*.txt`:
+ *   pmg_steelmaking_process = { … production_methods = { pm_blister_steel_process pm_bessemer_process } }
+ * A building can switch between the methods of one group.
+ */
+export function parsePmGroups(text: string): Record<string, string[]> {
+	return parseListBlocks(text, 'pmg_', 'production_methods');
+}
+
+/**
+ * Building types → their production method groups, from `common/buildings/*.txt`:
+ *   building_coal_mine = { … production_method_groups = { pmg_base_building_coal_mine … } }
+ */
+export function parseBuildingGroups(text: string): Record<string, string[]> {
+	return parseListBlocks(text, 'building_', 'production_method_groups');
+}
+
+/** Top-level blocks starting with `prefix` → the words in their `field = { … }` list. */
+function parseListBlocks(text: string, prefix: string, field: string): Record<string, string[]> {
+	const out: Record<string, string[]> = {};
+	const clean = text.replace(/^\uFEFF/, '').replace(/#[^\n]*/g, '');
+	const starts = [...clean.matchAll(new RegExp(`^(${prefix}[A-Za-z0-9_]+)\\s*=\\s*\\{`, 'gm'))];
+	const list = new RegExp(`${field}\\s*=\\s*\\{([^}]*)\\}`);
+	starts.forEach((m, i) => {
+		const body = clean.slice(m.index, starts[i + 1]?.index ?? clean.length);
+		const words = body.match(list);
+		if (words) out[m[1]] = words[1].split(/\s+/).filter(Boolean);
+	});
+	return out;
+}
+
+/** Production method → the groups it belongs to (some belong to more than one). */
+export function groupsByMethod(groups: Record<string, string[]>): Record<string, string[]> {
+	const out: Record<string, string[]> = {};
+	for (const [group, pms] of Object.entries(groups))
+		for (const pm of pms) (out[pm] ??= []).push(group);
+	return out;
+}
+
+export interface ProductionMethodData {
+	/** pm → its groups */
+	groups: Record<string, string[]>;
+	/** building type (with prefix, e.g. building_coal_mine) → its groups */
+	buildingGroups: Record<string, string[]>;
+	/** pm → name as the game shows it, e.g. "Bessemer Process" */
+	names: Record<string, string>;
+}
+
+export function readProductionMethods(gameDir: string | null): ProductionMethodData | null {
+	if (!gameDir) return null;
+	const game = path.join(gameDir, 'game');
+	try {
+		const dir = path.join(game, 'common', 'production_method_groups');
+		const groups: Record<string, string[]> = {};
+		for (const file of readdirSync(dir).filter((f) => f.endsWith('.txt')))
+			Object.assign(groups, parsePmGroups(readFileSync(path.join(dir, file), 'utf8')));
+		let names: Record<string, string> = {};
+		try {
+			names = parseLocalization(
+				readFileSync(
+					path.join(game, 'localization', 'english', 'production_methods_l_english.yml'),
+					'utf8'
+				),
+				/^[a-z]/
+			);
+		} catch {
+			// names fall back to the key
+		}
+		const buildingGroups: Record<string, string[]> = {};
+		const buildingDir = path.join(game, 'common', 'buildings');
+		for (const file of readdirSync(buildingDir).filter((f) => f.endsWith('.txt')))
+			Object.assign(
+				buildingGroups,
+				parseBuildingGroups(readFileSync(path.join(buildingDir, file), 'utf8'))
+			);
+		return { groups: groupsByMethod(groups), buildingGroups, names };
 	} catch {
 		return null;
 	}

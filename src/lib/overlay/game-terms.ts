@@ -27,9 +27,16 @@ export const GAME_TERMS = [
 
 const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
+/**
+ * A term followed by another capitalised word is part of a longer name ("Trade Center",
+ * "Company Headquarter"), so it is not highlighted on its own.
+ */
 function buildPattern(terms: readonly string[]) {
 	const sorted = [...new Set(terms)].sort((a, b) => b.length - a.length);
-	return { set: new Set(sorted), re: new RegExp(`\\b(${sorted.map(escape).join('|')})\\b`, 'g') };
+	return {
+		set: new Set(sorted),
+		re: new RegExp(`\\b(${sorted.map(escape).join('|')})\\b(?! [A-Z])`, 'g')
+	};
 }
 
 const DEFAULT = buildPattern(GAME_TERMS);

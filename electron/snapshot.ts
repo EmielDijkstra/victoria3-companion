@@ -4,16 +4,22 @@
 import {
 	isTestedVersion,
 	type BuildingInfo,
+	type NewProductionMethod,
 	type PriceInfo,
 	type Snapshot
 } from '../src/lib/snapshot';
-import type { GameNames, GoodDefinition } from './game-data';
+import type { GameNames, GoodDefinition, ProductionMethodData } from './game-data';
 
 type Json = Record<string, unknown>;
 const obj = (v: unknown): Json => (v && typeof v === 'object' ? (v as Json) : {});
 const arr = (v: unknown): unknown[] => (Array.isArray(v) ? v : []);
 const num = (v: unknown): number => (typeof v === 'number' && Number.isFinite(v) ? v : 0);
 const str = (v: unknown): string => (typeof v === 'string' ? v : '');
+const titleCase = (key: string) =>
+	key
+		.split('_')
+		.map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+		.join(' ');
 const round = (x: number, digits = 0) => Math.round(x * 10 ** digits) / 10 ** digits;
 const sum = (values: unknown[]) => values.reduce<number>((a, b) => a + num(b), 0);
 const strip = (s: string, prefix: string) => (s.startsWith(prefix) ? s.slice(prefix.length) : s);
@@ -36,6 +42,51 @@ export function newestOfWeekly(trend: unknown): number {
 	if (samples.length === 0) return 0;
 	const index = num(weekly.sample_index);
 	return num(samples[(((index - 1) % samples.length) + samples.length) % samples.length]);
+}
+
+/**
+ * The game lists newly unlocked production methods (`new_production_methods_v2`, none in use yet,
+ * spike S6). A building can switch when one of its current methods is in the same group.
+ */
+export function newProductionMethods(
+	unlocked: string[],
+	buildings: Record<string, unknown>[],
+	pmData: ProductionMethodData | null,
+	stateKey: (id: number) => string
+): NewProductionMethod[] {
+	if (!pmData) return [];
+	return unlocked
+		.map((pm) => {
+			const groups = new Set(pmData.groups[pm] ?? []);
+			const candidates = buildings.filter((b) => {
+				const current = arr(b.production_methods).map(str);
+				if (current.includes(pm)) return false;
+				// The building type must have one of the method's groups. Groups can share methods
+				// (every mine has "no explosives"), so a shared current method is not enough.
+				const own = pmData.buildingGroups[str(b.building)];
+				if (own) return own.some((group) => groups.has(group));
+				return current.some((p) => (pmData.groups[p] ?? []).some((group) => groups.has(group)));
+			});
+			return {
+				pm,
+				name: pmData.names[pm] ?? titleCase(strip(pm, 'pm_')),
+				buildings: candidates
+					.map((b) => ({
+						type: strip(str(b.building), 'building_'),
+						state: stateKey(num(b.state)),
+						levels: num(b.levels)
+					}))
+					.sort((a, b) => b.levels - a.levels)
+			};
+		})
+		.filter((p) => p.buildings.length > 0)
+		.reduce<NewProductionMethod[]>((merged, p) => {
+			const same = merged.find((m) => m.name === p.name);
+			if (same)
+				same.buildings = [...same.buildings, ...p.buildings].sort((a, b) => b.levels - a.levels);
+			else merged.push(p);
+			return merged;
+		}, []);
 }
 
 export function buildSnapshot(
@@ -127,11 +178,6 @@ export function buildSnapshot(
 		};
 	});
 	const adjective = names?.adjectives[str(c.definition)] ?? str(meta.name);
-	const titleCase = (key: string) =>
-		key
-			.split('_')
-			.map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-			.join(' ');
 	// As the game shows it: "Gelre", or "Belgian Gelre" for the player's part of a split state
 	const stateNames = Object.fromEntries(
 		states.map(({ state, region, sharedWith }) => {
@@ -155,6 +201,13 @@ export function buildSnapshot(
 			debtPct: credit > 0 ? round((debt / credit) * 100) : 0,
 			taxLevel: str(c.tax_level),
 			investmentPool: round(num(budget.investment_pool)),
+			investmentByBuilding: Object.entries(obj(budget.investment))
+				.map(([building, v]) => ({
+					building: strip(building, 'building_'),
+					perWeek: round(num(v))
+				}))
+				.filter((i) => i.perWeek > 0)
+				.sort((a, b) => b.perWeek - a.perWeek),
 			constructionCostPerWeek: round(
 				sum(
 					Object.values(
@@ -205,6 +258,14 @@ export function buildSnapshot(
 			.map(obj)
 			.filter((l) => num(l.country) === playerId && l.active === true)
 			.map((l) => strip(str(l.law), 'law_')),
+		newProductionMethods: newProductionMethods(
+			arr(c.new_production_methods_v2).map(str),
+			Object.values(obj(obj(g.building_manager).database))
+				.map(obj)
+				.filter((b) => myStates.includes(num(b.state)) && num(b.levels) > 0),
+			names?.productionMethods ?? null,
+			stateKey
+		),
 		journal: Object.values(obj(obj(g.journal_entry_manager).database))
 			.map(obj)
 			.filter((j) => num(j.country) === playerId && j.active === true)

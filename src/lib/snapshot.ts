@@ -48,6 +48,15 @@ export interface JournalProgress {
 	since: string;
 }
 
+/** A production method the game just unlocked, and the player's buildings that could use it. */
+export interface NewProductionMethod {
+	/** e.g. pm_bessemer_process */
+	pm: string;
+	/** As the game shows it, e.g. "Bessemer Process" */
+	name: string;
+	buildings: { type: string; state: string; levels: number }[];
+}
+
 export interface Snapshot {
 	date: string;
 	gameVersion: string;
@@ -65,6 +74,8 @@ export interface Snapshot {
 		debtPct: number;
 		taxLevel: string;
 		investmentPool: number;
+		/** Where private construction spends the Investment Pool, per week, largest first */
+		investmentByBuilding: { building: string; perWeek: number }[];
 		constructionCostPerWeek: number;
 		/** Latest GDP sample (about every 4 weeks, may lag the live value) */
 		gdp: number;
@@ -96,6 +107,8 @@ export interface Snapshot {
 	buildings: BuildingInfo[];
 	interestGroups: { group: string; approval: number; cloutPct: number; influence: string }[];
 	activeLaws: string[];
+	/** Newly unlocked production methods the player's buildings could switch to */
+	newProductionMethods: NewProductionMethod[];
 	/** Active journal entries, oldest first */
 	journal: JournalProgress[];
 }

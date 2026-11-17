@@ -37,3 +37,11 @@ describe('usableConceptNames', () => {
 		).toEqual(['Trade Capacity', 'Trade']);
 	});
 });
+
+describe('splitGameTerms: longer names', () => {
+	it('does not highlight the first word of a longer name', () => {
+		const parts = splitGameTerms('Je Trade Center en je Trade groeien.', ['Trade']);
+		expect(parts.filter((p) => p.term).map((p) => p.text)).toEqual(['Trade']);
+		expect(parts.map((p) => p.text).join('')).toBe('Je Trade Center en je Trade groeien.');
+	});
+});

@@ -61,6 +61,14 @@ export type Advice =
 			/** Where to build: the state with the most unemployed, so the new levels fill quickly */
 			targetState?: string;
 			stateUnemployed?: number;
+			/** Building types the private builders spend the most on (largest first, max 3) */
+			waitingFor?: string[];
+	  }
+	| {
+			id: 'new-production-methods';
+			level: 'smart';
+			/** Max 4, the ones with the most building levels first */
+			methods: { name: string; buildings: { type: string; state: string; levels: number }[] }[];
 	  }
 	| {
 			id: 'be-patient';
@@ -220,9 +228,21 @@ export function adviseFor(s: Snapshot): Advice[] {
 			level: 'smart',
 			investmentPool: e.investmentPool,
 			sectorLevels: s.construction.sectorLevels,
-			...(target ? { targetState: target.state, stateUnemployed: target.unemployed } : {})
+			...(target ? { targetState: target.state, stateUnemployed: target.unemployed } : {}),
+			...(e.investmentByBuilding?.length
+				? { waitingFor: e.investmentByBuilding.slice(0, 3).map((i) => i.building) }
+				: {})
 		});
 	}
+
+	// The game unlocked production methods that the player's buildings do not use yet
+	const levelsOf = (m: { buildings: { levels: number }[] }) =>
+		m.buildings.reduce((n, b) => n + b.levels, 0);
+	const methods = [...(s.newProductionMethods ?? [])]
+		.sort((a, b) => levelsOf(b) - levelsOf(a))
+		.slice(0, 4)
+		.map((m) => ({ name: m.name, buildings: m.buildings }));
+	if (methods.length > 0) out.push({ id: 'new-production-methods', level: 'smart', methods });
 
 	for (const b of s.buildings) {
 		// New producer of a scarce good, still hiring: be patient

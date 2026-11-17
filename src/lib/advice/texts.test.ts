@@ -82,6 +82,20 @@ const samples: Advice[] = [
 		standardOfLiving: 8.77,
 		balance: 2508,
 		debtPct: 44
+	},
+	{
+		id: 'new-production-methods',
+		level: 'smart',
+		methods: [
+			{
+				name: 'Bessemer Process',
+				buildings: [
+					{ type: 'steel_mill', state: 'wallonia', levels: 4 },
+					{ type: 'steel_mill', state: 'gelre', levels: 1 }
+				]
+			},
+			{ name: 'Rifles', buildings: [{ type: 'arms_industry', state: 'wallonia', levels: 2 }] }
+		]
 	}
 ];
 
@@ -196,5 +210,17 @@ describe('more-construction steps', () => {
 		expect(withState.how[0]).toContain('1.200');
 		expect(withState.how.some((step) => step.includes('Construction Queue'))).toBe(true);
 		expect(adviceText(base, 'en').how[1]).toContain('that state');
+	});
+});
+
+describe('new-production-methods text', () => {
+	it('lists each method with its buildings and states', () => {
+		const pm = samples.find((x) => x.id === 'new-production-methods')!;
+		const text = adviceText(pm, 'nl', NAMES);
+		expect(text.title).toBe('Nieuwe Production Methods beschikbaar');
+		expect(text.why).toContain(
+			'Bessemer Process voor je Steel Mill in Wallonia en Belgian Gelre en Rifles voor je Arms Industry in Wallonia'
+		);
+		expect(text.how[0]).toContain('Steel Mill in Wallonia');
 	});
 });

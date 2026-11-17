@@ -4,6 +4,21 @@ import type { Snapshot } from '../snapshot';
 // A snapshot like the Belgium save of 16 September 1848 (docs/spikes/s5-regels-vs-ai.md).
 export function belgium(patch: (s: Snapshot) => void = () => {}): Snapshot {
 	const s: Snapshot = {
+		newProductionMethods: [
+			{
+				pm: 'pm_bessemer_process',
+				name: 'Bessemer Process',
+				buildings: [
+					{ type: 'steel_mill', state: 'wallonia', levels: 4 },
+					{ type: 'steel_mill', state: 'flanders', levels: 1 }
+				]
+			},
+			{
+				pm: 'pm_rifles',
+				name: 'Rifles',
+				buildings: [{ type: 'arms_industry', state: 'wallonia', levels: 2 }]
+			}
+		],
 		journal: [
 			{ type: 'je_tutorial_grow_gdp', value: 3916769, goal: 4895962, since: '1839.3.4' },
 			{ type: 'je_without_texts', value: 0, goal: 0, since: '1840.1.1' }
@@ -22,6 +37,11 @@ export function belgium(patch: (s: Snapshot) => void = () => {}): Snapshot {
 			debtPct: 44,
 			taxLevel: 'very_high',
 			investmentPool: 166194,
+			investmentByBuilding: [
+				{ building: 'company_headquarter', perWeek: 2974 },
+				{ building: 'financial_district', perWeek: 802 },
+				{ building: 'paper_mill', perWeek: 570 }
+			],
 			constructionCostPerWeek: 11277,
 			gdp: 3432405
 		},

@@ -37,6 +37,8 @@ export const gameName = (key: string) =>
 		.map((w) => w.charAt(0).toUpperCase() + w.slice(1))
 		.join(' ');
 
+const unique = (items: string[]) => [...new Set(items)];
+
 const list = (items: string[], l: Locale) =>
 	items.length <= 1
 		? items.join('')
@@ -107,7 +109,7 @@ const nl: Table = {
 	}),
 	'more-construction': (a, l, place) => ({
 		title: 'Bouw meer Construction Sectors',
-		why: `Je Investment Pool bevat ${money(a.investmentPool, l)} die op private bouw wacht, maar je hebt maar ${a.sectorLevels} levels Construction Sector. Daardoor gaat alles langzaam.`,
+		why: `Je Investment Pool bevat ${money(a.investmentPool, l)} die op private bouw wacht, maar je hebt maar ${a.sectorLevels} levels Construction Sector. Daardoor gaat alles langzaam.${a.waitingFor?.length ? ` Je private investeerders willen vooral ${list(a.waitingFor.map(gameName), l)} bouwen.` : ''}`,
 		caveat: 'Construction Sectors kosten elke week bouwmaterialen; houd je weeksaldo positief.',
 		how: [
 			a.targetState
@@ -118,6 +120,26 @@ const nl: Table = {
 			'Voeg er twee of drie tegelijk toe: elk level geeft meer Construction per week.',
 			'Open je Construction Queue en zet ze bovenaan, zodat ze eerst gebouwd worden.',
 			'Kijk na een paar weken of je weeksaldo positief blijft.'
+		]
+	}),
+	'new-production-methods': (a, _l, place) => ({
+		title:
+			a.methods.length === 1
+				? `Nieuwe Production Method: ${a.methods[0].name}`
+				: 'Nieuwe Production Methods beschikbaar',
+		why: `Het spel heeft nieuwe Production Methods vrijgespeeld die je gebouwen nog niet gebruiken: ${list(
+			a.methods.map(
+				(m) =>
+					`${m.name} voor je ${list(unique(m.buildings.map((b) => gameName(b.type))), 'nl')} in ${list(unique(m.buildings.map((b) => place(b.state))), 'nl')}`
+			),
+			'nl'
+		)}. Nieuwere methoden leveren vaak meer op per werknemer, maar niet altijd.`,
+		caveat:
+			'ze gebruiken vaak andere of duurdere grondstoffen. Vergelijk eerst in de tooltip wat er verandert aan kosten en winst.',
+		how: [
+			`Klik op je ${gameName(a.methods[0].buildings[0].type)} in ${place(a.methods[0].buildings[0].state)} en open de Production Methods.`,
+			`Kies ${a.methods[0].name}. De tooltip laat zien wat er verandert aan in- en uitvoer en winst.`,
+			'Wordt een grondstof duurder of schaars? Zorg dan eerst dat je er genoeg van maakt of kunt kopen.'
 		]
 	}),
 	'be-patient': (a, l, place) => ({
@@ -211,7 +233,7 @@ const en: Table = {
 	}),
 	'more-construction': (a, l, place) => ({
 		title: 'Build more Construction Sectors',
-		why: `Your Investment Pool holds ${money(a.investmentPool, l)} waiting for private construction, but you only have ${a.sectorLevels} levels of Construction Sector. Everything goes slowly.`,
+		why: `Your Investment Pool holds ${money(a.investmentPool, l)} waiting for private construction, but you only have ${a.sectorLevels} levels of Construction Sector. Everything goes slowly.${a.waitingFor?.length ? ` Your private investors mainly want to build ${list(a.waitingFor.map(gameName), l)}.` : ''}`,
 		caveat: 'Construction Sectors cost materials every week; keep your weekly balance positive.',
 		how: [
 			a.targetState
@@ -222,6 +244,26 @@ const en: Table = {
 			'Add two or three at once: every level gives more Construction per week.',
 			'Open your Construction Queue and move them to the top, so they are built first.',
 			'Check after a few weeks whether your weekly balance stays positive.'
+		]
+	}),
+	'new-production-methods': (a, _l, place) => ({
+		title:
+			a.methods.length === 1
+				? `New Production Method: ${a.methods[0].name}`
+				: 'New Production Methods available',
+		why: `The game unlocked Production Methods your buildings do not use yet: ${list(
+			a.methods.map(
+				(m) =>
+					`${m.name} for your ${list(unique(m.buildings.map((b) => gameName(b.type))), 'en')} in ${list(unique(m.buildings.map((b) => place(b.state))), 'en')}`
+			),
+			'en'
+		)}. Newer methods often produce more per worker, but not always.`,
+		caveat:
+			'they often use different or more expensive inputs. Compare the costs and profit in the tooltip first.',
+		how: [
+			`Click your ${gameName(a.methods[0].buildings[0].type)} in ${place(a.methods[0].buildings[0].state)} and open its Production Methods.`,
+			`Choose ${a.methods[0].name}. The tooltip shows how inputs, outputs and profit change.`,
+			'Does an input become more expensive or scarce? Make sure you produce or can buy enough of it first.'
 		]
 	}),
 	'be-patient': (a, l, place) => ({

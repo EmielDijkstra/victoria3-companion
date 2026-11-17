@@ -116,6 +116,26 @@ describe('adviseFor: other situations', () => {
 		expect(ids(advice)).not.toContain('construction-paused');
 	});
 
+	it('names what the private investors wait for', () => {
+		const more = adviseFor(belgium()).find((a) => a.id === 'more-construction');
+		expect(more && 'waitingFor' in more && more.waitingFor).toEqual([
+			'company_headquarter',
+			'financial_district',
+			'paper_mill'
+		]);
+	});
+
+	it('suggests new production methods, the most building levels first', () => {
+		const pm = adviseFor(belgium()).find((a) => a.id === 'new-production-methods');
+		expect(pm && 'methods' in pm && pm.methods.map((m) => m.name)).toEqual([
+			'Bessemer Process',
+			'Rifles'
+		]);
+		expect(ids(adviseFor(belgium((s) => (s.newProductionMethods = []))))).not.toContain(
+			'new-production-methods'
+		);
+	});
+
 	it('handles an empty country without crashing', () => {
 		const empty = belgium((s) => {
 			s.states = [];
@@ -131,6 +151,7 @@ describe('adviseFor: other situations', () => {
 			s.economy.investmentPool = 0;
 			s.economy.debtPct = 0;
 			s.economy.taxLevel = 'medium';
+			s.newProductionMethods = [];
 		});
 		expect(adviseFor(empty)).toEqual([]);
 	});

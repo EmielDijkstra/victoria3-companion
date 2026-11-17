@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { GOODS_TXT, makeGamestate } from './fixtures/gamestate';
-import { parseGoods, parseLocalization } from './game-data';
-import { buildSnapshot, newestOfChannel, newestOfWeekly } from './snapshot';
+import { groupsByMethod, parseGoods, parseLocalization, parsePmGroups } from './game-data';
+import { buildSnapshot, newestOfChannel, newestOfWeekly, newProductionMethods } from './snapshot';
 
 const goods = parseGoods(GOODS_TXT);
 
@@ -131,5 +131,111 @@ describe('buildSnapshot', () => {
 		expect(empty.country.name).toBe('');
 		expect(empty.buildings).toEqual([]);
 		expect(empty.versionTested).toBe(false);
+	});
+});
+
+describe('newProductionMethods', () => {
+	const pmData = {
+		groups: {
+			pm_old_steel: ['pmg_steel'],
+			pm_new_steel: ['pmg_steel'],
+			pm_other: ['pmg_other'],
+			pm_no_explosives: ['pmg_explosives_coal', 'pmg_explosives_iron'],
+			pm_nitro_coal: ['pmg_explosives_coal'],
+			pm_nitro_iron: ['pmg_explosives_iron']
+		},
+		buildingGroups: {
+			building_coal_mine: ['pmg_explosives_coal'],
+			building_iron_mine: ['pmg_explosives_iron']
+		},
+		names: { pm_new_steel: 'New Steel', pm_nitro_coal: 'Nitro', pm_nitro_iron: 'Nitro' }
+	};
+	const key = (id: number) => ({ 1: 'wallonia', 2: 'flanders' })[id] ?? String(id);
+
+	it('finds the player buildings that can switch, by group', () => {
+		const result = newProductionMethods(
+			['pm_new_steel', 'pm_unknown'],
+			[
+				{
+					building: 'building_steel_mill',
+					state: 1,
+					levels: 2,
+					production_methods: ['pm_old_steel']
+				},
+				{
+					building: 'building_steel_mill',
+					state: 2,
+					levels: 5,
+					production_methods: ['pm_old_steel']
+				},
+				{
+					building: 'building_steel_mill',
+					state: 2,
+					levels: 1,
+					production_methods: ['pm_new_steel']
+				},
+				{ building: 'building_glassworks', state: 1, levels: 3, production_methods: ['pm_other'] }
+			],
+			pmData,
+			key
+		);
+		expect(result).toEqual([
+			{
+				pm: 'pm_new_steel',
+				name: 'New Steel',
+				buildings: [
+					{ type: 'steel_mill', state: 'flanders', levels: 5 },
+					{ type: 'steel_mill', state: 'wallonia', levels: 2 }
+				]
+			}
+		]);
+	});
+
+	it('only matches buildings that have the group, and merges methods with the same name', () => {
+		const mines = [
+			{
+				building: 'building_coal_mine',
+				state: 1,
+				levels: 2,
+				production_methods: ['pm_no_explosives']
+			},
+			{
+				building: 'building_iron_mine',
+				state: 1,
+				levels: 3,
+				production_methods: ['pm_no_explosives']
+			}
+		];
+		expect(newProductionMethods(['pm_nitro_coal', 'pm_nitro_iron'], mines, pmData, key)).toEqual([
+			{
+				pm: 'pm_nitro_coal',
+				name: 'Nitro',
+				buildings: [
+					{ type: 'iron_mine', state: 'wallonia', levels: 3 },
+					{ type: 'coal_mine', state: 'wallonia', levels: 2 }
+				]
+			}
+		]);
+	});
+
+	it('gives nothing without the game files', () => {
+		expect(newProductionMethods(['pm_new_steel'], [], null, key)).toEqual([]);
+	});
+});
+
+describe('parsePmGroups', () => {
+	it('reads multi-line and one-line lists, skips comments, and maps methods to all their groups', () => {
+		const groups = parsePmGroups(`pmg_a = {
+	texture = "x.dds"
+	production_methods = {
+		pm_one # first
+		pm_two
+	}
+}
+pmg_b = {
+	production_methods = { pm_two pm_three }
+}`);
+		expect(groups).toEqual({ pmg_a: ['pm_one', 'pm_two'], pmg_b: ['pm_two', 'pm_three'] });
+		expect(groupsByMethod(groups).pm_two).toEqual(['pmg_a', 'pmg_b']);
 	});
 });
