@@ -10,12 +10,12 @@ is een coach, geen cheat-tool. Plan en achtergrond: zie `docs/plan.md`.
 
 ## Stack
 
-- Tauri 2 (Windows). Backend in Rust, frontend in SvelteKit + TypeScript (strict) + Tailwind CSS
-- Saves en spelbestanden parsen met de Rust-crate `jomini` (MIT)
+- Electron (Windows) met SvelteKit + TypeScript (strict) + Tailwind CSS. Besluit 17-11-2026 na spike S3 (Tauri paste niet qua schijfruimte)
+- Saves omzetten met de officiële Rakaly CLI (MIT, als los programma aangeroepen) naar JSON en inlezen in Node (spike S1)
 - Lokale opslag: SQLite (snapshots per spelmaand)
 - Optioneel: Claude API voor uitleg op verzoek (opt-in, eigen API-sleutel)
-- Tests: Vitest (logica en regels), `cargo test` (parser), Playwright (hoofdflows)
-- Lint/format: ESLint + Prettier, `cargo fmt` + `cargo clippy`; typecheck: `svelte-check`
+- Tests: Vitest (logica, extractor en adviesregels), Playwright (hoofdflows)
+- Lint/format: ESLint + Prettier; typecheck: `svelte-check`
 
 ## Werkwijze (GitHub Flow, pragmatisch)
 
@@ -28,7 +28,7 @@ is een coach, geen cheat-tool. Plan en achtergrond: zie `docs/plan.md`.
    `feat(parser): extract budget from gamestate (#9)`.
    Types: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`, `ci`, `data`, `spike`.
 4. Draai voor elke PR de checks (zodra het projectskelet er is):
-   `npm run lint && npm run check && npm run test && npm run build` en `cargo test`.
+   `npm run lint && npm run check && npm run test && npm run build`.
 5. Open een PR met het sjabloon, titel in Conventional Commits-stijl, en een `Closes #<nr>`-regel
    voor elk issue dat de PR afrondt. Beschrijf hoe Emiel het geheel kan testen.
 6. Nooit direct naar `main` pushen. Emiel reviewt en merget (squash merge).

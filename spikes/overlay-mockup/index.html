@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Overlay-mockup – adviseur</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* Stijl geïnspireerd op de Victoria 3-interface. Eigen CSS en iconen, geen Paradox-assets. */
+  :root {
+    --panel-top: #3a3833;
+    --panel-bottom: #2a2824;
+    --panel-edge: #7d7158;
+    --text: #e9e1cf;
+    --text-dim: #b9ae97;
+    --text-strong: #fffaf0;
+    --concept: #f2a34b;
+    --header-band: #5b2730;
+    --button-top: #55693a;
+    --button-bottom: #34431f;
+    --button-edge: #a3b878;
+    --gold: #d1a868;
+    --good: #a6d47f;
+    --warn: #f2c35b;
+    --bad: #ec7a62;
+    --font: "EB Garamond", "Garamond", "Georgia", serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    font-family: var(--font);
+    color: var(--text);
+    background:
+      radial-gradient(ellipse at 30% 40%, #6f7f5a 0%, transparent 45%),
+      radial-gradient(ellipse at 65% 70%, #8a7c55 0%, transparent 40%),
+      radial-gradient(ellipse at 20% 85%, #3f5f73 0%, transparent 35%),
+      linear-gradient(160deg, #4d5a48, #33403f);
+    min-height: 100vh;
+  }
+  .note {
+    position: fixed; left: 16px; bottom: 16px; max-width: 420px;
+    font-size: 14px; color: #f4f0e6; background: rgba(0,0,0,.45);
+    padding: 10px 12px; border-radius: 6px;
+  }
+  .overlay {
+    position: fixed; top: 16px; right: 16px; width: 330px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  /* Alleen in de browser: smal scherm. Niet in de overlay, want daar is het venster zelf smal
+     en zou dit een terugkoppeling geven (paneel krimpt → venster krimpt → paneel krimpt). */
+  @media (max-width: 380px) { html:not(.overlay-mode) .overlay { left: 16px; right: 16px; width: auto; } .note { display: none; } }
+
+  /* Ingeklapt: alleen het tipje. Uitgeklapt: alleen het paneel. */
+  .overlay[data-state="collapsed"] .panel { display: none; }
+  .overlay[data-state="expanded"] .pill { display: none; }
+  .overlay[data-state="hidden"] { display: none; }
+
+  .pill {
+    display: grid; grid-template-columns: 14px 30px 1fr auto; align-items: center; gap: 8px;
+    padding: 6px 8px 6px 6px; border-radius: 22px; cursor: pointer;
+    background: linear-gradient(180deg, var(--panel-top), var(--panel-bottom));
+    border: 1px solid var(--panel-edge);
+    box-shadow: inset 0 1px 0 rgba(255,240,200,.12), 0 4px 12px rgba(0,0,0,.5);
+  }
+  .pill .emblem { width: 30px; height: 30px; }
+  .pill-text { min-width: 0; }
+  .pill-tag { font-size: 12.5px; color: var(--bad); text-transform: uppercase; letter-spacing: .6px; line-height: 1; }
+  .pill-title { font-size: 16px; font-weight: 600; color: var(--text-strong); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .badge {
+    min-width: 22px; height: 22px; padding: 0 6px; border-radius: 11px; display: grid; place-items: center;
+    font-size: 13.5px; font-weight: 700; color: #1d1a15; background: var(--warn);
+  }
+  .handle {
+    width: 14px; align-self: stretch; cursor: grab; border-radius: 3px;
+    background: radial-gradient(circle, var(--text-dim) 1.2px, transparent 1.6px) 0 0 / 7px 7px;
+    opacity: .7;
+  }
+  .handle:active { cursor: grabbing; }
+  .icon-btn {
+    width: 24px; height: 24px; border-radius: 4px; border: 1px solid transparent; background: none;
+    color: var(--text-dim); font: 600 17px/1 var(--font); cursor: pointer; display: grid; place-items: center;
+  }
+  .icon-btn:hover { color: var(--text-strong); border-color: var(--panel-edge); background: rgba(255,255,255,.05); }
+  .panel-tools { margin-left: auto; display: flex; gap: 2px; align-self: flex-start; }
+  .panel-head .handle { align-self: stretch; min-height: 40px; }
+
+  .panel {
+    border-radius: 7px;
+    padding: 14px 16px 16px;
+    background:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .09 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
+      linear-gradient(180deg, var(--panel-top), var(--panel-bottom));
+    border: 1px solid var(--panel-edge);
+    box-shadow: inset 0 0 0 1px rgba(255,240,200,.06), inset 0 1px 0 rgba(255,240,200,.12), 0 6px 18px rgba(0,0,0,.55);
+  }
+  .panel-head { display: flex; align-items: center; gap: 12px; }
+  .emblem { width: 42px; height: 42px; flex: none; }
+  .title { font-size: 22px; font-weight: 700; color: var(--text-strong); line-height: 1.1; }
+  .subtitle { font-size: 15px; color: var(--text-dim); }
+
+  .band {
+    font-size: 16px; color: var(--text-strong); font-weight: 500;
+    padding: 2px 8px; margin: 12px -6px 10px;
+    background: linear-gradient(90deg, var(--header-band) 0%, rgba(91,39,48,.55) 55%, transparent 100%);
+  }
+  .concept { color: var(--concept); font-weight: 500; }
+  b { color: var(--text-strong); font-weight: 700; }
+  p { margin: 0; font-size: 16px; line-height: 1.4; }
+
+  /* Adviezen */
+  .advice { border-top: 1px solid rgba(255,240,200,.08); padding-top: 10px; margin-top: 10px; }
+  .advice:first-of-type { border-top: 0; margin-top: 0; padding-top: 0; }
+  .advice-head { display: grid; grid-template-columns: 26px 1fr; gap: 8px; align-items: start; }
+  .rank {
+    width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center;
+    font-weight: 700; font-size: 15px; color: #1d1a15; margin-top: 1px;
+  }
+  .rank.bad { background: var(--bad); } .rank.warn { background: var(--warn); } .rank.good { background: var(--good); }
+  .advice-title { font-size: 18px; font-weight: 700; color: var(--text-strong); line-height: 1.2; }
+  .tag { font-size: 13px; color: var(--text-dim); text-transform: uppercase; letter-spacing: .6px; }
+  .advice-body { margin: 6px 0 0 34px; display: flex; flex-direction: column; gap: 6px; }
+  .why { font-size: 15px; color: var(--text); }
+  .why .num { color: var(--text-strong); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .caveat { font-size: 15px; color: var(--text-dim); }
+  .caveat::before { content: "Let op: "; color: var(--warn); font-weight: 600; }
+
+  details { margin-top: 2px; }
+  summary {
+    list-style: none; cursor: pointer; display: inline-block;
+    font-family: var(--font); font-size: 15.5px; color: #f1f4e4; padding: 4px 12px;
+    background: linear-gradient(180deg, var(--button-top), var(--button-bottom));
+    border: 1px solid var(--button-edge); border-radius: 4px;
+    box-shadow: inset 0 0 0 2px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.18);
+  }
+  summary::-webkit-details-marker { display: none; }
+  summary:hover { filter: brightness(1.12); }
+  details[open] summary { margin-bottom: 6px; }
+  ol.steps { margin: 0; padding-left: 20px; font-size: 15.5px; line-height: 1.4; }
+  ol.steps li { margin: 2px 0; }
+  .arrow { color: var(--gold); }
+
+  .meta { margin-top: 12px; font-size: 13.5px; color: var(--text-dim); display: flex; justify-content: space-between; }
+  .hint { margin-top: 6px; font-size: 13.5px; color: var(--text-dim); }
+
+  /* Overlay-modus (Electron): geen nep-achtergrond, geen mockup-notitie */
+  .overlay-mode body { background: transparent; }
+  .overlay-mode .note { display: none; }
+  .overlay-mode .overlay { top: 4px; left: 4px; right: auto; bottom: auto; width: 330px; }
+  .pill, .handle, .panel-head, .band, .icon-btn, summary { user-select: none; }
+
+  /* Paneel blijft heel; alleen de adviezenlijst scrolt, met een duidelijke schuifbalk. */
+  .panel { display: flex; flex-direction: column; max-height: calc(100vh - 40px); }
+  .overlay-mode .panel { max-height: calc(100vh - 8px); }
+  .panel-head, .band, .meta, .hint { flex: none; }
+  .advice-list {
+    flex: 1 1 auto; min-height: 0; overflow-y: auto; padding-right: 6px; margin-right: -6px;
+    scrollbar-width: auto; scrollbar-color: var(--panel-edge-light, #b5a57e) rgba(0,0,0,.25);
+  }
+  .advice-list::-webkit-scrollbar { width: 9px; }
+  .advice-list::-webkit-scrollbar-track { background: rgba(0,0,0,.25); border-radius: 5px; }
+  .advice-list::-webkit-scrollbar-thumb { background: #b5a57e; border-radius: 5px; border: 2px solid #2a2824; }
+  .meta { border-top: 1px solid rgba(255,240,200,.1); padding-top: 8px; }
+  .overlay-mode.click-through .panel { opacity: .8; }
+</style>
+</head>
+<body>
+
+<!-- Gedeelde kleurverlopen voor de emblemen (niet in een verborgen paneel, anders tekent Chrome ze niet) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <radialGradient id="eg" cx="50%" cy="40%" r="60%"><stop offset="0" stop-color="#7a2f38"/><stop offset="1" stop-color="#3e1419"/></radialGradient>
+    <linearGradient id="gold" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#f0d39a"/><stop offset="1" stop-color="#9c7438"/></linearGradient>
+  </defs>
+</svg>
+
+<div class="overlay" data-state="collapsed" aria-label="Victoria 3 Companion – adviseur">
+
+  <div class="pill" role="button" tabindex="0" title="Klik om de adviezen te openen">
+    <span class="handle" data-drag title="Verslepen"></span>
+    <svg class="emblem" viewBox="0 0 48 48" aria-hidden="true">
+      <circle cx="24" cy="24" r="22" fill="url(#eg)" stroke="url(#gold)" stroke-width="3"/>
+      <path d="M24 12 v24 M14 18 h20 M14 18 l-4 9 h8 z M34 18 l-4 9 h8 z" stroke="url(#gold)" stroke-width="2.4" fill="none" stroke-linejoin="round"/>
+    </svg>
+    <span class="pill-text">
+      <span class="pill-tag">Urgent</span>
+      <span class="pill-title">Zet je bouwlijst weer aan</span>
+    </span>
+    <span style="display:flex; align-items:center; gap:4px">
+      <span class="badge" title="Aantal adviezen">4</span>
+      <button class="icon-btn" data-action="hide" title="Wegklikken (Alt+V haalt terug)">×</button>
+    </span>
+  </div>
+
+  <section class="panel">
+    <div class="panel-head">
+      <span class="handle" data-drag title="Verslepen"></span>
+      <svg class="emblem" viewBox="0 0 48 48" aria-hidden="true">
+        <circle cx="24" cy="24" r="22" fill="url(#eg)" stroke="url(#gold)" stroke-width="3"/>
+        <path d="M24 12 v24 M14 18 h20 M14 18 l-4 9 h8 z M34 18 l-4 9 h8 z" stroke="url(#gold)" stroke-width="2.4" fill="none" stroke-linejoin="round"/>
+        <rect x="18" y="35" width="12" height="3" rx="1" fill="url(#gold)"/>
+      </svg>
+      <div>
+        <div class="title">Wat nu, Belgium?</div>
+        <div class="subtitle">Save van 16 september 1848</div>
+      </div>
+      <div class="panel-tools">
+        <button class="icon-btn" data-action="collapse" title="Inklappen tot tipje">–</button>
+        <button class="icon-btn" data-action="hide" title="Wegklikken (Alt+V haalt terug)">×</button>
+      </div>
+    </div>
+
+    <div class="band">Doe dit eerst</div>
+    <div class="advice-list">
+
+    <article class="advice">
+      <div class="advice-head">
+        <span class="rank bad">1</span>
+        <div>
+          <div class="tag">Bouwen · urgent</div>
+          <div class="advice-title">Zet je bouwlijst weer aan</div>
+        </div>
+      </div>
+      <div class="advice-body">
+        <p class="why">Alle <span class="concept">Construction</span> staat op pauze, terwijl er <span class="num">10 projecten</span> wachten.
+          Je <span class="concept">Construction Sectors</span> kosten je toch <span class="num">£11,3K per week</span> aan bouwmaterialen. Je betaalt dus voor stilstand.</p>
+        <p class="caveat">je weeksaldo is nu <b>+£2,4K</b>. Kijk na een paar weken of het positief blijft.</p>
+        <details>
+          <summary>Hoe doe ik dat?</summary>
+          <ol class="steps">
+            <li>Open het <span class="concept">Construction</span>-scherm (hamer in de onderbalk).</li>
+            <li>Klik bovenaan op <b>Resume</b> (de knop die nu "Paused" toont).</li>
+            <li>Zet je duurste of minst nuttige projecten onderaan, zie advies 2.</li>
+          </ol>
+        </details>
+      </div>
+    </article>
+
+    <article class="advice">
+      <div class="advice-head">
+        <span class="rank warn">2</span>
+        <div>
+          <div class="tag">Economie · slim</div>
+          <div class="advice-title">Bouw papierfabrieken in Flanders, niet in Gelre</div>
+        </div>
+      </div>
+      <div class="advice-body">
+        <p class="why">Je <span class="concept">Paper Mill</span> in Flanders is je winstgevendste gebouw: <span class="num">£1,6K per level per week</span>.
+          <span class="concept">Paper</span> kost <span class="num">47</span> tegen een basisprijs van <span class="num">30</span> (+56%): er is tekort.
+          In Flanders zoeken <span class="num">99.000</span> mensen werk, in Gelre maar <span class="num">4.300</span>. Toch staat de nieuwe papierfabriek in Gelre in je bouwlijst.</p>
+        <p class="caveat">meer papier drukt de prijs. Bouw er één of twee bij en kijk dan opnieuw.</p>
+        <details>
+          <summary>Hoe doe ik dat?</summary>
+          <ol class="steps">
+            <li>Klik op <b>Flanders</b> op de kaart en open de tab <b>Buildings</b>.</li>
+            <li>Bij <span class="concept">Paper Mill</span>: klik op <b>+</b> om een level toe te voegen.</li>
+            <li>Haal in het <span class="concept">Construction</span>-scherm de papierfabriek in Gelre weg, of zet hem achteraan.</li>
+          </ol>
+        </details>
+      </div>
+    </article>
+
+    <article class="advice">
+      <div class="advice-head">
+        <span class="rank good">3</span>
+        <div>
+          <div class="tag">Economie · geduld</div>
+          <div class="advice-title">Laat je explosievenfabriek groeien</div>
+        </div>
+      </div>
+      <div class="advice-body">
+        <p class="why">Je nieuwe <span class="concept">Explosives Factory</span> in Wallonia draait nog licht verlies, omdat hij pas <span class="num">3%</span> van zijn personeel heeft.
+          <span class="concept">Explosives</span> zijn erg schaars (<span class="num">+145%</span> boven de basisprijs) en de grondstof <span class="concept">Sulfur</span> is goedkoop (<span class="num">−41%</span>).
+          Als hij vol bezet is, wordt dit een van je beste fabrieken. Niet afbreken.</p>
+      </div>
+    </article>
+
+    <article class="advice">
+      <div class="advice-head">
+        <span class="rank warn">4</span>
+        <div>
+          <div class="tag">Politiek · overweeg</div>
+          <div class="advice-title">Belasting een stap omlaag zodra de bouw loopt</div>
+        </div>
+      </div>
+      <div class="advice-body">
+        <p class="why">Je <span class="concept">Tax Level</span> staat op <b>Very High</b>. Bijna een kwart van je bevolking is <span class="concept">Radical</span> (<span class="num">1,22 mln</span>)
+          en <span class="concept">Standard of Living</span> is laag (<span class="num">8,8</span>). Hoge belasting maakt mensen armer en bozer.</p>
+        <p class="caveat">minder belasting = minder inkomsten. Doe dit pas als je weeksaldo na advies 1 duidelijk positief blijft. Je schuld staat op 44% van je <span class="concept">Credit Limit</span>.</p>
+      </div>
+    </article>
+
+    </div>
+    <div class="meta"><span>Autosave: elke maand</span><span>4 adviezen <span class="arrow">▸</span></span></div>
+    <p class="hint">Sleep aan ⠿ om te verplaatsen · – inklappen · × wegklikken · Alt+V terughalen</p>
+  </section>
+
+</div>
+
+<div class="note">
+  Mockup – nog geen werkende app. De adviezen zijn met de hand opgeschreven, op basis van een automatische
+  analyse van de save van België (16 september 1848). Stijl geïnspireerd op Victoria 3, met eigen CSS en iconen.
+</div>
+
+<script>
+  const overlay = document.querySelector(".overlay");
+  const bridge = window.overlayBridge; // alleen in Electron
+  const inOverlay = new URLSearchParams(location.search).has("overlay");
+  if (inOverlay) document.documentElement.classList.add("overlay-mode");
+
+  const setState = (state) => {
+    overlay.dataset.state = state;
+    if (state === "hidden") bridge?.hide();
+    reportSize();
+  };
+
+  // In Electron past het venster zich aan de inhoud aan.
+  function reportSize() {
+    if (!bridge) return;
+    requestAnimationFrame(() => {
+      // Natuurlijke hoogte = paneel zonder scrollen (ook als het venster nu nog te klein is),
+      // begrensd op de schermhoogte; daarboven scrolt alleen de adviezenlijst.
+      const width = overlay.getBoundingClientRect().width;
+      const list = overlay.querySelector(".advice-list");
+      const natural = overlay.dataset.state === "expanded"
+        ? overlay.scrollHeight - list.clientHeight + list.scrollHeight
+        : overlay.scrollHeight;
+      const height = Math.min(natural, screen.availHeight - 16);
+      bridge.resize(Math.ceil(width) + 8, Math.ceil(height) + 8); // + rand voor de schaduw
+    });
+  }
+  if (bridge) {
+    const ro = new ResizeObserver(reportSize);
+    ro.observe(overlay);
+    for (const el of overlay.querySelectorAll(".pill, .panel, .advice")) ro.observe(el); // ook bij openklappen van "Hoe doe ik dat?"
+  }
+
+  // Klikken: tipje opent, knoppen klappen in of verbergen.
+  document.querySelector(".pill").addEventListener("click", (e) => {
+    if (e.target.closest("[data-action], [data-drag]")) return;
+    setState("expanded");
+  });
+  for (const btn of document.querySelectorAll("[data-action]")) {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      setState(btn.dataset.action === "collapse" ? "collapsed" : "hidden");
+    });
+  }
+
+  // Verslepen aan het handvat. In Electron verschuift het venster, in de browser het element.
+  for (const handle of document.querySelectorAll("[data-drag]")) {
+    handle.addEventListener("pointerdown", (e) => {
+      e.preventDefault(); e.stopPropagation();
+      handle.setPointerCapture(e.pointerId);
+      let last = { x: e.screenX, y: e.screenY };
+      const move = (ev) => {
+        const dx = ev.screenX - last.x, dy = ev.screenY - last.y;
+        last = { x: ev.screenX, y: ev.screenY };
+        if (bridge) bridge.moveBy(dx, dy);
+        else {
+          const r = overlay.getBoundingClientRect();
+          overlay.style.right = "auto";
+          overlay.style.left = r.left + dx + "px";
+          overlay.style.top = r.top + dy + "px";
+        }
+      };
+      const up = () => { handle.removeEventListener("pointermove", move); handle.removeEventListener("pointerup", up); bridge?.dragEnd(); };
+      handle.addEventListener("pointermove", move);
+      handle.addEventListener("pointerup", up);
+    });
+  }
+
+  if (bridge) {
+    // Klik-door overal behalve boven het tipje of paneel.
+    for (const el of document.querySelectorAll(".pill, .panel")) {
+      el.addEventListener("mouseenter", () => bridge.setInteractive(true));
+      el.addEventListener("mouseleave", () => bridge.setInteractive(false));
+    }
+    bridge.onState(({ fullyClickThrough, shown }) => {
+      document.documentElement.classList.toggle("click-through", fullyClickThrough);
+      if (shown && overlay.dataset.state === "hidden") setState("collapsed");
+    });
+    reportSize();
+  }
+</script>
+</body>
+</html>

@@ -9,13 +9,21 @@ problemen** en vooral **uitlegt waarom** iets een probleem is en wat je eraan ku
 geen "automatische piloot": de app is een coach die je het spel leert begrijpen. Eerste versie draait alleen
 lokaal op Windows, zonder server.
 
+> **Koerswijziging (17-11-2026, na spike S3):** Emiel wil geen tweede scoreboard. "De gegevens kan ik ook
+> in het spel zien. Het gaat erom hoe ik dingen moet aanpassen en wat slim is om te doen." **Advies staat
+> voorop**; cijfers zijn alleen de onderbouwing. De overlay is standaard een klein tipje, open te klikken,
+> te verslepen en weg te klikken. Zie `docs/spikes/s3-overlay.md`.
+
 ### Doelen
 
-1. **Overzicht** – de belangrijkste cijfers van je land op één plek, met trends over tijd.
-2. **Waarschuwen** – "je begroting loopt leeg", "staal is schaars en duur", "deze fabrieken draaien verlies".
-3. **Leren** – bij elke waarschuwing en elk cijfer een korte uitleg in het Nederlands: wat is dit, waarom
-   doet het ertoe, waar vind je het in het spel, wat zijn je opties.
-4. **Niet storen** – werkt naast het spel (tweede scherm of overlay), zonder het spel te veranderen.
+1. **Adviseren** – concreet zeggen wat slim is om nu te doen, op volgorde van belang: "zet je bouwlijst
+   weer aan", "bouw papierfabrieken in Flanders, niet in Gelre". Elk advies: wat, waarom (met cijfers uit
+   je save), let op, en hoe je het in het spel doet.
+2. **Waarschuwen** – alleen als er iets misgaat, als tipje dat je kunt openklikken.
+3. **Leren** – bij elk advies uitleg in het Nederlands over het waarom, zodat je het spel gaat begrijpen.
+4. **Niet storen** – klein, verschuifbaar, weg te klikken; zonder het spel te veranderen.
+
+~~Overzicht van cijfers~~ is geen doel op zich: die staan al in het spel.
 
 ### Bewust níet (in elk geval niet in v1)
 
@@ -157,8 +165,10 @@ Wel:
 | AI (optioneel; S5 beslist wanneer) | **Claude API** (`claude-opus-5-5`; in S5 ook een goedkoper model meten) | Uitleg op verzoek en vrije vragen over je eigen spel, gevoed met de feiten van de regels (4.4a). |
 | Tests | Vitest (logica), Playwright (hoofdflows), `cargo test` (parser) | Zoals in de wandel-app. |
 
-**Besluit (17-11-2026): Tauri.** Emiel heeft geen voorkeur, dus de technisch beste keuze. Electron (alles in
-TypeScript, met jomini als WASM) blijft de terugval als spike S1 of S3 tegenvalt.
+~~Besluit (17-11-2026): Tauri.~~ **Nieuw besluit (17-11-2026, na spike S3): Electron.** Tauri vraagt Rust en
+Microsoft C++ Build Tools (~7–9 GB); daarvoor is te weinig schijfruimte. Electron werkte meteen boven het spel,
+houdt alles in TypeScript en roept Rakaly als los programma aan. De tabel hierboven is daarmee achterhaald
+voor de desktop-schil, het parsen (Rakaly → JSON in Node) en de tests (geen `cargo test`).
 
 ### 4.4 Architectuur
 
@@ -340,7 +350,7 @@ Beantwoord:
 - ~~Mag de app een mod gebruiken?~~ **Niet in ironman-runs.** Wel als terugval in gewone campagnes.
 
 - ~~AI-adviseur?~~ **Twijfel.** Advies: regels én AI op verzoek (4.4a); spike S5 meet of de AI echt helpt.
-- ~~Tauri of Electron?~~ **Maakt niet uit → Tauri.**
+- ~~Tauri of Electron?~~ **Maakt niet uit → Tauri**, na S3 gewijzigd in **Electron** (te weinig schijfruimte voor Tauri).
 - ~~Overlay of tweede scherm?~~ **Overlay.**
 - ~~Taal?~~ **Engelse spelbegrippen, Nederlandse uitleg.**
 - ~~Aparte testcampagne in debugmodus voor de ontwikkeling?~~ **Akkoord.**
