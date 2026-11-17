@@ -96,6 +96,11 @@ uitlezen van binaire saves.
 > debugmodus, geen mods die de checksum veranderen, niets in het spel aanpassen. De app kijkt alleen
 > **mee**. Pas als dat niet lukt, valt de app terug op gewone saves (route B of C).
 >
+> **Update na spike S1 (17-11-2026, zie `docs/spikes/s1-ironman-saves.md`):** binaire saves zijn leesbaar
+> met de officiële Rakaly-tools (MIT, Vic3-tokens ingebouwd). Route A werkt dus. Bovendien is ironman in
+> 1.13 **geen vereiste** voor achievements: het spel noemt alleen singleplayer, geen blokkerende
+> spelregels en geen observer-modus. Ironman blijft een vrije keuze; de app werkt voor beide.
+>
 > Let op: ook gewone saves zijn standaard **binair** (dat zag ik op deze pc). Gewone saves alleen lossen
 > het tokenprobleem dus niet op. De terugval werkt pas met debugmodus (tekstsaves) of een logger-mod, en
 > zonder ironman tellen achievements toch al niet.
@@ -308,7 +313,8 @@ kan de app dan alleen uitleggen en leren (begrippen, leerpad, "leg dit scherm ui
 
 | Risico | Kans | Gevolg | Maatregel |
 |---|---|---|---|
-| Binaire ironman-saves niet leesbaar zonder tokens | Hoog | Geen cijfers uit ironman-runs | Spike S1 eerst; opties uit 4.1a; terugval: gewone campagnes met logger-mod of tekstsaves |
+| Binaire saves niet leesbaar zonder tokens | ~~Hoog~~ Opgelost (S1) | — | Officiële Rakaly-tools met ingebouwde tokens; bij een nieuwe spelpatch op een Rakaly-update wachten |
+| Rakaly loopt achter na een spelpatch | Middel | Kort geen nieuwe gegevens | Versie uit de save controleren; nette melding in de app; onbekende velden negeren |
 | App raakt per ongeluk achievements | Laag | Ironman-run niet meer geldig | App schrijft nooit in de spelmappen en start het spel niet met andere opties; alleen lezen |
 | Ironman autosavet weinig | Middel | Cijfers lopen achter | Uitzoeken in S1; in de app tonen van welke datum de cijfers zijn |
 | Savestructuur verandert per patch | Middel | Extractor breekt | Snapshot-extractor los en getest; versie uit `continue_game.json`/savekop checken en melden |
