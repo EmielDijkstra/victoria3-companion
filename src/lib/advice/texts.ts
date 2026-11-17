@@ -285,7 +285,9 @@ export const minorVersion = (v: string) => v.split('.').slice(0, 2).join('.');
  * game. Missing: written from knowledge, not yet checked. Add a rule here only after clicking
  * through the steps yourself.
  */
-export const HOW_TO_CHECKED: Partial<Record<AdviceId, string>> = {};
+export const HOW_TO_CHECKED: Partial<Record<AdviceId, string>> = {
+	'more-construction': '1.15'
+};
 
 export type HowToStatus =
 	| { kind: 'checked'; version: string }
