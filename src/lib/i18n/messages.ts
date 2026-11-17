@@ -56,6 +56,14 @@ const nl = {
 	sectionAdvice: 'Advies',
 	noAdvice: 'Geen advies op dit moment: ik zie niets wat dringend aandacht nodig heeft.',
 	caveatPrefix: 'Let op:',
+	// panel: goals from the game and concepts
+	sectionGoals: 'Doelen van het spel',
+	goalsIntro: 'Wat het spel nu van je vraagt, met de uitleg uit het spel zelf.',
+	goalWhy: 'Waarom?',
+	goalFromGame: (v: string) => `Tekst uit de tutorial van het spel (versie ${v}), in het Engels.`,
+	moreGoals: (n: number) => `Nog ${n} doelen zonder uitleg`,
+	conceptFromGame: (v: string) => `Uitleg uit het spel (versie ${v})`,
+	close: 'Sluiten',
 	howTo: 'Hoe doe ik dat?',
 	howToChecked: (v: string) => `Stappen gecontroleerd in versie ${v}.`,
 	howToOtherVersion: (checked: string, v: string) =>
@@ -140,6 +148,13 @@ const en: Messages = {
 	sectionAdvice: 'Advice',
 	noAdvice: 'No advice right now: I see nothing that needs urgent attention.',
 	caveatPrefix: 'Mind:',
+	sectionGoals: 'Goals from the game',
+	goalsIntro: 'What the game asks of you now, explained by the game itself.',
+	goalWhy: 'Why?',
+	goalFromGame: (v: string) => `Text from the game's tutorial (version ${v}).`,
+	moreGoals: (n: number) => `${n} more goals without an explanation`,
+	conceptFromGame: (v: string) => `Explanation from the game (version ${v})`,
+	close: 'Close',
 	howTo: 'How do I do that?',
 	howToChecked: (v: string) => `Steps checked in version ${v}.`,
 	howToOtherVersion: (checked: string, v: string) =>

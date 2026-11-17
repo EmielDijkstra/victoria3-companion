@@ -99,6 +99,12 @@ describe('buildSnapshot', () => {
 		expect(s.activeLaws).toEqual(['monarchy', 'no_police']);
 	});
 
+	it('reads the active journal entries of the player, with progress', () => {
+		expect(s.journal).toEqual([
+			{ type: 'je_tutorial_grow_gdp', value: 3916769, goal: 4895962, since: '1839.3.4' }
+		]);
+	});
+
 	it('names a split state like the game does: "Belgian Gelre"', () => {
 		const names = {
 			states: { STATE_GELRE: 'Gelre', STATE_FLANDERS: 'Flanders' },

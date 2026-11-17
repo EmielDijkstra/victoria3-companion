@@ -103,12 +103,17 @@ function createWindow() {
 
 /**
  * Development aid: `electron . --capture=out.png [--expanded] [--settings] [--capture-wait=ms]
- * [--capture-lang=en]` saves an image of the window and quits. Useful to check the rendering
+ * [--capture-lang=en] [--capture-click=sel1|sel2]` saves an image of the window and quits. Useful to check the rendering
  * without a screen recording. `--capture-lang` clicks that language button (and so remembers
  * the choice); `--settings` opens the settings view.
  */
 const captureLang = process.argv.find((a) => a.startsWith('--capture-lang='))?.split('=')[1];
 const capturePath = process.argv.find((a) => a.startsWith('--capture='))?.split('=')[1];
+const captureClicks = (
+	process.argv.find((a) => a.startsWith('--capture-click='))?.slice('--capture-click='.length) ?? ''
+)
+	.split('|')
+	.filter(Boolean);
 const captureWait = Number(
 	process.argv.find((a) => a.startsWith('--capture-wait='))?.split('=')[1]
 );
@@ -136,6 +141,13 @@ function captureAndQuit(file: string) {
 				if (!process.argv.includes('--settings')) await toggleSettings();
 			} else if (process.argv.includes('--settings')) {
 				await toggleSettings();
+			}
+			// --capture-click=sel1|sel2: scroll each element into view and click it, in order
+			for (const selector of captureClicks) {
+				await win.webContents.executeJavaScript(
+					`(() => { const el = document.querySelector(${JSON.stringify(selector)}); el?.scrollIntoView({ block: 'center' }); el?.click(); })()`
+				);
+				await new Promise((r) => setTimeout(r, 400));
 			}
 			const image = await win.capturePage();
 			await writeFile(file, image.toPNG());
@@ -178,6 +190,7 @@ function registerIpc() {
 	});
 
 	ipcMain.handle(IPC.getStatus, () => companion?.getStatus());
+	ipcMain.handle(IPC.getKnowledge, () => companion?.getKnowledge() ?? null);
 
 	ipcMain.handle(IPC.choosePath, async (_e, kind: PathKind) => {
 		if (!win || !companion || !isPathKind(kind)) return companion?.getStatus();

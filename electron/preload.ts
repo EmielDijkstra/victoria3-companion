@@ -16,7 +16,8 @@ const bridge: OverlayBridge = {
 	onStatus: (callback) =>
 		ipcRenderer.on(IPC.status, (_event, status: AppStatus) => callback(status)),
 	choosePath: (kind) => ipcRenderer.invoke(IPC.choosePath, kind),
-	resetPath: (kind) => ipcRenderer.invoke(IPC.resetPath, kind)
+	resetPath: (kind) => ipcRenderer.invoke(IPC.resetPath, kind),
+	getKnowledge: () => ipcRenderer.invoke(IPC.getKnowledge)
 };
 
 contextBridge.exposeInMainWorld('overlayBridge', bridge);

@@ -4,6 +4,10 @@ import type { Snapshot } from '../snapshot';
 // A snapshot like the Belgium save of 16 September 1848 (docs/spikes/s5-regels-vs-ai.md).
 export function belgium(patch: (s: Snapshot) => void = () => {}): Snapshot {
 	const s: Snapshot = {
+		journal: [
+			{ type: 'je_tutorial_grow_gdp', value: 3916769, goal: 4895962, since: '1839.3.4' },
+			{ type: 'je_without_texts', value: 0, goal: 0, since: '1840.1.1' }
+		],
 		date: '1848.9.16.6',
 		gameVersion: '1.15.1',
 		versionTested: true,

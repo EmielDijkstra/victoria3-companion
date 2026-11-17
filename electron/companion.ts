@@ -3,9 +3,11 @@
 import { existsSync, watch, type FSWatcher } from 'node:fs';
 import path from 'node:path';
 import { Worker } from 'node:worker_threads';
+import type { GameKnowledge } from '../src/lib/knowledge';
 import type { Snapshot } from '../src/lib/snapshot';
 import type { AppStatus, PathKind, PathStatus, SaveSummary } from '../src/lib/status';
 import { readGameNames, readGoods, type GameNames, type GoodDefinition } from './game-data';
+import { readGameKnowledge } from './game-knowledge';
 import {
 	findGameDir,
 	findUserDataDir,
@@ -40,6 +42,7 @@ export class Companion {
 	private lastRead: { name: string; mtimeMs: number } | null = null;
 	private goods: GoodDefinition[] | null = null;
 	private names: GameNames | null = null;
+	private knowledge: GameKnowledge | null | undefined = undefined;
 
 	constructor(private readonly opts: CompanionOptions) {
 		this.settings = loadSettings(this.settingsFile);
@@ -63,6 +66,13 @@ export class Companion {
 		return this.status;
 	}
 
+	/** Read on first request (a few hundred ms), then kept until the game folder changes. */
+	getKnowledge(): GameKnowledge | null {
+		if (this.knowledge === undefined)
+			this.knowledge = readGameKnowledge(this.status.paths.game.path, this.status.installedVersion);
+		return this.knowledge;
+	}
+
 	/** Find folders and start watching. Safe to call again after a setting changed. */
 	start() {
 		this.stopWatching();
@@ -70,6 +80,7 @@ export class Companion {
 		const paths = this.resolvePaths();
 		this.goods = readGoods(paths.game.path);
 		this.names = readGameNames(paths.game.path);
+		this.knowledge = undefined;
 		this.status = {
 			...this.status,
 			paths,

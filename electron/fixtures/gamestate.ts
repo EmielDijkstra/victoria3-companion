@@ -173,6 +173,21 @@ export function makeGamestate(overrides: { countryPatch?: Record<string, unknown
 				'2': { law: 'law_free_trade', country: 25 },
 				'3': { law: 'law_no_police', country: 25, active: true }
 			}
+		},
+		journal_entry_manager: {
+			database: {
+				'1': {
+					type: 'je_tutorial_grow_gdp',
+					country: 25,
+					active: true,
+					date_added: '1839.3.4',
+					baseline_value: 3916769.44,
+					goal_value: 4895961.8
+				},
+				'2': { type: 'je_done', country: 25, date_added: '1837.1.1' },
+				'3': { type: 'je_other_country', country: 29, active: true, date_added: '1837.1.1' },
+				'4': 'none'
+			}
 		}
 	};
 }

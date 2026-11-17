@@ -204,6 +204,16 @@ export function buildSnapshot(
 		activeLaws: Object.values(obj(obj(g.laws).database))
 			.map(obj)
 			.filter((l) => num(l.country) === playerId && l.active === true)
-			.map((l) => strip(str(l.law), 'law_'))
+			.map((l) => strip(str(l.law), 'law_')),
+		journal: Object.values(obj(obj(g.journal_entry_manager).database))
+			.map(obj)
+			.filter((j) => num(j.country) === playerId && j.active === true)
+			.map((j) => ({
+				type: str(j.type),
+				value: round(num(j.baseline_value), 0),
+				goal: round(num(j.goal_value), 0),
+				since: str(j.date_added)
+			}))
+			.filter((j) => j.type !== '')
 	};
 }

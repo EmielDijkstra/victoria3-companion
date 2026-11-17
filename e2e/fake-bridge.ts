@@ -2,6 +2,7 @@
 // instead of the Electron main process.
 import type { Page } from '@playwright/test';
 import { belgium } from '../src/lib/advice/fixtures';
+import type { GameKnowledge } from '../src/lib/knowledge';
 import type { AppStatus } from '../src/lib/status';
 
 export function testStatus(): AppStatus {
@@ -35,9 +36,36 @@ export function testStatus(): AppStatus {
 	};
 }
 
+/** Made-up texts in the game's style (no game text in this repository). */
+export function testKnowledge(): GameKnowledge {
+	return {
+		version: '1.15.1',
+		concepts: {
+			'Investment Pool': {
+				key: 'concept_investment_pool',
+				name: 'Investment Pool',
+				description: 'Test: money that private owners use to build. Spent on Construction.'
+			},
+			Construction: {
+				key: 'concept_construction',
+				name: 'Construction',
+				description: 'Test: how fast buildings are built.'
+			}
+		},
+		journal: {
+			je_tutorial_grow_gdp: {
+				type: 'je_tutorial_grow_gdp',
+				name: 'Grow GDP',
+				how: ['Test step one: expand productive buildings.', 'Test step two: trade.'],
+				why: ['Test reason: a bigger economy.']
+			}
+		}
+	};
+}
+
 export async function installFakeBridge(page: Page, options: { locale?: 'nl' | 'en' } = {}) {
 	await page.addInitScript(
-		({ status, locale }) => {
+		({ status, locale, knowledge }) => {
 			if (locale) localStorage.setItem('vic3-companion.locale', locale);
 			const noop = () => {};
 			window.overlayBridge = {
@@ -50,9 +78,10 @@ export async function installFakeBridge(page: Page, options: { locale?: 'nl' | '
 				getStatus: async () => status,
 				onStatus: noop,
 				choosePath: async () => status,
-				resetPath: async () => status
+				resetPath: async () => status,
+				getKnowledge: async () => knowledge
 			};
 		},
-		{ status: testStatus(), locale: options.locale }
+		{ status: testStatus(), locale: options.locale, knowledge: testKnowledge() }
 	);
 }

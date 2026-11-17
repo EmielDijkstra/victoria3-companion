@@ -10,6 +10,9 @@
 	import { adviceText, LEVEL_LABEL } from '../advice/texts';
 	import AdviceList from './AdviceList.svelte';
 	import GameText from './GameText.svelte';
+	import GoalList from './GoalList.svelte';
+	import ConceptCard from './ConceptCard.svelte';
+	import { knowledge } from './knowledge.svelte';
 
 	const t = $derived(locale.t);
 	const lang = $derived(locale.current);
@@ -103,6 +106,11 @@
 	let clickThrough = $state(false);
 
 	const bridge = typeof window !== 'undefined' ? window.overlayBridge : undefined;
+	// Explanations from the installed game; loaded again when the game folder changes
+	$effect(() => {
+		knowledge.load(bridge, status?.paths.game.path ?? null);
+	});
+
 	const interaction = new InteractionSync((interactive) => bridge?.setInteractive(interactive));
 
 	// The Electron window follows the size of the tip or panel.
@@ -278,6 +286,10 @@
 						<p class="notice mb-2">{t.untestedVersion(snapshot.gameVersion)}</p>
 					{/if}
 					<AdviceList {advice} {stateNames} gameVersion={snapshot.gameVersion} />
+					{#if knowledge.current && snapshot.journal?.length}
+						<div class="band">{t.sectionGoals}</div>
+						<GoalList journal={snapshot.journal} />
+					{/if}
 				{:else if save?.state !== 'reading'}
 					<p class="mt-2 text-[15px] text-ink-dim"><GameText text={t.autosaveTip} /></p>
 				{/if}
@@ -364,6 +376,8 @@
 				<h3 class="sub">{t.controls}</h3>
 				<p class="text-[14px] leading-snug text-ink-dim">{t.controlsHelp}</p>
 			{/if}
+
+			<ConceptCard />
 
 			<div class="mt-3 flex justify-end border-t border-[rgba(255,240,200,0.1)] pt-2">
 				<button

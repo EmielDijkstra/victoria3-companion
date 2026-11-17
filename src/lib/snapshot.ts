@@ -37,6 +37,17 @@ export interface StateInfo {
 	sharedWith: string[];
 }
 
+/** An active journal entry of the player: what the game asks for right now. */
+export interface JournalProgress {
+	/** e.g. je_tutorial_grow_gdp */
+	type: string;
+	/** Progress towards the goal, when the entry has one (both 0 otherwise) */
+	value: number;
+	goal: number;
+	/** Date the entry was added */
+	since: string;
+}
+
 export interface Snapshot {
 	date: string;
 	gameVersion: string;
@@ -85,6 +96,8 @@ export interface Snapshot {
 	buildings: BuildingInfo[];
 	interestGroups: { group: string; approval: number; cloutPct: number; influence: string }[];
 	activeLaws: string[];
+	/** Active journal entries, oldest first */
+	journal: JournalProgress[];
 }
 
 /** "1.15.1" → tested if "1.15" is in the list */
