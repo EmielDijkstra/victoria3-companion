@@ -46,6 +46,11 @@ export function testKnowledge(): GameKnowledge {
 				name: 'Investment Pool',
 				description: 'Test: money that private owners use to build. Spent on Construction.'
 			},
+			'Trade Capacity': {
+				key: 'concept_trade_capacity',
+				name: 'Trade Capacity',
+				description: 'Test: how much a state can trade.'
+			},
 			Construction: {
 				key: 'concept_construction',
 				name: 'Construction',

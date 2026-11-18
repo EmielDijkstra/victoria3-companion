@@ -65,6 +65,29 @@ export type Advice =
 			waitingFor?: string[];
 	  }
 	| {
+			id: 'trade-capacity-full';
+			level: 'smart';
+			states: { state: string; capacity: number; used: number }[];
+			/** Largest imports that cost more here than on the world market (max 2) */
+			dearImports: string[];
+	  }
+	| {
+			id: 'subsidized-export';
+			level: 'consider';
+			/** Goods with an import subsidy that the player exports */
+			goods: { good: string; net: number; policy: string }[];
+	  }
+	| {
+			id: 'import-what-you-make';
+			level: 'smart';
+			good: string;
+			imported: number;
+			produced: number;
+			price: number;
+			base: number;
+			vsBasePct: number;
+	  }
+	| {
 			id: 'new-production-methods';
 			level: 'smart';
 			/** Max 4, the ones with the most building levels first */
@@ -143,6 +166,11 @@ const NOT_A_PRODUCER =
 const GOVERNMENT = /^(government_administration|university)$/;
 
 const isProducer = (b: BuildingInfo) => !NOT_A_PRODUCER.test(b.type);
+
+const round = (n: number) => Math.round(n);
+
+/** low_subventions / high_subventions; not "no_tariffs_or_subventions" */
+export const isSubsidy = (policy: string) => /^(low|high|very_high)_subventions$/.test(policy);
 
 function priceOf(prices: PriceInfo[] | null, good: string | undefined) {
 	return good ? prices?.find((p) => p.good === good) : undefined;
@@ -233,6 +261,46 @@ export function adviseFor(s: Snapshot): Advice[] {
 				? { waitingFor: e.investmentByBuilding.slice(0, 3).map((i) => i.building) }
 				: {})
 		});
+	}
+
+	// Trade (spike S6): capacity, subsidies, imports
+	const trade = s.trade;
+	if (trade) {
+		const full = trade.states.filter((t) => t.capacity > 0 && t.used / t.capacity >= 0.95);
+		if (full.length > 0) {
+			out.push({
+				id: 'trade-capacity-full',
+				level: 'smart',
+				states: full,
+				dearImports: trade.goods
+					.filter((t) => t.net < 0 && t.worldPrice > 0 && t.localPrice > t.worldPrice * 1.1)
+					.slice(0, 2)
+					.map((t) => t.good)
+			});
+		}
+		const subsidized = trade.goods.filter((t) => t.net > 0 && isSubsidy(t.importPolicy));
+		if (subsidized.length > 0) {
+			out.push({
+				id: 'subsidized-export',
+				level: 'consider',
+				goods: subsidized.map((t) => ({ good: t.good, net: t.net, policy: t.importPolicy }))
+			});
+		}
+		const made = trade.goods.find(
+			(t) => t.net <= -5 && t.produced > 0 && t.base > 0 && t.localPrice >= t.base * 1.15
+		);
+		if (made) {
+			out.push({
+				id: 'import-what-you-make',
+				level: 'smart',
+				good: made.good,
+				imported: -made.net,
+				produced: made.produced,
+				price: made.localPrice,
+				base: made.base,
+				vsBasePct: round((made.localPrice / made.base - 1) * 100)
+			});
+		}
 	}
 
 	// The game unlocked production methods that the player's buildings do not use yet

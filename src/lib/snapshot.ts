@@ -57,6 +57,39 @@ export interface NewProductionMethod {
 	buildings: { type: string; state: string; levels: number }[];
 }
 
+/** One good the player's states trade on the world market (spike S6). */
+export interface TradedGood {
+	good: string;
+	/** Net volume over the player's states: + export, − import */
+	net: number;
+	localPrice: number;
+	/** Newest world market price sample; 0 when unknown */
+	worldPrice: number;
+	/** Base price from the game files; 0 when unknown */
+	base: number;
+	/** Policy as in the save, e.g. "low_tariffs", "high_subventions"; "" = none set */
+	importPolicy: string;
+	exportPolicy: string;
+	/** Output of the player's own buildings per week */
+	produced: number;
+}
+
+export interface TradeInfo {
+	/** Trade Capacity per state that has some (from Trade Centers) */
+	states: { state: string; capacity: number; used: number }[];
+	/** Largest imports first */
+	goods: TradedGood[];
+	/** Tags of countries with a trade privilege treaty */
+	partners: string[];
+	tradeCenters: {
+		levels: number;
+		revenue: number;
+		tariffs: number;
+		subventions: number;
+		profit: number;
+	};
+}
+
 export interface Snapshot {
 	date: string;
 	gameVersion: string;
@@ -109,6 +142,8 @@ export interface Snapshot {
 	activeLaws: string[];
 	/** Newly unlocked production methods the player's buildings could switch to */
 	newProductionMethods: NewProductionMethod[];
+	/** Trade on the world market; null without the goods list from the game files */
+	trade: TradeInfo | null;
 	/** Active journal entries, oldest first */
 	journal: JournalProgress[];
 }

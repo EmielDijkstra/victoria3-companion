@@ -57,6 +57,9 @@ Zet in het spel **Autosave Interval** op **Every month**.
 - **⚙ Instellingen** (onderaan het paneel): je spel, mappen, taal (NL/EN) en bediening.
 - **Doelen van het spel**: wat het spel nu van je vraagt (Journal Entries), met voortgang en de
   officiële stappen uit de tutorial van je eigen spelversie.
+- **📖 Leren** (onderaan het paneel): onderwerpen uitgelegd en toegepast op je land. Eerste
+  onderwerp: Handel (Trade Capacity, grootste import en export, prijzen hier en op de wereldmarkt,
+  subsidies en handelsadvies).
 - **Begrippen**: een onderstreept spelbegrip aanklikken toont de uitleg uit het spel (Esc sluit).
 
 ### Checks (voor elke PR)

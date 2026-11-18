@@ -64,6 +64,24 @@ const nl = {
 	moreGoals: (n: number) => `Nog ${n} doelen zonder uitleg`,
 	conceptFromGame: (v: string) => `Uitleg uit het spel (versie ${v})`,
 	close: 'Sluiten',
+	// learn
+	learn: 'Leren',
+	learnTrade: 'Handel',
+	learnConcepts: 'Begrippen, uitgelegd door het spel:',
+	learnYourCountry: (country: string) => `Wat betekent dit voor ${country}?`,
+	learnAdvice: 'Advies over handel',
+	sheetUnchecked: (v: string) =>
+		`Eigen uitleg voor versie ${v}, nog niet in het spel gecontroleerd.`,
+	sheetChecked: (v: string) => `Eigen uitleg, gecontroleerd in versie ${v}.`,
+	tradeVolume: 'Volume',
+	tradePriceHere: 'Prijs hier',
+	tradePriceWorld: 'Wereld',
+	tradeImports: 'Grootste import',
+	tradeExports: 'Grootste export',
+	tradeCenters: (levels: number, revenue: string, tariffs: string) =>
+		`Je hebt ${levels} levels Trade Center: ${revenue} handelsopbrengst en ${tariffs} aan tarieven per week.`,
+	tradePartners: (tags: string) => `Handelsverdragen met ${tags}.`,
+	tradeNoData: 'Handelsgegevens zijn er pas als de app de spelbestanden kan lezen.',
 	howTo: 'Hoe doe ik dat?',
 	howToChecked: (v: string) => `Stappen gecontroleerd in versie ${v}.`,
 	howToOtherVersion: (checked: string, v: string) =>
@@ -155,6 +173,23 @@ const en: Messages = {
 	moreGoals: (n: number) => `${n} more goals without an explanation`,
 	conceptFromGame: (v: string) => `Explanation from the game (version ${v})`,
 	close: 'Close',
+	learn: 'Learn',
+	learnTrade: 'Trade',
+	learnConcepts: 'Concepts, explained by the game:',
+	learnYourCountry: (country: string) => `What does this mean for ${country}?`,
+	learnAdvice: 'Trade advice',
+	sheetUnchecked: (v: string) =>
+		`Our own explanation for version ${v}, not yet checked in the game.`,
+	sheetChecked: (v: string) => `Our own explanation, checked in version ${v}.`,
+	tradeVolume: 'Volume',
+	tradePriceHere: 'Price here',
+	tradePriceWorld: 'World',
+	tradeImports: 'Largest imports',
+	tradeExports: 'Largest exports',
+	tradeCenters: (levels: number, revenue: string, tariffs: string) =>
+		`You have ${levels} levels of Trade Center: ${revenue} trade revenue and ${tariffs} in tariffs per week.`,
+	tradePartners: (tags: string) => `Trade agreements with ${tags}.`,
+	tradeNoData: 'Trade data is only available when the app can read the game files.',
 	howTo: 'How do I do that?',
 	howToChecked: (v: string) => `Steps checked in version ${v}.`,
 	howToOtherVersion: (checked: string, v: string) =>

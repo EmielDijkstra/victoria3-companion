@@ -10,7 +10,10 @@ describe('messages', () => {
 	it('has no empty texts', () => {
 		for (const table of Object.values(MESSAGES)) {
 			for (const [key, value] of Object.entries(table)) {
-				const text = typeof value === 'function' ? value('x' as never, 'y' as never) : value;
+				const text =
+					typeof value === 'function'
+						? (value as (...args: never[]) => string)('x' as never, 'y' as never, 'z' as never)
+						: value;
 				expect(String(text).trim(), key).not.toBe('');
 			}
 		}

@@ -239,3 +239,45 @@ pmg_b = {
 		expect(groupsByMethod(groups).pm_two).toEqual(['pmg_a', 'pmg_b']);
 	});
 });
+
+describe('trade', () => {
+	const s = buildSnapshot(makeGamestate(), parseGoods(GOODS_TXT));
+
+	it('reads capacity, traded goods with prices and policies, partners and trade centers', () => {
+		expect(s.trade?.states).toEqual([{ state: 'flanders', capacity: 64, used: 64 }]);
+		expect(s.trade?.goods).toEqual([
+			{
+				good: 'tools',
+				net: -4,
+				localPrice: 12.5,
+				worldPrice: 0,
+				base: 40,
+				importPolicy: '',
+				exportPolicy: 'low_tariffs',
+				produced: 0
+			},
+			{
+				good: 'paper',
+				net: 8,
+				localPrice: 46.7,
+				worldPrice: 41,
+				base: 30,
+				importPolicy: 'high_subventions',
+				exportPolicy: '',
+				produced: 12
+			}
+		]);
+		expect(s.trade?.partners).toEqual(['NET']);
+		expect(s.trade?.tradeCenters).toEqual({
+			levels: 3,
+			revenue: 100,
+			tariffs: 20,
+			subventions: 5,
+			profit: 10
+		});
+	});
+
+	it('has no trade without the goods list', () => {
+		expect(buildSnapshot(makeGamestate(), null).trade).toBeNull();
+	});
+});

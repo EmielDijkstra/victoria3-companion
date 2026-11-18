@@ -5,6 +5,7 @@ import {
 	isTestedVersion,
 	type BuildingInfo,
 	type NewProductionMethod,
+	type TradeInfo,
 	type PriceInfo,
 	type Snapshot
 } from '../src/lib/snapshot';
@@ -87,6 +88,84 @@ export function newProductionMethods(
 			else merged.push(p);
 			return merged;
 		}, []);
+}
+
+/** Trade of the player's country: capacity, traded goods with prices and policies, partners. */
+export function buildTrade(
+	g: Json,
+	c: Json,
+	playerId: number,
+	myStates: number[],
+	goods: GoodDefinition[],
+	stateKey: (id: number) => string
+): TradeInfo {
+	const stateDb = obj(obj(g.states).database);
+	const myBuildings = Object.values(obj(obj(g.building_manager).database))
+		.map(obj)
+		.filter((b) => myStates.includes(num(b.state)));
+
+	const net: Record<string, number> = {};
+	const produced: Record<string, number> = {};
+	for (const id of myStates)
+		for (const [good, v] of Object.entries(obj(obj(obj(stateDb[String(id)]).trade).goods)))
+			net[good] = (net[good] ?? 0) + num(obj(v).value);
+	for (const b of myBuildings)
+		for (const [good, v] of Object.entries(obj(obj(b.output_goods).goods)))
+			produced[good] = (produced[good] ?? 0) + num(obj(v).value);
+
+	const prices = obj(obj(obj(c.budget).current_price_report).goods);
+	const world = obj(obj(obj(obj(g.market_manager).world_market).price_trend).channels);
+	const policy = (field: unknown, id: string) => str(obj(obj(field)[id]).level);
+	const countries = obj(obj(g.country_manager).database);
+
+	const centers = myBuildings.filter((b) => str(b.building) === 'building_trade_center');
+	const total = (field: string) => round(centers.reduce((n, b) => n + num(b[field]), 0));
+
+	return {
+		states: myStates
+			.map((id) => ({ id, s: obj(stateDb[String(id)]) }))
+			.filter(({ s }) => num(s.trade_capacity) > 0)
+			.map(({ id, s }) => ({
+				state: stateKey(id),
+				capacity: round(num(s.trade_capacity)),
+				used: round(num(s.trade_capacity_usage))
+			})),
+		goods: Object.entries(net)
+			.filter(([id, n]) => n !== 0 && goods[Number(id)])
+			.map(([id, n]) => {
+				const ch = obj(world[id]);
+				return {
+					good: goods[Number(id)].name,
+					net: round(n),
+					localPrice: round(num(obj(prices[id]).value), 1),
+					worldPrice: round(
+						arr(ch.values).length ? newestOfChannel({ channels: { 0: ch } }) : 0,
+						1
+					),
+					base: goods[Number(id)].cost ?? 0,
+					importPolicy: policy(c.import_tariffs, id),
+					exportPolicy: policy(c.export_tariffs, id),
+					produced: round(produced[id] ?? 0)
+				};
+			})
+			.sort((a, b) => a.net - b.net),
+		partners: [
+			...new Set(
+				Object.values(obj(obj(g.treaty_article_manager).database))
+					.map(obj)
+					.filter((a) => str(a.article) === 'trade_privilege' && num(a.source_country) === playerId)
+					.map((a) => str(obj(countries[String(num(a.target_country))]).definition))
+					.filter(Boolean)
+			)
+		].sort(),
+		tradeCenters: {
+			levels: centers.reduce((n, b) => n + num(b.levels), 0),
+			revenue: total('trade_revenue'),
+			tariffs: total('tariffs'),
+			subventions: total('subventions'),
+			profit: total('profit_after_reserves')
+		}
+	};
 }
 
 export function buildSnapshot(
@@ -266,6 +345,7 @@ export function buildSnapshot(
 			names?.productionMethods ?? null,
 			stateKey
 		),
+		trade: goods ? buildTrade(g, c, playerId, myStates, goods, stateKey) : null,
 		journal: Object.values(obj(obj(g.journal_entry_manager).database))
 			.map(obj)
 			.filter((j) => num(j.country) === playerId && j.active === true)

@@ -122,6 +122,47 @@ const nl: Table = {
 			'Kijk na een paar weken of je weeksaldo positief blijft.'
 		]
 	}),
+	'trade-capacity-full': (a, _l, place) => ({
+		title: 'Je Trade Capacity is vol',
+		why: `In ${list(
+			a.states.map((t) => `${place(t.state)} (${t.used}/${t.capacity})`),
+			'nl'
+		)} wordt alle Trade Capacity gebruikt. Meer handel kan er niet bij.${a.dearImports.length ? ` Intussen betaal je voor ${list(a.dearImports.map(gameName), 'nl')} meer dan op de wereldmarkt.` : ''}`,
+		caveat:
+			'Trade Centers hebben personeel nodig en kosten Merchant Marine. Bouw er één of twee levels bij en kijk dan opnieuw.',
+		how: [
+			`Klik op ${place(a.states[0].state)} op de kaart en open de tab Buildings.`,
+			'Klik bij Trade Center op + om een level toe te voegen. Staat er nog geen, kies Trade Center in het bouwmenu.'
+		]
+	}),
+	'subsidized-export': (a, l) => ({
+		title: `Je subsidieert de import van ${list(
+			a.goods.map((g) => gameName(g.good)),
+			'nl'
+		)}`,
+		why: `Op de import van ${list(
+			a.goods.map((g) => `${gameName(g.good)} (${gameName(g.policy)})`),
+			'nl'
+		)} betaal je subsidie, maar je exporteert ${a.goods.length === 1 ? 'het' : 'ze'} zelf (${list(
+			a.goods.map((g) => `+${count(g.net, l)}`),
+			'nl'
+		)}). Die subsidie kost je geld zonder dat je het goed tekortkomt.`,
+		caveat:
+			'had je de subsidie bewust gezet, bijvoorbeeld voor een fabriek die het nodig heeft? Kijk dan eerst of die nog genoeg krijgt.',
+		how: [
+			'Open het Market-scherm en zoek het goed op.',
+			'Zet de import op No Tariffs or Subventions (of een tarief).'
+		]
+	}),
+	'import-what-you-make': (a, l) => ({
+		title: `Maak meer ${gameName(a.good)} in plaats van te importeren`,
+		why: `Je importeert ${count(a.imported, l)} ${gameName(a.good)}, terwijl je eigen gebouwen er ${count(a.produced, l)} maken. De prijs is ${decimal(a.price, l)} tegen een basisprijs van ${a.base} (+${a.vsBasePct}%): er is tekort.`,
+		caveat: 'meer aanbod drukt de prijs. Breid één of twee levels uit en kijk dan opnieuw.',
+		how: [
+			`Zoek een gebouw dat ${gameName(a.good)} maakt (Buildings-tab van een staat).`,
+			'Klik op + om een level toe te voegen, liefst in een staat met werklozen.'
+		]
+	}),
 	'new-production-methods': (a, _l, place) => ({
 		title:
 			a.methods.length === 1
@@ -244,6 +285,47 @@ const en: Table = {
 			'Add two or three at once: every level gives more Construction per week.',
 			'Open your Construction Queue and move them to the top, so they are built first.',
 			'Check after a few weeks whether your weekly balance stays positive.'
+		]
+	}),
+	'trade-capacity-full': (a, _l, place) => ({
+		title: 'Your Trade Capacity is full',
+		why: `In ${list(
+			a.states.map((t) => `${place(t.state)} (${t.used}/${t.capacity})`),
+			'en'
+		)} all Trade Capacity is in use. No more trade fits.${a.dearImports.length ? ` Meanwhile you pay more for ${list(a.dearImports.map(gameName), 'en')} than on the world market.` : ''}`,
+		caveat:
+			'Trade Centers need workers and use Merchant Marine. Add one or two levels and check again.',
+		how: [
+			`Click ${place(a.states[0].state)} on the map and open the Buildings tab.`,
+			'Click + next to Trade Center to add a level. None there yet? Pick Trade Center in the build menu.'
+		]
+	}),
+	'subsidized-export': (a, l) => ({
+		title: `You subsidise imports of ${list(
+			a.goods.map((g) => gameName(g.good)),
+			'en'
+		)}`,
+		why: `You pay a subsidy on imports of ${list(
+			a.goods.map((g) => `${gameName(g.good)} (${gameName(g.policy)})`),
+			'en'
+		)}, but you export ${a.goods.length === 1 ? 'it' : 'them'} yourself (${list(
+			a.goods.map((g) => `+${count(g.net, l)}`),
+			'en'
+		)}). That subsidy costs money while you are not short of the good.`,
+		caveat:
+			'did you set it on purpose, e.g. for a factory that needs it? Check that it still gets enough first.',
+		how: [
+			'Open the Market screen and find the good.',
+			'Set imports to No Tariffs or Subventions (or a tariff).'
+		]
+	}),
+	'import-what-you-make': (a, l) => ({
+		title: `Make more ${gameName(a.good)} instead of importing`,
+		why: `You import ${count(a.imported, l)} ${gameName(a.good)} while your own buildings make ${count(a.produced, l)}. The price is ${decimal(a.price, l)} against a base price of ${a.base} (+${a.vsBasePct}%): there is a shortage.`,
+		caveat: 'more supply lowers the price. Expand one or two levels and check again.',
+		how: [
+			`Find a building that makes ${gameName(a.good)} (Buildings tab of a state).`,
+			'Click + to add a level, preferably in a state with unemployed people.'
 		]
 	}),
 	'new-production-methods': (a, _l, place) => ({

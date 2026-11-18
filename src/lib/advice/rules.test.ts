@@ -136,6 +136,43 @@ describe('adviseFor: other situations', () => {
 		);
 	});
 
+	it('sees a full Trade Capacity and names the dear imports', () => {
+		const full = adviseFor(belgium()).find((a) => a.id === 'trade-capacity-full');
+		expect(full && 'states' in full && full.states.map((x) => x.state)).toEqual([
+			'flanders',
+			'wallonia'
+		]);
+		expect(full && 'dearImports' in full && full.dearImports).toEqual(['tobacco', 'fabric']);
+	});
+
+	it('flags an import subsidy on a good the player exports', () => {
+		const sub = adviseFor(belgium()).find((a) => a.id === 'subsidized-export');
+		expect(sub && 'goods' in sub && sub.goods).toEqual([
+			{ good: 'paper', net: 6, policy: 'high_subventions' }
+		]);
+	});
+
+	it('does not count "no tariffs or subventions" as a subsidy', () => {
+		const advice = adviseFor(
+			belgium((s) => {
+				s.trade!.goods.find((g) => g.good === 'paper')!.importPolicy = 'no_tariffs_or_subventions';
+			})
+		);
+		expect(ids(advice)).not.toContain('subsidized-export');
+	});
+
+	it('suggests making more of a dear good the player imports and makes', () => {
+		const advice = adviseFor(
+			belgium((s) => {
+				const fabric = s.trade!.goods.find((g) => g.good === 'fabric')!;
+				fabric.localPrice = 26;
+			})
+		).find((a) => a.id === 'import-what-you-make');
+		expect(advice).toMatchObject({ good: 'fabric', imported: 19, produced: 310, vsBasePct: 30 });
+		// Not when the price is close to the base price
+		expect(ids(adviseFor(belgium()))).not.toContain('import-what-you-make');
+	});
+
 	it('handles an empty country without crashing', () => {
 		const empty = belgium((s) => {
 			s.states = [];
@@ -152,6 +189,7 @@ describe('adviseFor: other situations', () => {
 			s.economy.debtPct = 0;
 			s.economy.taxLevel = 'medium';
 			s.newProductionMethods = [];
+			s.trade = null;
 		});
 		expect(adviseFor(empty)).toEqual([]);
 	});

@@ -19,6 +19,56 @@ export function belgium(patch: (s: Snapshot) => void = () => {}): Snapshot {
 				buildings: [{ type: 'arms_industry', state: 'wallonia', levels: 2 }]
 			}
 		],
+		trade: {
+			states: [
+				{ state: 'flanders', capacity: 123, used: 123 },
+				{ state: 'wallonia', capacity: 178, used: 170 }
+			],
+			goods: [
+				{
+					good: 'tobacco',
+					net: -35,
+					localPrice: 42.9,
+					worldPrice: 34.8,
+					base: 30,
+					importPolicy: '',
+					exportPolicy: '',
+					produced: 0
+				},
+				{
+					good: 'fabric',
+					net: -19,
+					localPrice: 20.9,
+					worldPrice: 14.9,
+					base: 20,
+					importPolicy: 'low_tariffs',
+					exportPolicy: 'low_tariffs',
+					produced: 310
+				},
+				{
+					good: 'paper',
+					net: 6,
+					localPrice: 38.9,
+					worldPrice: 43,
+					base: 30,
+					importPolicy: 'high_subventions',
+					exportPolicy: 'low_tariffs',
+					produced: 120
+				},
+				{
+					good: 'tools',
+					net: 64,
+					localPrice: 37.7,
+					worldPrice: 51.4,
+					base: 40,
+					importPolicy: 'low_tariffs',
+					exportPolicy: '',
+					produced: 767
+				}
+			],
+			partners: ['FRA', 'GBR', 'SWI'],
+			tradeCenters: { levels: 24, revenue: 11096, tariffs: 1618, subventions: 210, profit: 888 }
+		},
 		journal: [
 			{ type: 'je_tutorial_grow_gdp', value: 3916769, goal: 4895962, since: '1839.3.4' },
 			{ type: 'je_without_texts', value: 0, goal: 0, since: '1840.1.1' }

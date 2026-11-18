@@ -96,6 +96,30 @@ const samples: Advice[] = [
 			},
 			{ name: 'Rifles', buildings: [{ type: 'arms_industry', state: 'wallonia', levels: 2 }] }
 		]
+	},
+	{
+		id: 'trade-capacity-full',
+		level: 'smart',
+		states: [
+			{ state: 'flanders', capacity: 123, used: 123 },
+			{ state: 'gelre', capacity: 10, used: 10 }
+		],
+		dearImports: ['tobacco']
+	},
+	{
+		id: 'subsidized-export',
+		level: 'consider',
+		goods: [{ good: 'paper', net: 6, policy: 'high_subventions' }]
+	},
+	{
+		id: 'import-what-you-make',
+		level: 'smart',
+		good: 'fabric',
+		imported: 19,
+		produced: 310,
+		price: 26,
+		base: 20,
+		vsBasePct: 30
 	}
 ];
 
@@ -222,5 +246,21 @@ describe('new-production-methods text', () => {
 			'Bessemer Process voor je Steel Mill in Wallonia en Belgian Gelre en Rifles voor je Arms Industry in Wallonia'
 		);
 		expect(text.how[0]).toContain('Steel Mill in Wallonia');
+	});
+});
+
+describe('trade texts', () => {
+	const byId = (id: string) => samples.find((x) => x.id === id)!;
+
+	it('names the full states as the game does', () => {
+		const text = adviceText(byId('trade-capacity-full'), 'nl', NAMES);
+		expect(text.why).toContain('Flanders (123/123) en Belgian Gelre (10/10)');
+		expect(text.why).toContain('Tobacco');
+	});
+
+	it('explains the import subsidy on an exported good', () => {
+		const text = adviceText(byId('subsidized-export'), 'en', NAMES);
+		expect(text.title).toBe('You subsidise imports of Paper');
+		expect(text.why).toContain('Paper (High Subventions)');
 	});
 });

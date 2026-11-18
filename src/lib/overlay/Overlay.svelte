@@ -11,6 +11,7 @@
 	import AdviceList from './AdviceList.svelte';
 	import GameText from './GameText.svelte';
 	import GoalList from './GoalList.svelte';
+	import LearnTrade from './LearnTrade.svelte';
 	import ConceptCard from './ConceptCard.svelte';
 	import { knowledge } from './knowledge.svelte';
 
@@ -99,8 +100,9 @@
 	type View = 'collapsed' | 'expanded' | 'hidden';
 
 	let view = $state<View>('collapsed');
-	// Settings (game facts, folders, language) are rarely needed once it runs: separate view
-	let showSettings = $state(false);
+	// Pages in the panel: advice (default), learn (topics such as trade) and settings (rarely
+	// needed once it runs)
+	let page = $state<'advice' | 'learn' | 'settings'>('advice');
 	const pathTrouble = $derived(status ? Object.values(status.paths).some((p) => p.problem) : false);
 	let root: HTMLDivElement;
 	let clickThrough = $state(false);
@@ -264,7 +266,7 @@
 				</div>
 			</header>
 
-			{#if !showSettings}
+			{#if page === 'advice'}
 				<!-- Advice view: what the player needs during play -->
 				{#if save?.state === 'error'}
 					<p class="notice mt-3">{saveMessage(save, t)}</p>
@@ -274,7 +276,7 @@
 				{#if pathTrouble}
 					<p class="notice mt-3">
 						{t.settingsProblem}
-						<button type="button" class="link-btn" onclick={() => (showSettings = true)}
+						<button type="button" class="link-btn" onclick={() => (page = 'settings')}
 							>{t.openSettings}</button
 						>
 					</p>
@@ -291,6 +293,14 @@
 						<GoalList journal={snapshot.journal} />
 					{/if}
 				{:else if save?.state !== 'reading'}
+					<p class="mt-2 text-[15px] text-ink-dim"><GameText text={t.autosaveTip} /></p>
+				{/if}
+			{:else if page === 'learn'}
+				<!-- Learn: topics explained, applied to the player's country -->
+				<div class="band">{t.learn}</div>
+				{#if snapshot}
+					<LearnTrade {snapshot} {advice} {stateNames} />
+				{:else}
 					<p class="mt-2 text-[15px] text-ink-dim"><GameText text={t.autosaveTip} /></p>
 				{/if}
 			{:else}
@@ -379,14 +389,26 @@
 
 			<ConceptCard />
 
-			<div class="mt-3 flex justify-end border-t border-[rgba(255,240,200,0.1)] pt-2">
-				<button
-					type="button"
-					class="small-btn"
-					data-settings-toggle
-					onclick={() => (showSettings = !showSettings)}
-					>{showSettings ? t.backToAdvice : `⚙ ${t.settings}`}</button
-				>
+			<div class="mt-3 flex justify-end gap-1.5 border-t border-[rgba(255,240,200,0.1)] pt-2">
+				{#if page === 'advice'}
+					<button type="button" class="small-btn" data-learn-toggle onclick={() => (page = 'learn')}
+						>📖 {t.learn}</button
+					>
+					<button
+						type="button"
+						class="small-btn"
+						data-settings-toggle
+						onclick={() => (page = 'settings')}>⚙ {t.settings}</button
+					>
+				{:else}
+					<button
+						type="button"
+						class="small-btn"
+						data-settings-toggle
+						data-back
+						onclick={() => (page = 'advice')}>{t.backToAdvice}</button
+					>
+				{/if}
 			</div>
 		</section>
 	{/if}

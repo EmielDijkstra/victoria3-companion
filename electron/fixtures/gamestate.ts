@@ -29,6 +29,8 @@ export function makeGamestate(overrides: { countryPatch?: Record<string, unknown
 				'25': {
 					definition: 'BEL',
 					tax_level: 'very_high',
+					import_tariffs: { '1': { level: 'high_subventions' } },
+					export_tariffs: { '3': { level: 'low_tariffs' } },
 					states: [477, 476],
 					construction_paused: true,
 					government_queue: {
@@ -78,6 +80,10 @@ export function makeGamestate(overrides: { countryPatch?: Record<string, unknown
 				'477': {
 					region: 'STATE_FLANDERS',
 					country: 25,
+					trade_capacity: 64,
+					trade_capacity_usage: 64,
+					// + export, − import (spike S6)
+					trade: { goods: { '1': { value: 6 }, '3': { value: -4 } } },
 					infrastructure: 124,
 					infrastructure_usage: 68,
 					pop_statistics: {
@@ -91,6 +97,7 @@ export function makeGamestate(overrides: { countryPatch?: Record<string, unknown
 				'476': {
 					region: 'STATE_GELRE',
 					country: 25,
+					trade: { goods: { '1': { value: 2 } } },
 					infrastructure: 32,
 					infrastructure_usage: 12,
 					pop_statistics: {
@@ -102,11 +109,32 @@ export function makeGamestate(overrides: { countryPatch?: Record<string, unknown
 				}
 			}
 		},
+		market_manager: {
+			world_market: { price_trend: { channels: { '1': { index: 1, values: [41.04] } } } }
+		},
+		treaty_article_manager: {
+			database: {
+				'1': { article: 'trade_privilege', source_country: 25, target_country: 29 },
+				'2': { article: 'trade_privilege', source_country: 29, target_country: 25 },
+				'3': { article: 'guarantee_independence', source_country: 25, target_country: 1 }
+			}
+		},
 		building_manager: {
 			database: {
+				'90': {
+					building: 'building_trade_center',
+					state: 477,
+					levels: 3,
+					staffing: 3,
+					trade_revenue: 100,
+					tariffs: 20,
+					subventions: 5,
+					profit_after_reserves: 10
+				},
 				'1': {
 					building: 'building_paper_mill',
 					state: 477,
+					output_goods: { goods: { '1': { value: 12 } } },
 					levels: 1,
 					staffing: 1,
 					profit_after_reserves: 1615
