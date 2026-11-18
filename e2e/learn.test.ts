@@ -1,64 +1,57 @@
 import { expect, test } from '@playwright/test';
 import { installFakeBridge } from './fake-bridge';
 
-// Main flow: Learn → Trade. The game's concepts, our explanation, the player's trade figures and
-// the trade advice.
+// Main flow: Learn. Per topic the game's concepts, our explanation, what stands out in the
+// player's country (sentences, no tables: the game shows the figures) and the advice of the topic.
 
-test('learn about trade, applied to your own country', async ({ page }) => {
+test.beforeEach(async ({ page }) => {
 	await installFakeBridge(page, { locale: 'nl' });
 	await page.goto('/');
 	await page.locator('[data-tip]').click();
-
 	await page.locator('[data-learn-toggle]').click();
+});
+
+test('trade: concepts, what stands out and the trade advice', async ({ page }) => {
 	await expect(page.locator('[data-learn-topic="trade"]')).toHaveText('Handel');
-	// The advice list is not on this page, apart from the trade advice
+	// Only the trade advice, not the whole list
 	await expect(page.locator('[data-advice="construction-paused"]')).toHaveCount(0);
 	await expect(page.locator('[data-advice="trade-capacity-full"]')).toBeVisible();
 
-	// Concepts from the game
 	await page.locator('button.chip[data-concept="Trade Capacity"]').click();
 	await expect(page.locator('[data-concept-card]')).toContainText(
 		'Test: how much a state can trade.'
 	);
 	await page.keyboard.press('Escape');
 
-	// Your country
-	await expect(page.getByText('Wat betekent dit voor Belgium?')).toBeVisible();
-	await expect(page.locator('[data-trade-capacity="flanders"]')).toContainText('123/123');
-	await expect(page.locator('table.goods')).toContainText('Tobacco');
-	await expect(page.locator('table.goods')).toContainText('Tools');
+	await expect(page.getByText('Wat valt op bij Belgium?')).toBeVisible();
+	await expect(page.locator('[data-insights]')).toContainText(
+		'Je verdient aan de export van Tools en Paper'
+	);
 	await expect(page.getByText('nog niet in het spel gecontroleerd').first()).toBeVisible();
+	// No tables of figures
+	await expect(page.locator('table')).toHaveCount(0);
 
 	await page.locator('[data-back]').click();
 	await expect(page.locator('[data-advice="construction-paused"]')).toBeVisible();
 });
 
-test('learn about laws: feasible laws with who is for and against', async ({ page }) => {
-	await installFakeBridge(page, { locale: 'nl' });
-	await page.goto('/');
-	await page.locator('[data-tip]').click();
-	await page.locator('[data-learn-toggle]').click();
+test('laws: feasible laws explained with who is for and against', async ({ page }) => {
 	await page.locator('[data-topic="laws"]').click();
-
 	await expect(page.locator('[data-learn-topic="laws"]')).toHaveText('Wetten');
-	const law = page.locator('[data-law="dedicated_police"]');
-	await expect(law).toContainText('Dedicated Police Force');
-	await expect(law).toContainText('Petite Bourgeoisie ++ (25,5%)');
-	// Description from the game files
-	await expect(law).toContainText('Test: a police force with training.');
+	const insights = page.locator('[data-insights]');
+	// The advised law is not repeated; the next one is explained, with its description from the game
+	await expect(insights).not.toContainText('Dedicated Police Force');
+	await expect(insights).toContainText(
+		'Censorship in plaats van Right of Assembly: Petite Bourgeoisie is ervoor, Intelligentsia ertegen. Test: no free press.'
+	);
 	await expect(page.locator('[data-advice="law-with-support"]')).toBeVisible();
 });
 
-test('learn about population: professions, basic needs and advice', async ({ page }) => {
-	await installFakeBridge(page, { locale: 'nl' });
-	await page.goto('/');
-	await page.locator('[data-tip]').click();
-	await page.locator('[data-learn-toggle]').click();
+test('population: what stands out and the population advice', async ({ page }) => {
 	await page.locator('[data-topic="population"]').click();
-
 	await expect(page.locator('[data-learn-topic="population"]')).toHaveText('Bevolking');
-	await expect(page.locator('[data-profession="peasants"]')).toContainText('628.650');
-	await expect(page.locator('[data-need="popneed_basic_food"]')).toContainText('+31%');
+	await expect(page.locator('[data-insights]')).toContainText('59% van je werkenden is Peasant');
 	await expect(page.locator('[data-advice="dear-basic-needs"]')).toBeVisible();
 	await expect(page.locator('[data-advice="understaffed"]')).toBeVisible();
+	await expect(page.locator('table')).toHaveCount(0);
 });

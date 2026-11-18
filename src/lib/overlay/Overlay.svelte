@@ -11,9 +11,12 @@
 	import AdviceList from './AdviceList.svelte';
 	import GameText from './GameText.svelte';
 	import GoalList from './GoalList.svelte';
-	import LearnTrade from './LearnTrade.svelte';
-	import LearnLaws from './LearnLaws.svelte';
-	import LearnPopulation from './LearnPopulation.svelte';
+	import LearnTopic from './LearnTopic.svelte';
+	import { TRADE } from '../learn/trade';
+	import { LAWS } from '../learn/laws';
+	import { POPULATION } from '../learn/population';
+	import { lawInsights, peopleInsights, tradeInsights } from '../learn/insights';
+	import { gameName } from '../advice/texts';
 	import ConceptCard from './ConceptCard.svelte';
 	import { knowledge } from './knowledge.svelte';
 
@@ -106,6 +109,46 @@
 	// needed once it runs)
 	let page = $state<'advice' | 'learn' | 'settings'>('advice');
 	let topic = $state<'trade' | 'laws' | 'population'>('trade');
+
+	// Advice ids per Learn topic
+	const TOPIC_ADVICE: Record<typeof topic, string[]> = {
+		trade: ['trade-capacity-full', 'subsidized-export', 'import-what-you-make'],
+		laws: ['law-with-support'],
+		population: ['dear-basic-needs', 'understaffed', 'unemployment']
+	};
+	const learn = $derived.by(() => {
+		if (!snapshot) return null;
+		const place = (key: string) => stateNames[key] ?? gameName(key);
+		const topicAdvice = advice.filter((a) => TOPIC_ADVICE[topic].includes(a.id));
+		if (topic === 'laws')
+			return {
+				topic,
+				title: t.learnLaws,
+				sheet: LAWS,
+				insights: lawInsights(
+					snapshot,
+					lang,
+					knowledge.current?.laws,
+					topicAdvice.find((x) => x.id === 'law-with-support' && 'law' in x)?.law
+				),
+				advice: topicAdvice
+			};
+		if (topic === 'population')
+			return {
+				topic,
+				title: t.learnPopulation,
+				sheet: POPULATION,
+				insights: peopleInsights(snapshot, lang, place),
+				advice: topicAdvice
+			};
+		return {
+			topic,
+			title: t.learnTrade,
+			sheet: TRADE,
+			insights: tradeInsights(snapshot, lang),
+			advice: topicAdvice
+		};
+	});
 	const pathTrouble = $derived(status ? Object.values(status.paths).some((p) => p.problem) : false);
 	let root: HTMLDivElement;
 	let clickThrough = $state(false);
@@ -314,12 +357,17 @@
 						>
 					{/each}
 				</div>
-				{#if snapshot && topic === 'population'}
-					<LearnPopulation {snapshot} {advice} {stateNames} />
-				{:else if snapshot && topic === 'laws'}
-					<LearnLaws {snapshot} {advice} {stateNames} />
-				{:else if snapshot}
-					<LearnTrade {snapshot} {advice} {stateNames} />
+				{#if snapshot && learn}
+					<LearnTopic
+						topic={learn.topic}
+						title={learn.title}
+						sheet={learn.sheet}
+						insights={learn.insights}
+						advice={learn.advice}
+						country={snapshot.country.name}
+						gameVersion={snapshot.gameVersion}
+						{stateNames}
+					/>
 				{:else}
 					<p class="mt-2 text-[15px] text-ink-dim"><GameText text={t.autosaveTip} /></p>
 				{/if}

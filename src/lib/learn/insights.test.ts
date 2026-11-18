@@ -1,0 +1,66 @@
+import { describe, expect, it } from 'vitest';
+import { belgium } from '../advice/fixtures';
+import { lawInsights, peopleInsights, tradeInsights } from './insights';
+
+const place = (key: string) => ({ gelre: 'Belgian Gelre' })[key] ?? key;
+
+describe('tradeInsights', () => {
+	it('names what the country earns on and what it buys abroad, without tables', () => {
+		const [earn, abroad] = tradeInsights(belgium(), 'nl');
+		expect(earn).toBe(
+			'Je verdient aan de export van Tools en Paper: die maak je zelf veel. Houd die gebouwen bezet en winstgevend.'
+		);
+		expect(abroad).toContain('Tobacco koop je in het buitenland');
+	});
+
+	it('suggests a trade agreement when there is none', () => {
+		const out = tradeInsights(
+			belgium((s) => (s.trade!.partners = [])),
+			'en'
+		);
+		expect(out.at(-1)).toContain('You have no trade agreements.');
+	});
+});
+
+describe('lawInsights', () => {
+	it('leaves out the law that already has its own advice', () => {
+		expect(lawInsights(belgium(), 'nl', {}, 'Dedicated Police Force')[0]).toMatch(/^Censorship/);
+	});
+
+	it('explains who is for and against, with the description from the game', () => {
+		const [first, second] = lawInsights(belgium(), 'nl', {
+			dedicated_police: 'A police force with training.'
+		});
+		expect(first).toBe(
+			'Dedicated Police Force in plaats van Local Police Force: Petite Bourgeoisie en Armed Forces zijn ervoor, niemand is ertegen. A police force with training.'
+		);
+		expect(second).toBe(
+			'Censorship in plaats van Right of Assembly: Petite Bourgeoisie is ervoor, Intelligentsia ertegen.'
+		);
+	});
+});
+
+describe('peopleInsights', () => {
+	it('explains the peasant share, the dearest basic good and low literacy', () => {
+		const out = peopleInsights(
+			belgium((s) => (s.population.literacyPct = 35)),
+			'nl',
+			place
+		);
+		expect(out[0]).toMatch(/^59% van je werkenden is Peasant\./);
+		expect(out[1]).toBe(
+			'Meat kost +40% boven de basisprijs. Daardoor wordt Basic Food duurder voor je arbeiders en boeren.'
+		);
+		expect(out.at(-1)).toContain('Geletterdheid is 35%');
+	});
+
+	it('warns about hunger only when food security is low', () => {
+		expect(peopleInsights(belgium(), 'en', place).join(' ')).not.toContain('food');
+		const hungry = peopleInsights(
+			belgium((s) => (s.people!.foodSecurity[1].value = 0.3)),
+			'en',
+			place
+		);
+		expect(hungry.join(' ')).toContain('In Belgian Gelre people struggle to buy enough food.');
+	});
+});

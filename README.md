@@ -57,11 +57,10 @@ Zet in het spel **Autosave Interval** op **Every month**.
 - **⚙ Instellingen** (onderaan het paneel): je spel, mappen, taal (NL/EN) en bediening.
 - **Doelen van het spel**: wat het spel nu van je vraagt (Journal Entries), met voortgang en de
   officiële stappen uit de tutorial van je eigen spelversie.
-- **📖 Leren** (onderaan het paneel): onderwerpen uitgelegd en toegepast op je land. Eerste
-  onderwerp: Handel (Trade Capacity, grootste import en export, prijzen hier en op de wereldmarkt,
-  subsidies en handelsadvies) en Wetten (welke wetten je al kunt invoeren, wie ervoor en wie ertegen
-  is, en de beschrijving uit het spel) en Bevolking (beroepen, prijs van de basisbehoeften, food
-  security en half lege gebouwen).
+- **📖 Leren** (onderaan het paneel): Handel, Wetten en Bevolking. Per onderwerp de begrippen
+  (uitgelegd door het spel), hoe het werkt en wat slim is, wat er bij jouw land opvalt en het advies.
+  Geen tabellen met cijfers: die toont het spel zelf. De app legt uit waarom iets niet goed gaat en
+  noemt hooguit het cijfer dat de tip veroorzaakt.
 - **Begrippen**: een onderstreept spelbegrip aanklikken toont de uitleg uit het spel (Esc sluit).
 
 ### Checks (voor elke PR)
