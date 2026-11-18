@@ -1,18 +1,7 @@
 // Knowledge sheet "Trade": how trade works and what is smart, in our own words. Checked per game
 // version, like the how-to steps: only Emiel sets `checked`. Game concepts are explained by the
 // game itself (concept cards); this sheet adds the strategy.
-import type { Locale } from '../i18n/messages';
-
-export interface KnowledgeSheet {
-	/** Game version (major.minor) the sheet was written for */
-	version: string;
-	/** Version in which Emiel checked it in the game; null = not yet */
-	checked: string | null;
-	sources: { source: string; license: string; source_url: string }[];
-	/** Concept names from the game that belong to this topic (shown as clickable chips) */
-	concepts: string[];
-	points: Record<Locale, string[]>;
-}
+import type { KnowledgeSheet } from './sheet';
 
 export const TRADE: KnowledgeSheet = {
 	version: '1.15',

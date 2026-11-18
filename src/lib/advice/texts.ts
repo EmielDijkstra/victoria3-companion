@@ -163,6 +163,32 @@ const nl: Table = {
 			'Klik op + om een level toe te voegen, liefst in een staat met werklozen.'
 		]
 	}),
+	'law-with-support': (a, l) => ({
+		title: `Een wet met veel steun: ${a.law}`,
+		why: `${a.law} (${a.groupName}) heeft meer steun dan je huidige ${a.current}.${
+			a.for.length
+				? ` Voor: ${list(
+						a.for.map((x) => `${x.name}${x.strong ? ' (sterk)' : ''} ${decimal(x.cloutPct, l)}%`),
+						'nl'
+					)}.`
+				: ''
+		} ${
+			a.against.length
+				? `Tegen: ${list(
+						a.against.map(
+							(x) => `${x.name}${x.strong ? ' (sterk)' : ''} ${decimal(x.cloutPct, l)}%`
+						),
+						'nl'
+					)}.`
+				: 'Geen enkele Interest Group is tegen.'
+		}`,
+		caveat: `steun zegt of het haalbaar is, niet of het goed is voor je land. Lees eerst wat de wet doet (Leren → Wetten).${a.conditions ? ' Het spel kan nog extra voorwaarden stellen.' : ''}`,
+		how: [
+			'Open het Politics-scherm en kies de tab Laws.',
+			`Zoek ${a.groupName}, kies ${a.law} en klik op Enact.`,
+			'Invoeren duurt maanden; het lukt beter als Interest Groups in je regering ervoor zijn.'
+		]
+	}),
 	'new-production-methods': (a, _l, place) => ({
 		title:
 			a.methods.length === 1
@@ -326,6 +352,34 @@ const en: Table = {
 		how: [
 			`Find a building that makes ${gameName(a.good)} (Buildings tab of a state).`,
 			'Click + to add a level, preferably in a state with unemployed people.'
+		]
+	}),
+	'law-with-support': (a, l) => ({
+		title: `A law with broad support: ${a.law}`,
+		why: `${a.law} (${a.groupName}) has more support than your current ${a.current}.${
+			a.for.length
+				? ` For: ${list(
+						a.for.map(
+							(x) => `${x.name}${x.strong ? ' (strongly)' : ''} ${decimal(x.cloutPct, l)}%`
+						),
+						'en'
+					)}.`
+				: ''
+		} ${
+			a.against.length
+				? `Against: ${list(
+						a.against.map(
+							(x) => `${x.name}${x.strong ? ' (strongly)' : ''} ${decimal(x.cloutPct, l)}%`
+						),
+						'en'
+					)}.`
+				: 'No interest group is against it.'
+		}`,
+		caveat: `support says whether it is feasible, not whether it is good for your country. Read what the law does first (Learn → Laws).${a.conditions ? ' The game may set extra conditions.' : ''}`,
+		how: [
+			'Open the Politics screen and choose the Laws tab.',
+			`Find ${a.groupName}, choose ${a.law} and click Enact.`,
+			'Enacting takes months; it goes better when interest groups in your government support it.'
 		]
 	}),
 	'new-production-methods': (a, _l, place) => ({

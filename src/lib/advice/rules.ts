@@ -88,6 +88,19 @@ export type Advice =
 			vsBasePct: number;
 	  }
 	| {
+			id: 'law-with-support';
+			level: 'consider';
+			law: string;
+			groupName: string;
+			current: string;
+			support: number;
+			currentSupport: number;
+			/** Interest groups for (approve or more) and against, most clout first, max 3 each */
+			for: { name: string; cloutPct: number; strong: boolean }[];
+			against: { name: string; cloutPct: number; strong: boolean }[];
+			conditions: boolean;
+	  }
+	| {
 			id: 'new-production-methods';
 			level: 'smart';
 			/** Max 4, the ones with the most building levels first */
@@ -301,6 +314,40 @@ export function adviseFor(s: Snapshot): Advice[] {
 				vsBasePct: round((made.localPrice / made.base - 1) * 100)
 			});
 		}
+	}
+
+	// A law with clearly more support than the current one in its group (spike S6). Support is
+	// the clout-weighted stance of the interest groups; it says what is feasible, not what is good.
+	const lawPick = (s.laws ?? [])
+		.flatMap((g) => g.options.map((o) => ({ g, o, gain: o.support - g.activeSupport })))
+		.filter(({ o, gain }) => o.support >= 0.3 && gain >= 0.3)
+		.sort((a, b) => b.gain - a.gain)[0];
+	if (lawPick) {
+		const side = (approve: boolean) =>
+			lawPick.o.stances
+				.filter((st) =>
+					approve
+						? /approve$/.test(st.stance) && !/disapprove/.test(st.stance)
+						: /disapprove/.test(st.stance)
+				)
+				.slice(0, 3)
+				.map((st) => ({
+					name: st.name,
+					cloutPct: st.cloutPct,
+					strong: st.stance.startsWith('strongly')
+				}));
+		out.push({
+			id: 'law-with-support',
+			level: 'consider',
+			law: lawPick.o.name,
+			groupName: lawPick.g.name,
+			current: lawPick.g.activeName,
+			support: lawPick.o.support,
+			currentSupport: lawPick.g.activeSupport,
+			for: side(true),
+			against: side(false),
+			conditions: lawPick.o.conditions
+		});
 	}
 
 	// The game unlocked production methods that the player's buildings do not use yet

@@ -57,6 +57,7 @@ export function testKnowledge(): GameKnowledge {
 				description: 'Test: how fast buildings are built.'
 			}
 		},
+		laws: { dedicated_police: 'Test: a police force with training.' },
 		journal: {
 			je_tutorial_grow_gdp: {
 				type: 'je_tutorial_grow_gdp',

@@ -69,6 +69,61 @@ export function belgium(patch: (s: Snapshot) => void = () => {}): Snapshot {
 			partners: ['FRA', 'GBR', 'SWI'],
 			tradeCenters: { levels: 24, revenue: 11096, tariffs: 1618, subventions: 210, profit: 888 }
 		},
+		laws: [
+			{
+				group: 'policing',
+				name: 'Policing',
+				active: 'local_police',
+				activeName: 'Local Police Force',
+				activeSupport: -0.1,
+				options: [
+					{
+						law: 'dedicated_police',
+						name: 'Dedicated Police Force',
+						support: 0.69,
+						conditions: false,
+						stances: [
+							{
+								ig: 'petty_bourgeoisie',
+								name: 'Petite Bourgeoisie',
+								stance: 'strongly_approve',
+								cloutPct: 25.5
+							},
+							{
+								ig: 'armed_forces',
+								name: 'Armed Forces',
+								stance: 'strongly_approve',
+								cloutPct: 8.8
+							}
+						]
+					}
+				]
+			},
+			{
+				group: 'free_speech',
+				name: 'Free Speech',
+				active: 'right_of_assembly',
+				activeName: 'Right of Assembly',
+				activeSupport: 0.17,
+				options: [
+					{
+						law: 'censorship',
+						name: 'Censorship',
+						support: 0.56,
+						conditions: false,
+						stances: [
+							{
+								ig: 'petty_bourgeoisie',
+								name: 'Petite Bourgeoisie',
+								stance: 'approve',
+								cloutPct: 25.5
+							},
+							{ ig: 'intelligentsia', name: 'Intelligentsia', stance: 'disapprove', cloutPct: 15.5 }
+						]
+					}
+				]
+			}
+		],
 		journal: [
 			{ type: 'je_tutorial_grow_gdp', value: 3916769, goal: 4895962, since: '1839.3.4' },
 			{ type: 'je_without_texts', value: 0, goal: 0, since: '1840.1.1' }

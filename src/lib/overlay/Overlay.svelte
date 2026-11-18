@@ -12,6 +12,7 @@
 	import GameText from './GameText.svelte';
 	import GoalList from './GoalList.svelte';
 	import LearnTrade from './LearnTrade.svelte';
+	import LearnLaws from './LearnLaws.svelte';
 	import ConceptCard from './ConceptCard.svelte';
 	import { knowledge } from './knowledge.svelte';
 
@@ -103,6 +104,7 @@
 	// Pages in the panel: advice (default), learn (topics such as trade) and settings (rarely
 	// needed once it runs)
 	let page = $state<'advice' | 'learn' | 'settings'>('advice');
+	let topic = $state<'trade' | 'laws'>('trade');
 	const pathTrouble = $derived(status ? Object.values(status.paths).some((p) => p.problem) : false);
 	let root: HTMLDivElement;
 	let clickThrough = $state(false);
@@ -298,7 +300,22 @@
 			{:else if page === 'learn'}
 				<!-- Learn: topics explained, applied to the player's country -->
 				<div class="band">{t.learn}</div>
-				{#if snapshot}
+				<div class="mt-2 flex gap-1" role="tablist" aria-label={t.learn}>
+					{#each [['trade', t.learnTrade], ['laws', t.learnLaws]] as [key, label] (key)}
+						<button
+							type="button"
+							role="tab"
+							class="lang-btn"
+							class:active={topic === key}
+							aria-selected={topic === key}
+							data-topic={key}
+							onclick={() => (topic = key as typeof topic)}>{label}</button
+						>
+					{/each}
+				</div>
+				{#if snapshot && topic === 'laws'}
+					<LearnLaws {snapshot} {advice} {stateNames} />
+				{:else if snapshot}
 					<LearnTrade {snapshot} {advice} {stateNames} />
 				{:else}
 					<p class="mt-2 text-[15px] text-ink-dim"><GameText text={t.autosaveTip} /></p>

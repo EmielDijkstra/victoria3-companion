@@ -26,6 +26,8 @@ export interface GameKnowledge {
 	version: string | null;
 	/** By display name, e.g. "Trade Capacity" */
 	concepts: Record<string, ConceptText>;
+	/** Short description per law, by key without prefix (e.g. free_trade) */
+	laws: Record<string, string>;
 	/** By journal entry type; only entries with a name or lesson */
 	journal: Record<string, JournalText>;
 }

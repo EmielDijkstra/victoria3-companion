@@ -32,3 +32,19 @@ test('learn about trade, applied to your own country', async ({ page }) => {
 	await page.locator('[data-back]').click();
 	await expect(page.locator('[data-advice="construction-paused"]')).toBeVisible();
 });
+
+test('learn about laws: feasible laws with who is for and against', async ({ page }) => {
+	await installFakeBridge(page, { locale: 'nl' });
+	await page.goto('/');
+	await page.locator('[data-tip]').click();
+	await page.locator('[data-learn-toggle]').click();
+	await page.locator('[data-topic="laws"]').click();
+
+	await expect(page.locator('[data-learn-topic="laws"]')).toHaveText('Wetten');
+	const law = page.locator('[data-law="dedicated_police"]');
+	await expect(law).toContainText('Dedicated Police Force');
+	await expect(law).toContainText('Petite Bourgeoisie ++ (25,5%)');
+	// Description from the game files
+	await expect(law).toContainText('Test: a police force with training.');
+	await expect(page.locator('[data-advice="law-with-support"]')).toBeVisible();
+});

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
 	buildConcepts,
 	buildJournal,
+	buildLawTexts,
 	cleanGameText,
 	parseJournalLessons,
 	parseLessonChains
@@ -105,5 +106,13 @@ describe('buildConcepts', () => {
 			name: 'Harbour',
 			description: 'A Harbour holds Boats near a Town.'
 		});
+	});
+});
+
+describe('buildLawTexts', () => {
+	it('gives the description per law, keyed without prefix', () => {
+		expect(
+			buildLawTexts({ law_harbour_rights_desc: 'Every [concept_harbour] is free.', ...loc })
+		).toEqual({ harbour_rights: 'Every Harbour is free.' });
 	});
 });

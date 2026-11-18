@@ -132,6 +132,16 @@ export function buildConcepts(loc: Loc): Record<string, ConceptText> {
 	return out;
 }
 
+/** Short description per law, by key without prefix (free_trade → "…"). */
+export function buildLawTexts(loc: Loc): Record<string, string> {
+	const out: Record<string, string> = {};
+	for (const [key, text] of Object.entries(loc)) {
+		const m = key.match(/^law_([a-z0-9_]+)_desc$/);
+		if (m) out[m[1]] = cleanGameText(text, loc);
+	}
+	return out;
+}
+
 export function buildJournal(
 	lessonsByEntry: Record<string, { how?: string; why?: string }>,
 	chains: Record<string, string[]>,
@@ -200,6 +210,7 @@ export function readGameKnowledge(
 		return {
 			version,
 			concepts: buildConcepts(loc),
+			laws: buildLawTexts(loc),
 			journal: buildJournal(lessonsByEntry, chains, loc)
 		};
 	} catch {

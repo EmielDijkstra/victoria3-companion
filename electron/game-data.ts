@@ -49,6 +49,8 @@ export interface GameNames {
 	adjectives: Record<string, string>;
 	/** Production method groups and names; null when they could not be read */
 	productionMethods?: ProductionMethodData | null;
+	/** Laws, what ideologies think of them, and names; null when they could not be read */
+	laws?: LawData | null;
 }
 
 /** Simple reader for Paradox localization lines:  KEY:0 "Text"  (the :0 is optional). */
@@ -78,7 +80,12 @@ export function readGameNames(gameDir: string | null): GameNames | null {
 				)
 			).map(([k, v]) => [k.slice(0, -4), v])
 		);
-		return { states, adjectives, productionMethods: readProductionMethods(gameDir) };
+		return {
+			states,
+			adjectives,
+			productionMethods: readProductionMethods(gameDir),
+			laws: readLawData(gameDir)
+		};
 	} catch {
 		return null;
 	}
@@ -160,6 +167,104 @@ export function readProductionMethods(gameDir: string | null): ProductionMethodD
 				parseBuildingGroups(readFileSync(path.join(buildingDir, file), 'utf8'))
 			);
 		return { groups: groupsByMethod(groups), buildingGroups, names };
+	} catch {
+		return null;
+	}
+}
+
+export type Stance =
+	'strongly_approve' | 'approve' | 'neutral' | 'disapprove' | 'strongly_disapprove';
+const STANCES = new Set<string>([
+	'strongly_approve',
+	'approve',
+	'neutral',
+	'disapprove',
+	'strongly_disapprove'
+]);
+
+export interface LawDefinition {
+	group: string;
+	/** Technologies that unlock the law (empty: always unlocked) */
+	techs: string[];
+	/** Only shown to some countries (`is_visible`); left out of the advice */
+	restricted: boolean;
+	/** Extra conditions (`possible`, `can_enact`) the overlay cannot check */
+	conditions: boolean;
+}
+
+/** Laws from `common/laws/*.txt`: group, unlocking technologies and whether conditions apply. */
+export function parseLaws(text: string): Record<string, LawDefinition> {
+	const out: Record<string, LawDefinition> = {};
+	const clean = text.replace(/^\uFEFF/, '').replace(/#[^\n]*/g, '');
+	const starts = [...clean.matchAll(/^(law_[A-Za-z0-9_]+)\s*=\s*\{/gm)];
+	starts.forEach((m, i) => {
+		const body = clean.slice(m.index, starts[i + 1]?.index ?? clean.length);
+		const group = body.match(/^\s+group\s*=\s*(lawgroup_[A-Za-z0-9_]+)/m)?.[1];
+		if (!group) return;
+		const techs = body.match(/unlocking_technologies\s*=\s*\{([^}]*)\}/)?.[1];
+		out[m[1]] = {
+			group,
+			techs: techs ? techs.split(/\s+/).filter(Boolean) : [],
+			restricted: /\bis_visible\s*=\s*\{/.test(body),
+			conditions: /\b(possible|can_enact)\s*=\s*\{/.test(body)
+		};
+	});
+	return out;
+}
+
+/**
+ * What each ideology thinks of laws, from `common/ideologies/*.txt`:
+ *   ideology_pious = { lawgroup_church_and_state = { law_state_religion = strongly_approve … } }
+ */
+export function parseIdeologies(text: string): Record<string, Record<string, Stance>> {
+	const out: Record<string, Record<string, Stance>> = {};
+	let current: string | null = null;
+	for (const line of text.replace(/^\uFEFF/, '').split(/\r?\n/)) {
+		const top = line.match(/^(ideology_[A-Za-z0-9_]+)\s*=\s*\{/);
+		if (top) current = top[1];
+		const stance = line.match(/^\s+(law_[A-Za-z0-9_]+)\s*=\s*([a-z_]+)/);
+		if (current && stance && STANCES.has(stance[2]))
+			(out[current] ??= {})[stance[1]] = stance[2] as Stance;
+	}
+	return out;
+}
+
+export interface LawData {
+	laws: Record<string, LawDefinition>;
+	ideologies: Record<string, Record<string, Stance>>;
+	/** law_x, lawgroup_x and ig_x → name as the game shows it */
+	names: Record<string, string>;
+}
+
+export function readLawData(gameDir: string | null): LawData | null {
+	if (!gameDir) return null;
+	const common = path.join(gameDir, 'game', 'common');
+	const readDir = (dir: string) =>
+		readdirSync(dir)
+			.filter((f) => f.endsWith('.txt'))
+			.map((f) => readFileSync(path.join(dir, f), 'utf8'));
+	try {
+		const laws = Object.assign({}, ...readDir(path.join(common, 'laws')).map(parseLaws));
+		const ideologies = Object.assign(
+			{},
+			...readDir(path.join(common, 'ideologies')).map(parseIdeologies)
+		);
+		const loc = path.join(gameDir, 'game', 'localization', 'english');
+		const names: Record<string, string> = {};
+		for (const file of [
+			'laws_l_english.yml',
+			path.join('interest_groups', 'interest_groups_l_english.yml')
+		]) {
+			try {
+				Object.assign(
+					names,
+					parseLocalization(readFileSync(path.join(loc, file), 'utf8'), /^(law_|lawgroup_|ig_)/)
+				);
+			} catch {
+				// names fall back to the key
+			}
+		}
+		return { laws, ideologies, names };
 	} catch {
 		return null;
 	}

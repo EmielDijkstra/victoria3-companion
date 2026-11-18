@@ -1,7 +1,20 @@
 import { describe, expect, it } from 'vitest';
 import { GOODS_TXT, makeGamestate } from './fixtures/gamestate';
-import { groupsByMethod, parseGoods, parseLocalization, parsePmGroups } from './game-data';
-import { buildSnapshot, newestOfChannel, newestOfWeekly, newProductionMethods } from './snapshot';
+import {
+	groupsByMethod,
+	parseGoods,
+	parseIdeologies,
+	parseLaws,
+	parseLocalization,
+	parsePmGroups
+} from './game-data';
+import {
+	buildLaws,
+	buildSnapshot,
+	newestOfChannel,
+	newestOfWeekly,
+	newProductionMethods
+} from './snapshot';
 
 const goods = parseGoods(GOODS_TXT);
 
@@ -279,5 +292,82 @@ describe('trade', () => {
 
 	it('has no trade without the goods list', () => {
 		expect(buildSnapshot(makeGamestate(), null).trade).toBeNull();
+	});
+});
+
+describe('laws', () => {
+	const LAWS_TXT = `law_monarchy = {
+	group = lawgroup_governance
+}
+law_republic = {
+	group = lawgroup_governance
+	unlocking_technologies = { tech_a }
+	possible = { always = yes }
+}
+law_future = {
+	group = lawgroup_governance
+	unlocking_technologies = { tech_b }
+}
+law_local_only = {
+	group = lawgroup_governance
+	is_visible = { always = no }
+}
+law_no_police = {
+	group = lawgroup_policing
+}`;
+	const IDEOLOGY_TXT = `ideology_liberal = {
+	lawgroup_governance = {
+		law_monarchy = disapprove
+		law_republic = strongly_approve
+	}
+}`;
+
+	it('reads group, technologies, restrictions and conditions', () => {
+		const laws = parseLaws(LAWS_TXT);
+		expect(laws.law_republic).toEqual({
+			group: 'lawgroup_governance',
+			techs: ['tech_a'],
+			restricted: false,
+			conditions: true
+		});
+		expect(laws.law_local_only.restricted).toBe(true);
+		expect(parseIdeologies(IDEOLOGY_TXT)).toEqual({
+			ideology_liberal: { law_monarchy: 'disapprove', law_republic: 'strongly_approve' }
+		});
+	});
+
+	it('lists unlocked alternatives with clout-weighted support', () => {
+		const data = {
+			laws: parseLaws(LAWS_TXT),
+			ideologies: parseIdeologies(IDEOLOGY_TXT),
+			names: { law_republic: 'Republic', ig_intelligentsia: 'Intelligentsia' }
+		};
+		const groups = buildLaws(makeGamestate(), 25, data);
+		// Only governance has an unlocked alternative (tech_b is not known, local_only is hidden)
+		expect(groups).toEqual([
+			{
+				group: 'governance',
+				name: 'Governance',
+				active: 'monarchy',
+				activeName: 'Monarchy',
+				activeSupport: -0.42,
+				options: [
+					{
+						law: 'republic',
+						name: 'Republic',
+						support: 0.83,
+						conditions: true,
+						stances: [
+							{
+								ig: 'intelligentsia',
+								name: 'Intelligentsia',
+								stance: 'strongly_approve',
+								cloutPct: 41.7
+							}
+						]
+					}
+				]
+			}
+		]);
 	});
 });

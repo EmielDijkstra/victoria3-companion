@@ -90,6 +90,39 @@ export interface TradeInfo {
 	};
 }
 
+export type Stance =
+	'strongly_approve' | 'approve' | 'neutral' | 'disapprove' | 'strongly_disapprove';
+
+/** What one interest group thinks of a law (from its ideologies). */
+export interface LawStance {
+	/** Interest group key without prefix, e.g. "landowners" */
+	ig: string;
+	name: string;
+	stance: Stance;
+	cloutPct: number;
+}
+
+export interface LawOption {
+	law: string;
+	name: string;
+	/** Clout-weighted stance of all interest groups: −2 (all strongly against) … +2 */
+	support: number;
+	/** Interest groups that are not neutral, most clout first */
+	stances: LawStance[];
+	/** The game sets extra conditions the overlay cannot check */
+	conditions: boolean;
+}
+
+export interface LawGroupInfo {
+	group: string;
+	name: string;
+	active: string;
+	activeName: string;
+	activeSupport: number;
+	/** Unlocked alternatives, best supported first */
+	options: LawOption[];
+}
+
 export interface Snapshot {
 	date: string;
 	gameVersion: string;
@@ -144,6 +177,8 @@ export interface Snapshot {
 	newProductionMethods: NewProductionMethod[];
 	/** Trade on the world market; null without the goods list from the game files */
 	trade: TradeInfo | null;
+	/** Law groups with their current law and unlocked alternatives; null without game files */
+	laws: LawGroupInfo[] | null;
 	/** Active journal entries, oldest first */
 	journal: JournalProgress[];
 }

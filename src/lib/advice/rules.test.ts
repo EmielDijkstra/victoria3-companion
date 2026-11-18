@@ -173,6 +173,29 @@ describe('adviseFor: other situations', () => {
 		expect(ids(adviseFor(belgium()))).not.toContain('import-what-you-make');
 	});
 
+	it('suggests the law with the largest gain in support, with who is for and against', () => {
+		const law = adviseFor(belgium()).find((a) => a.id === 'law-with-support');
+		expect(law).toMatchObject({
+			law: 'Dedicated Police Force',
+			groupName: 'Policing',
+			current: 'Local Police Force',
+			for: [
+				{ name: 'Petite Bourgeoisie', cloutPct: 25.5, strong: true },
+				{ name: 'Armed Forces', cloutPct: 8.8, strong: true }
+			],
+			against: []
+		});
+	});
+
+	it('suggests no law when the difference in support is small', () => {
+		const advice = adviseFor(
+			belgium((s) => {
+				for (const g of s.laws!) for (const o of g.options) o.support = g.activeSupport + 0.1;
+			})
+		);
+		expect(ids(advice)).not.toContain('law-with-support');
+	});
+
 	it('handles an empty country without crashing', () => {
 		const empty = belgium((s) => {
 			s.states = [];
@@ -190,6 +213,7 @@ describe('adviseFor: other situations', () => {
 			s.economy.taxLevel = 'medium';
 			s.newProductionMethods = [];
 			s.trade = null;
+			s.laws = null;
 		});
 		expect(adviseFor(empty)).toEqual([]);
 	});

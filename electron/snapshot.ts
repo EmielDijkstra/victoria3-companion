@@ -4,12 +4,14 @@
 import {
 	isTestedVersion,
 	type BuildingInfo,
+	type LawGroupInfo,
+	type LawStance,
 	type NewProductionMethod,
 	type TradeInfo,
 	type PriceInfo,
 	type Snapshot
 } from '../src/lib/snapshot';
-import type { GameNames, GoodDefinition, ProductionMethodData } from './game-data';
+import type { GameNames, GoodDefinition, LawData, ProductionMethodData, Stance } from './game-data';
 
 type Json = Record<string, unknown>;
 const obj = (v: unknown): Json => (v && typeof v === 'object' ? (v as Json) : {});
@@ -166,6 +168,108 @@ export function buildTrade(
 			profit: total('profit_after_reserves')
 		}
 	};
+}
+
+const STANCE_VALUE: Record<Stance, number> = {
+	strongly_approve: 2,
+	approve: 1,
+	neutral: 0,
+	disapprove: -1,
+	strongly_disapprove: -2
+};
+const STANCE_OF: Stance[] = [
+	'strongly_disapprove',
+	'disapprove',
+	'neutral',
+	'approve',
+	'strongly_approve'
+];
+
+/**
+ * Law groups of the player: the current law and the alternatives that are unlocked (technology
+ * known, not restricted to other countries), with the clout-weighted stance of the interest
+ * groups. An interest group's stance is the sum over its ideologies, as in the game.
+ */
+export function buildLaws(g: Json, playerId: number, data: LawData): LawGroupInfo[] {
+	const techs = new Set(
+		Object.values(obj(obj(g.technology).database))
+			.map(obj)
+			.filter((t) => num(t.country) === playerId)
+			.flatMap((t) => arr(t.acquired_technologies).map(str))
+	);
+	const igs = Object.values(obj(obj(g.interest_groups).database))
+		.map(obj)
+		.filter((ig) => num(ig.country) === playerId)
+		.map((ig) => ({
+			key: str(ig.definition),
+			clout: num(ig.clout),
+			ideologies: arr(ig.ideologies).map(str)
+		}));
+	const name = (key: string, prefix: string) => data.names[key] ?? titleCase(strip(key, prefix));
+
+	// −2 … +2: the sum of what the group's ideologies think of the law
+	const value = (ig: (typeof igs)[number], law: string) =>
+		Math.max(
+			-2,
+			Math.min(
+				2,
+				ig.ideologies.reduce(
+					(n, id) => n + STANCE_VALUE[data.ideologies[id]?.[law] ?? 'neutral'],
+					0
+				)
+			)
+		);
+	const support = (law: string) =>
+		round(
+			igs.reduce((n, ig) => n + ig.clout * value(ig, law), 0),
+			2
+		);
+	const visible = (law: string): LawStance[] =>
+		igs
+			.map((ig) => ({
+				ig: strip(ig.key, 'ig_'),
+				name: name(ig.key, 'ig_'),
+				stance: STANCE_OF[value(ig, law) + 2],
+				cloutPct: round(ig.clout * 100, 1)
+			}))
+			.filter((st) => st.stance !== 'neutral')
+			.sort((a, b) => b.cloutPct - a.cloutPct);
+
+	const active = Object.values(obj(obj(g.laws).database))
+		.map(obj)
+		.filter((l) => num(l.country) === playerId && l.active === true)
+		.map((l) => str(l.law))
+		.filter((law) => data.laws[law]);
+
+	return active
+		.map((law) => {
+			const group = data.laws[law].group;
+			const options = Object.entries(data.laws)
+				.filter(
+					([other, def]) =>
+						other !== law &&
+						def.group === group &&
+						!def.restricted &&
+						def.techs.every((t) => techs.has(t))
+				)
+				.map(([other, def]) => ({
+					law: strip(other, 'law_'),
+					name: name(other, 'law_'),
+					support: support(other),
+					stances: visible(other),
+					conditions: def.conditions
+				}))
+				.sort((a, b) => b.support - a.support);
+			return {
+				group: strip(group, 'lawgroup_'),
+				name: name(group, 'lawgroup_'),
+				active: strip(law, 'law_'),
+				activeName: name(law, 'law_'),
+				activeSupport: support(law),
+				options
+			};
+		})
+		.filter((gr) => gr.options.length > 0);
 }
 
 export function buildSnapshot(
@@ -346,6 +450,7 @@ export function buildSnapshot(
 			stateKey
 		),
 		trade: goods ? buildTrade(g, c, playerId, myStates, goods, stateKey) : null,
+		laws: names?.laws ? buildLaws(g, playerId, names.laws) : null,
 		journal: Object.values(obj(obj(g.journal_entry_manager).database))
 			.map(obj)
 			.filter((j) => num(j.country) === playerId && j.active === true)

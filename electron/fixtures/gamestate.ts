@@ -170,11 +170,18 @@ export function makeGamestate(overrides: { countryPatch?: Record<string, unknown
 				}
 			}
 		},
+		technology: {
+			database: {
+				'5': { country: 25, acquired_technologies: ['tech_a'] },
+				'6': { country: 29, acquired_technologies: ['tech_b'] }
+			}
+		},
 		interest_groups: {
 			database: {
 				'88': {
 					country: 25,
 					definition: 'ig_intelligentsia',
+					ideologies: ['ideology_liberal'],
 					approval: 5,
 					clout: 0.417,
 					influence_type: 'influential'

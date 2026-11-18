@@ -120,6 +120,18 @@ const samples: Advice[] = [
 		price: 26,
 		base: 20,
 		vsBasePct: 30
+	},
+	{
+		id: 'law-with-support',
+		level: 'consider',
+		law: 'Dedicated Police Force',
+		groupName: 'Policing',
+		current: 'Local Police Force',
+		support: 0.69,
+		currentSupport: -0.1,
+		for: [{ name: 'Petite Bourgeoisie', cloutPct: 25.5, strong: true }],
+		against: [],
+		conditions: true
 	}
 ];
 
@@ -262,5 +274,15 @@ describe('trade texts', () => {
 		const text = adviceText(byId('subsidized-export'), 'en', NAMES);
 		expect(text.title).toBe('You subsidise imports of Paper');
 		expect(text.why).toContain('Paper (High Subventions)');
+	});
+});
+
+describe('law text', () => {
+	it('names supporters, says nobody is against, and warns about conditions', () => {
+		const law = samples.find((x) => x.id === 'law-with-support')!;
+		const text = adviceText(law, 'nl');
+		expect(text.why).toContain('Voor: Petite Bourgeoisie (sterk) 25,5%');
+		expect(text.why).toContain('Geen enkele Interest Group is tegen.');
+		expect(text.caveat).toContain('extra voorwaarden');
 	});
 });
