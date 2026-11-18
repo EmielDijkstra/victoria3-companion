@@ -123,6 +123,32 @@ export interface LawGroupInfo {
 	options: LawOption[];
 }
 
+/** A basic need of the lower strata and how expensive it is in the player's market. */
+export interface NeedPrice {
+	need: string;
+	name: string;
+	/** Weighted price of the goods that fill the need, against their base prices */
+	vsBasePct: number;
+	goods: { good: string; vsBasePct: number }[];
+}
+
+export interface PeopleInfo {
+	/** Workforce per profession, largest first */
+	professions: { type: string; workforce: number }[];
+	/** Basic needs of workers and peasants, most expensive first */
+	needs: NeedPrice[];
+	/** Average food security per state (0–1, weighted by workforce) */
+	foodSecurity: { state: string; value: number }[];
+	/** Buildings that stay half empty while their state has unemployed people */
+	understaffed: {
+		type: string;
+		state: string;
+		levels: number;
+		staffingPct: number;
+		stateUnemployed: number;
+	}[];
+}
+
 export interface Snapshot {
 	date: string;
 	gameVersion: string;
@@ -179,6 +205,8 @@ export interface Snapshot {
 	trade: TradeInfo | null;
 	/** Law groups with their current law and unlocked alternatives; null without game files */
 	laws: LawGroupInfo[] | null;
+	/** Professions, basic needs and staffing; null without the game files */
+	people: PeopleInfo | null;
 	/** Active journal entries, oldest first */
 	journal: JournalProgress[];
 }

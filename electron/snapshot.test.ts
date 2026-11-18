@@ -6,11 +6,15 @@ import {
 	parseIdeologies,
 	parseLaws,
 	parseLocalization,
-	parsePmGroups
+	parsePmGroups,
+	parsePopNeeds,
+	parsePopTypeKeys
 } from './game-data';
 import {
 	buildLaws,
+	buildPeople,
 	buildSnapshot,
+	indexedArray,
 	newestOfChannel,
 	newestOfWeekly,
 	newProductionMethods
@@ -367,6 +371,93 @@ law_no_police = {
 						]
 					}
 				]
+			}
+		]);
+	});
+});
+
+describe('population', () => {
+	it('reads pop needs and pop type keys from the game files', () => {
+		expect(
+			parsePopNeeds(`popneed_basic_food = {
+	default = grain
+	entry = {
+		goods = grain
+		weight = 1
+	}
+	entry = {
+		goods = fish
+		weight = 2
+	}
+}`)
+		).toEqual([
+			{
+				need: 'popneed_basic_food',
+				goods: [
+					{ good: 'grain', weight: 1 },
+					{ good: 'fish', weight: 2 }
+				]
+			}
+		]);
+		expect(parsePopTypeKeys('\uFEFFlaborers = {\n\tstrata = poor\n}\n')).toEqual(['laborers']);
+		expect(indexedArray([3, { '0': 5 }, { '2': 7 }])).toEqual({ 0: 5, 2: 7 });
+	});
+
+	it('weighs needs by price, food security by people, and finds half-empty buildings', () => {
+		const data = {
+			popTypes: ['academics', 'laborers'],
+			needs: [
+				{
+					need: 'popneed_basic_food',
+					goods: [
+						{ good: 'paper', weight: 1 },
+						{ good: 'tools', weight: 3 }
+					]
+				}
+			],
+			needNames: { popneed_basic_food: 'Basic Food' }
+		};
+		const people = buildPeople(
+			makeGamestate() as never,
+			makeGamestate().country_manager.database['25'] as never,
+			[477, 476],
+			parseGoods(GOODS_TXT),
+			data,
+			[
+				{ type: 'textile_mill', state: 'flanders', levels: 3, staffingPct: 40 },
+				{ type: 'paper_mill', state: 'flanders', levels: 1, staffingPct: 30 },
+				{ type: 'steel_mill', state: 'gelre', levels: 4, staffingPct: 35 }
+			],
+			{ flanders: 99192, gelre: 4322 },
+			(id: number) =>
+				(({ 477: 'flanders', 476: 'gelre' }) as Record<number, string>)[id] ?? String(id)
+		);
+		expect(people.professions).toEqual([
+			{ type: 'laborers', workforce: 391050 },
+			{ type: 'academics', workforce: 500 }
+		]);
+		// paper 46.7 / 30 = 1.557, tools 12.5 / 40 = 0.3125 → (1.557 + 3 × 0.3125) / 4 = 0.623
+		expect(people.needs).toEqual([
+			{
+				need: 'popneed_basic_food',
+				name: 'Basic Food',
+				vsBasePct: -38,
+				goods: [
+					{ good: 'paper', vsBasePct: 56 },
+					{ good: 'tools', vsBasePct: -69 }
+				]
+			}
+		]);
+		// (0.5 × 400 + 0.9 × 100) / 500 = 0.58; the pop in another country's state is left out
+		expect(people.foodSecurity).toEqual([{ state: 'flanders', value: 0.58 }]);
+		// one level, or too few unemployed in the state: not counted
+		expect(people.understaffed).toEqual([
+			{
+				type: 'textile_mill',
+				state: 'flanders',
+				levels: 3,
+				staffingPct: 40,
+				stateUnemployed: 99192
 			}
 		]);
 	});

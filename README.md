@@ -60,7 +60,8 @@ Zet in het spel **Autosave Interval** op **Every month**.
 - **📖 Leren** (onderaan het paneel): onderwerpen uitgelegd en toegepast op je land. Eerste
   onderwerp: Handel (Trade Capacity, grootste import en export, prijzen hier en op de wereldmarkt,
   subsidies en handelsadvies) en Wetten (welke wetten je al kunt invoeren, wie ervoor en wie ertegen
-  is, en de beschrijving uit het spel).
+  is, en de beschrijving uit het spel) en Bevolking (beroepen, prijs van de basisbehoeften, food
+  security en half lege gebouwen).
 - **Begrippen**: een onderstreept spelbegrip aanklikken toont de uitleg uit het spel (Esc sluit).
 
 ### Checks (voor elke PR)

@@ -189,6 +189,33 @@ const nl: Table = {
 			'Invoeren duurt maanden; het lukt beter als Interest Groups in je regering ervoor zijn.'
 		]
 	}),
+	'dear-basic-needs': (a) => ({
+		title: `${a.need} is duur voor je arbeiders`,
+		why: `De goederen voor ${a.need} kosten +${a.vsBasePct}% boven de basisprijs${
+			a.goods.length
+				? ` (${list(
+						a.goods.map((gd) => `${gameName(gd.good)} +${gd.vsBasePct}%`),
+						'nl'
+					)})`
+				: ''
+		}. Arbeiders en boeren geven daar een groot deel van hun loon aan uit; dure basisbehoeften drukken hun Standard of Living.`,
+		caveat:
+			'meer aanbod drukt de prijs. Bouw er één of twee levels bij, of importeer het goedkoper.',
+		how: [
+			`Bouw of breid gebouwen uit die ${a.goods.length ? gameName(a.goods[0].good) : a.need} maken, liefst in een staat met werklozen.`,
+			'Of verlaag in het Market-scherm het importtarief van dat goed.'
+		]
+	}),
+	understaffed: (a, l, place) => ({
+		title: `${gameName(a.building)} in ${place(a.buildingState)} blijft half leeg`,
+		why: `Hij is maar voor ${a.staffingPct}% bezet, terwijl er in ${place(a.buildingState)} ${count(a.stateUnemployed, l)} mensen werk zoeken. Vaak ontbreken mensen met de juiste kwalificaties (geschoolde banen vragen geletterdheid), of betaalt het gebouw te weinig.`,
+		caveat:
+			'een gebouw neemt langzaam mensen aan. Is het net gebouwd of uitgebreid, geef het dan een paar maanden.',
+		how: [
+			'Open het gebouw en hover over het personeel: je ziet welke beroepen ontbreken.',
+			'Ontbreken geschoolde mensen? Verhoog geletterdheid met scholen en de Institution Schools.'
+		]
+	}),
 	'new-production-methods': (a, _l, place) => ({
 		title:
 			a.methods.length === 1
@@ -380,6 +407,31 @@ const en: Table = {
 			'Open the Politics screen and choose the Laws tab.',
 			`Find ${a.groupName}, choose ${a.law} and click Enact.`,
 			'Enacting takes months; it goes better when interest groups in your government support it.'
+		]
+	}),
+	'dear-basic-needs': (a) => ({
+		title: `${a.need} is expensive for your workers`,
+		why: `The goods for ${a.need} cost +${a.vsBasePct}% above the base price${
+			a.goods.length
+				? ` (${list(
+						a.goods.map((gd) => `${gameName(gd.good)} +${gd.vsBasePct}%`),
+						'en'
+					)})`
+				: ''
+		}. Workers and peasants spend much of their income on it; expensive basic needs lower their Standard of Living.`,
+		caveat: 'more supply lowers the price. Add one or two levels, or import it more cheaply.',
+		how: [
+			`Build or expand buildings that make ${a.goods.length ? gameName(a.goods[0].good) : a.need}, preferably in a state with unemployed people.`,
+			'Or lower the import tariff of that good in the Market screen.'
+		]
+	}),
+	understaffed: (a, l, place) => ({
+		title: `${gameName(a.building)} in ${place(a.buildingState)} stays half empty`,
+		why: `It is only ${a.staffingPct}% staffed, while ${count(a.stateUnemployed, l)} people in ${place(a.buildingState)} are looking for work. Often people with the right qualifications are missing (skilled jobs need literacy), or the building pays too little.`,
+		caveat: 'a building hires slowly. If it was just built or expanded, give it a few months.',
+		how: [
+			'Open the building and hover over its staff: you see which professions are missing.',
+			'Skilled people missing? Raise literacy with schools and the Schools institution.'
 		]
 	}),
 	'new-production-methods': (a, _l, place) => ({

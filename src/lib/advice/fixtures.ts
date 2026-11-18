@@ -124,6 +124,45 @@ export function belgium(patch: (s: Snapshot) => void = () => {}): Snapshot {
 				]
 			}
 		],
+		people: {
+			professions: [
+				{ type: 'peasants', workforce: 628650 },
+				{ type: 'laborers', workforce: 375630 },
+				{ type: 'clerks', workforce: 45308 },
+				{ type: 'engineers', workforce: 13260 }
+			],
+			needs: [
+				{
+					need: 'popneed_basic_food',
+					name: 'Basic Food',
+					vsBasePct: 31,
+					goods: [
+						{ good: 'meat', vsBasePct: 40 },
+						{ good: 'grain', vsBasePct: 25 },
+						{ good: 'fish', vsBasePct: 5 }
+					]
+				},
+				{
+					need: 'popneed_heating',
+					name: 'Heating',
+					vsBasePct: 4,
+					goods: [{ good: 'coal', vsBasePct: 9 }]
+				}
+			],
+			foodSecurity: [
+				{ state: 'flanders', value: 0.62 },
+				{ state: 'gelre', value: 0.57 }
+			],
+			understaffed: [
+				{
+					type: 'livestock_ranch',
+					state: 'gelre',
+					levels: 3,
+					staffingPct: 43,
+					stateUnemployed: 30486
+				}
+			]
+		},
 		journal: [
 			{ type: 'je_tutorial_grow_gdp', value: 3916769, goal: 4895962, since: '1839.3.4' },
 			{ type: 'je_without_texts', value: 0, goal: 0, since: '1840.1.1' }

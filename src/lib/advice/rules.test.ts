@@ -196,6 +196,29 @@ describe('adviseFor: other situations', () => {
 		expect(ids(advice)).not.toContain('law-with-support');
 	});
 
+	it('warns when a basic need is expensive, naming its dearest goods', () => {
+		const need = adviseFor(belgium()).find((a) => a.id === 'dear-basic-needs');
+		expect(need).toMatchObject({
+			need: 'Basic Food',
+			vsBasePct: 31,
+			goods: [
+				{ good: 'meat', vsBasePct: 40 },
+				{ good: 'grain', vsBasePct: 25 }
+			]
+		});
+		const cheap = adviseFor(belgium((s) => (s.people!.needs[0].vsBasePct = 10)));
+		expect(ids(cheap)).not.toContain('dear-basic-needs');
+	});
+
+	it('points at a half-empty building next to unemployed people', () => {
+		expect(adviseFor(belgium()).find((a) => a.id === 'understaffed')).toMatchObject({
+			building: 'livestock_ranch',
+			buildingState: 'gelre',
+			staffingPct: 43,
+			stateUnemployed: 30486
+		});
+	});
+
 	it('handles an empty country without crashing', () => {
 		const empty = belgium((s) => {
 			s.states = [];
@@ -214,6 +237,7 @@ describe('adviseFor: other situations', () => {
 			s.newProductionMethods = [];
 			s.trade = null;
 			s.laws = null;
+			s.people = null;
 		});
 		expect(adviseFor(empty)).toEqual([]);
 	});

@@ -69,7 +69,9 @@ export function makeGamestate(overrides: { countryPatch?: Record<string, unknown
 						population_upper_strata: 61265,
 						population_radicals: 1222155,
 						population_loyalists: 33692,
-						population_unemployed_workforce: 168084
+						population_unemployed_workforce: 168084,
+						// [length, {index: value}, …]: 0 = academics, 1 = laborers (test order)
+						population_workforce_by_profession: [2, { '0': 500 }, { '1': 391050 }]
 					},
 					...overrides.countryPatch
 				}
@@ -167,6 +169,31 @@ export function makeGamestate(overrides: { countryPatch?: Record<string, unknown
 					levels: 8,
 					staffing: 8,
 					profit_after_reserves: 2000
+				}
+			}
+		},
+		pops: {
+			database: {
+				'1': {
+					type: 'laborers',
+					location: 477,
+					workforce: 300,
+					dependents: 100,
+					food_security: { value: 0.5 }
+				},
+				'2': {
+					type: 'laborers',
+					location: 477,
+					workforce: 100,
+					dependents: 0,
+					food_security: { value: 0.9 }
+				},
+				'3': {
+					type: 'laborers',
+					location: 479,
+					workforce: 999,
+					dependents: 0,
+					food_security: { value: 0.1 }
 				}
 			}
 		},

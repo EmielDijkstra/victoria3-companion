@@ -7,11 +7,19 @@ import {
 	type LawGroupInfo,
 	type LawStance,
 	type NewProductionMethod,
+	type PeopleInfo,
 	type TradeInfo,
 	type PriceInfo,
 	type Snapshot
 } from '../src/lib/snapshot';
-import type { GameNames, GoodDefinition, LawData, ProductionMethodData, Stance } from './game-data';
+import type {
+	GameNames,
+	GoodDefinition,
+	LawData,
+	PopulationData,
+	ProductionMethodData,
+	Stance
+} from './game-data';
 
 type Json = Record<string, unknown>;
 const obj = (v: unknown): Json => (v && typeof v === 'object' ? (v as Json) : {});
@@ -272,6 +280,108 @@ export function buildLaws(g: Json, playerId: number, data: LawData): LawGroupInf
 		.filter((gr) => gr.options.length > 0);
 }
 
+/** Needs that weigh most on workers and peasants (the lower strata). */
+const BASIC_NEEDS = [
+	'popneed_basic_food',
+	'popneed_simple_clothing',
+	'popneed_heating',
+	'popneed_crude_items'
+];
+
+/** "[15, {"0": 510}, {"1": 2400}, …]": the first number is the length, then one object per index. */
+export function indexedArray(v: unknown): Record<number, number> {
+	const out: Record<number, number> = {};
+	for (const item of arr(v).slice(1))
+		for (const [k, n] of Object.entries(obj(item))) out[Number(k)] = num(n);
+	return out;
+}
+
+/**
+ * Population of the player: workforce per profession, how expensive the basic needs are, food
+ * security per state and buildings that stay half empty although people look for work.
+ */
+export function buildPeople(
+	g: Json,
+	c: Json,
+	myStates: number[],
+	goods: GoodDefinition[],
+	data: PopulationData,
+	buildings: { type: string; state: string; levels: number; staffingPct: number }[],
+	unemployedByState: Record<string, number>,
+	stateKey: (id: number) => string
+): PeopleInfo {
+	const workforce = indexedArray(obj(c.pop_statistics).population_workforce_by_profession);
+	const prices = obj(obj(obj(c.budget).current_price_report).goods);
+	const goodIndex = new Map(goods.map((gd, i) => [gd.name, i]));
+	const ratio = (good: string) => {
+		const i = goodIndex.get(good);
+		const base = i === undefined ? 0 : (goods[i].cost ?? 0);
+		const price = i === undefined ? 0 : num(obj(prices[String(i)]).value);
+		return base > 0 && price > 0 ? price / base : null;
+	};
+
+	const needs = data.needs
+		.filter((n) => BASIC_NEEDS.includes(n.need))
+		.map((n) => {
+			const priced = n.goods
+				.map((gd) => ({ ...gd, r: ratio(gd.good) }))
+				.filter((gd): gd is typeof gd & { r: number } => gd.r !== null);
+			const weight = priced.reduce((t, gd) => t + gd.weight, 0);
+			const avg = weight > 0 ? priced.reduce((t, gd) => t + gd.weight * gd.r, 0) / weight : 1;
+			return {
+				need: n.need,
+				name: data.needNames[n.need] ?? titleCase(strip(n.need, 'popneed_')),
+				vsBasePct: round((avg - 1) * 100),
+				goods: priced
+					.map((gd) => ({ good: gd.good, vsBasePct: round((gd.r - 1) * 100) }))
+					.sort((a, b) => b.vsBasePct - a.vsBasePct)
+			};
+		})
+		.sort((a, b) => b.vsBasePct - a.vsBasePct);
+
+	// Food security per state, weighted by workforce (pops is the largest part of the save)
+	const food: Record<string, { sum: number; weight: number }> = {};
+	for (const p of Object.values(obj(obj(g.pops).database))) {
+		const pop = obj(p);
+		const location = num(pop.location);
+		if (!myStates.includes(location)) continue;
+		const fs = obj(pop.food_security);
+		if (fs.value === undefined) continue;
+		const w = num(pop.workforce) + num(pop.dependents);
+		const key = stateKey(location);
+		food[key] ??= { sum: 0, weight: 0 };
+		food[key].sum += num(fs.value) * w;
+		food[key].weight += w;
+	}
+
+	return {
+		professions: Object.entries(workforce)
+			.map(([i, n]) => ({ type: data.popTypes[Number(i)] ?? `pop_${i}`, workforce: round(n) }))
+			.filter((p) => p.workforce > 0)
+			.sort((a, b) => b.workforce - a.workforce),
+		needs,
+		foodSecurity: Object.entries(food)
+			.filter(([, f]) => f.weight > 0)
+			.map(([state, f]) => ({ state, value: round(f.sum / f.weight, 2) })),
+		understaffed: buildings
+			.filter(
+				(b) =>
+					b.levels >= 2 &&
+					b.staffingPct >= 25 &&
+					b.staffingPct < 60 &&
+					(unemployedByState[b.state] ?? 0) >= 5000
+			)
+			.map((b) => ({
+				type: b.type,
+				state: b.state,
+				levels: b.levels,
+				staffingPct: b.staffingPct,
+				stateUnemployed: unemployedByState[b.state]
+			}))
+			.sort((a, b) => a.staffingPct - b.staffingPct)
+	};
+}
+
 export function buildSnapshot(
 	save: unknown,
 	goods: GoodDefinition[] | null,
@@ -451,6 +561,19 @@ export function buildSnapshot(
 		),
 		trade: goods ? buildTrade(g, c, playerId, myStates, goods, stateKey) : null,
 		laws: names?.laws ? buildLaws(g, playerId, names.laws) : null,
+		people:
+			goods && names?.population
+				? buildPeople(
+						g,
+						c,
+						myStates,
+						goods,
+						names.population,
+						buildings,
+						Object.fromEntries(states.map((st) => [st.state, st.unemployed])),
+						stateKey
+					)
+				: null,
 		journal: Object.values(obj(obj(g.journal_entry_manager).database))
 			.map(obj)
 			.filter((j) => num(j.country) === playerId && j.active === true)

@@ -132,6 +132,21 @@ const samples: Advice[] = [
 		for: [{ name: 'Petite Bourgeoisie', cloutPct: 25.5, strong: true }],
 		against: [],
 		conditions: true
+	},
+	{
+		id: 'dear-basic-needs',
+		level: 'smart',
+		need: 'Basic Food',
+		vsBasePct: 31,
+		goods: [{ good: 'meat', vsBasePct: 40 }]
+	},
+	{
+		id: 'understaffed',
+		level: 'consider',
+		building: 'livestock_ranch',
+		buildingState: 'gelre',
+		staffingPct: 43,
+		stateUnemployed: 30486
 	}
 ];
 
@@ -284,5 +299,23 @@ describe('law text', () => {
 		expect(text.why).toContain('Voor: Petite Bourgeoisie (sterk) 25,5%');
 		expect(text.why).toContain('Geen enkele Interest Group is tegen.');
 		expect(text.caveat).toContain('extra voorwaarden');
+	});
+});
+
+describe('population texts', () => {
+	it('names the need, its dearest good and the split state as the game does', () => {
+		const need = adviceText(
+			samples.find((x) => x.id === 'dear-basic-needs')!,
+			'nl'
+		);
+		expect(need.title).toBe('Basic Food is duur voor je arbeiders');
+		expect(need.why).toContain('(Meat +40%)');
+		const empty = adviceText(
+			samples.find((x) => x.id === 'understaffed')!,
+			'nl',
+			NAMES
+		);
+		expect(empty.title).toBe('Livestock Ranch in Belgian Gelre blijft half leeg');
+		expect(empty.why).toContain('30.486 mensen werk zoeken');
 	});
 });

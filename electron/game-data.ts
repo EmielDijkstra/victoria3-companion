@@ -51,6 +51,8 @@ export interface GameNames {
 	productionMethods?: ProductionMethodData | null;
 	/** Laws, what ideologies think of them, and names; null when they could not be read */
 	laws?: LawData | null;
+	/** Professions, pop needs and their names; null when they could not be read */
+	population?: PopulationData | null;
 }
 
 /** Simple reader for Paradox localization lines:  KEY:0 "Text"  (the :0 is optional). */
@@ -84,7 +86,8 @@ export function readGameNames(gameDir: string | null): GameNames | null {
 			states,
 			adjectives,
 			productionMethods: readProductionMethods(gameDir),
-			laws: readLawData(gameDir)
+			laws: readLawData(gameDir),
+			population: readPopulationData(gameDir)
 		};
 	} catch {
 		return null;
@@ -265,6 +268,74 @@ export function readLawData(gameDir: string | null): LawData | null {
 			}
 		}
 		return { laws, ideologies, names };
+	} catch {
+		return null;
+	}
+}
+
+/** A need of pops and the goods that fill it, from `common/pop_needs/*.txt`. */
+export interface PopNeed {
+	need: string;
+	goods: { good: string; weight: number }[];
+}
+
+export function parsePopNeeds(text: string): PopNeed[] {
+	const out: PopNeed[] = [];
+	const clean = text.replace(/^\uFEFF/, '').replace(/#[^\n]*/g, '');
+	const starts = [...clean.matchAll(/^(popneed_[A-Za-z0-9_]+)\s*=\s*\{/gm)];
+	starts.forEach((m, i) => {
+		const body = clean.slice(m.index, starts[i + 1]?.index ?? clean.length);
+		const goods = [...body.matchAll(/entry\s*=\s*\{([^}]*)\}/g)]
+			.map((e) => ({
+				good: e[1].match(/goods\s*=\s*([a-z_]+)/)?.[1] ?? '',
+				weight: Number(e[1].match(/weight\s*=\s*([\d.]+)/)?.[1] ?? 1)
+			}))
+			.filter((g) => g.good);
+		out.push({ need: m[1], goods });
+	});
+	return out;
+}
+
+/** Top-level keys of `common/pop_types/*.txt`, files sorted by name: the save numbers professions so. */
+export function parsePopTypeKeys(text: string): string[] {
+	return [...text.replace(/^\uFEFF/, '').matchAll(/^([a-z_]+)\s*=\s*\{/gm)].map((m) => m[1]);
+}
+
+export interface PopulationData {
+	/** Professions in the order the save numbers them (0 = academics …) */
+	popTypes: string[];
+	needs: PopNeed[];
+	/** popneed_x → "Basic Food" */
+	needNames: Record<string, string>;
+}
+
+export function readPopulationData(gameDir: string | null): PopulationData | null {
+	if (!gameDir) return null;
+	const common = path.join(gameDir, 'game', 'common');
+	try {
+		const typeDir = path.join(common, 'pop_types');
+		const popTypes = readdirSync(typeDir)
+			.filter((f) => f.endsWith('.txt'))
+			.sort()
+			.flatMap((f) => parsePopTypeKeys(readFileSync(path.join(typeDir, f), 'utf8')));
+		const needDir = path.join(common, 'pop_needs');
+		const needs = readdirSync(needDir)
+			.filter((f) => f.endsWith('.txt'))
+			.sort()
+			.flatMap((f) => parsePopNeeds(readFileSync(path.join(needDir, f), 'utf8')));
+		let needNames: Record<string, string> = {};
+		try {
+			needNames = parseLocalization(
+				readFileSync(
+					path.join(gameDir, 'game', 'localization', 'english', 'goods_l_english.yml'),
+					'utf8'
+				),
+				/^popneed_[a-z_]+$/
+			);
+		} catch {
+			// names fall back to the key
+		}
+		return { popTypes, needs, needNames };
 	} catch {
 		return null;
 	}

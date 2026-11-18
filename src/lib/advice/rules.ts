@@ -101,6 +101,22 @@ export type Advice =
 			conditions: boolean;
 	  }
 	| {
+			id: 'dear-basic-needs';
+			level: 'smart';
+			need: string;
+			vsBasePct: number;
+			/** The goods of that need that are most expensive, max 2 */
+			goods: { good: string; vsBasePct: number }[];
+	  }
+	| {
+			id: 'understaffed';
+			level: 'consider';
+			building: string;
+			buildingState: string;
+			staffingPct: number;
+			stateUnemployed: number;
+	  }
+	| {
 			id: 'new-production-methods';
 			level: 'smart';
 			/** Max 4, the ones with the most building levels first */
@@ -348,6 +364,33 @@ export function adviseFor(s: Snapshot): Advice[] {
 			against: side(false),
 			conditions: lawPick.o.conditions
 		});
+	}
+
+	// Population (spike S6): expensive basic needs lower the Standard of Living of workers and
+	// peasants; half-empty buildings next to unemployed people point at missing qualifications
+	const people = s.people;
+	if (people) {
+		const need = people.needs[0];
+		if (need && need.vsBasePct >= 25) {
+			out.push({
+				id: 'dear-basic-needs',
+				level: 'smart',
+				need: need.name,
+				vsBasePct: need.vsBasePct,
+				goods: need.goods.filter((gd) => gd.vsBasePct >= 15).slice(0, 2)
+			});
+		}
+		const empty = people.understaffed[0];
+		if (empty) {
+			out.push({
+				id: 'understaffed',
+				level: 'consider',
+				building: empty.type,
+				buildingState: empty.state,
+				staffingPct: empty.staffingPct,
+				stateUnemployed: empty.stateUnemployed
+			});
+		}
 	}
 
 	// The game unlocked production methods that the player's buildings do not use yet

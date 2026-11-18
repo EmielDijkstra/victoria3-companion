@@ -48,3 +48,17 @@ test('learn about laws: feasible laws with who is for and against', async ({ pag
 	await expect(law).toContainText('Test: a police force with training.');
 	await expect(page.locator('[data-advice="law-with-support"]')).toBeVisible();
 });
+
+test('learn about population: professions, basic needs and advice', async ({ page }) => {
+	await installFakeBridge(page, { locale: 'nl' });
+	await page.goto('/');
+	await page.locator('[data-tip]').click();
+	await page.locator('[data-learn-toggle]').click();
+	await page.locator('[data-topic="population"]').click();
+
+	await expect(page.locator('[data-learn-topic="population"]')).toHaveText('Bevolking');
+	await expect(page.locator('[data-profession="peasants"]')).toContainText('628.650');
+	await expect(page.locator('[data-need="popneed_basic_food"]')).toContainText('+31%');
+	await expect(page.locator('[data-advice="dear-basic-needs"]')).toBeVisible();
+	await expect(page.locator('[data-advice="understaffed"]')).toBeVisible();
+});
