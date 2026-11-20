@@ -52,14 +52,16 @@ ironman = { ironman=no  save_interval=three_months }
 
 ## Hoe vaak autosavet het spel?
 
-- De save bewaart `save_interval=three_months`: je huidige instelling is **elk kwartaal**.
+- ~~De save bewaart `save_interval=three_months`: je huidige instelling is **elk kwartaal**.~~
+  **Correctie (17-11-2026):** dat veld is níet de instelling. Emiels autosaves van 1 augustus, 1 september
+  en 1 oktober 1848 (dus elke maand) zeggen allemaal `three_months`.
 - Het spel heeft een instelling **"Autosave Interval"** (Settings → Game → Save Games). Volgens Emiels
   schermafbeelding zijn de opties: *Never, Every month, Every three months, Every half year, Every year,
   Every five years*. Emiel heeft hem op **Every month** gezet.
 - Het spel houdt maximaal 5 autosaves (`MAX_NUMBER_OF_AUTOSAVES = 5`) plus `autosave_exit.v3`.
 - Met elke maand is de app hooguit één spelmaand achter. De app adviseert die instelling.
-- Let op: de nieuwe ironman-save bewaart zelf `save_interval=three_months`. Of de algemene instelling
-  ook voor ironman geldt, blijkt vanzelf zodra er ironman-autosaves verschijnen.
+- ~~Let op: de nieuwe ironman-save bewaart zelf `save_interval=three_months`.~~ Zie de correctie
+  hierboven: het veld zegt niets over de instelling.
 
 ## Wat nog níet is getest
 

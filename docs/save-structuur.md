@@ -17,7 +17,7 @@ Testbestand: kopie van `autosave_exit.v3`, België, 16 september 1848 (124 MB JS
 | Land (naam) | `meta_data.name` | Bijv. `"Belgium"`; `meta_data.rank` = `"minor_power"` |
 | Ironman | `meta_data.ironman` / `ironman.ironman` | `yes`/`no` (JSON: `true`/`false`) |
 | Achievements | `meta_data.game_rules.settings` bevat `"achievements_allowed"` | Of de campagne achievements toestaat |
-| Autosave-interval | `ironman.save_interval` | Bijv. `three_months` |
+| ~~Autosave-interval~~ | `ironman.save_interval` | **Niet de instelling van de speler.** Autosaves van 1 aug, 1 sep en 1 okt 1848 (dus elke maand) zeggen allemaal `three_months` (gecontroleerd 17-11-2026). Niet tonen als instelling; het echte interval is af te leiden uit de datums van opeenvolgende autosaves |
 | Campagne-id | `playthrough_id` | UUID; gebruiken om campagnes uit elkaar te houden |
 | **Speler** | `player_manager.database.<n>.country` | Land-id (België = `25`). Alle "mijn land"-gegevens hangen hieraan. |
 | **Mijn land** | `country_manager.database.<id>` | Hieronder afgekort als `C` |

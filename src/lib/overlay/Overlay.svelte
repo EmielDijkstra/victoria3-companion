@@ -2,45 +2,79 @@
 	import { onMount } from 'svelte';
 	import Emblem from './Emblem.svelte';
 	import { InteractionSync } from './interaction';
-	import type { AppStatus, PathKind } from '../status';
-	import {
-		formatClock,
-		formatGameDate,
-		formatGameDateShort,
-		intervalLabel,
-		suggestMonthlyAutosave
-	} from '../format';
+	import type { AppStatus, PathKind, PathStatus, SaveState } from '../status';
+	import { locale } from '../i18n/locale.svelte';
+	import { LOCALES, type Messages } from '../i18n/messages';
+	import { formatClock, formatGameDate, formatGameDateShort, formatSeconds } from '../format';
+
+	const t = $derived(locale.t);
+	const lang = $derived(locale.current);
 
 	let status = $state<AppStatus | null>(null);
 	const save = $derived(status?.save);
 	const summary = $derived(
 		save?.state === 'ready' ? save.summary : save?.state === 'error' ? save.summary : undefined
 	);
+	const country = $derived(summary ? summary.country || t.unknownCountry : '');
 
 	// What the small tip says
 	const tip = $derived.by(() => {
-		if (!save) return { tag: 'Companion', title: 'Opstarten…', tone: 'dim' };
+		if (!save) return { tag: t.tipTagCompanion, title: t.tipStarting, tone: 'dim' };
 		switch (save.state) {
 			case 'reading':
-				return { tag: 'Bezig', title: 'Save inlezen…', tone: 'dim' };
+				return { tag: t.tipTagBusy, title: t.tipReading, tone: 'dim' };
 			case 'ready':
 				return {
-					tag: 'Ingelezen',
-					title: `${save.summary.country} · ${formatGameDateShort(save.summary.gameDate)}`,
+					tag: t.tipTagLoaded,
+					title: `${country} · ${formatGameDateShort(save.summary.gameDate, lang)}`,
 					tone: 'good'
 				};
 			case 'error':
-				return { tag: 'Let op', title: 'Probleem – klik voor info', tone: 'bad' };
+				return { tag: t.tipTagProblem, title: t.tipProblem, tone: 'bad' };
 			default:
-				return { tag: 'Companion', title: 'Wacht op een save', tone: 'dim' };
+				return { tag: t.tipTagCompanion, title: t.tipWaiting, tone: 'dim' };
 		}
 	});
 
-	const PATH_LABELS: Record<PathKind, string> = {
-		userData: 'Saves en instellingen',
-		game: 'Spelinstallatie',
-		rakaly: 'Rakaly (leest saves)'
-	};
+	// The main process sends codes; turn them into text in the chosen language.
+	function saveMessage(s: SaveState, m: Messages): string | null {
+		if (s.state === 'waiting') {
+			return {
+				starting: m.waitingStarting,
+				'no-user-data': m.waitingNoUserData,
+				'no-saves': m.waitingNoSaves
+			}[s.reason];
+		}
+		if (s.state === 'error') {
+			const file = s.fileName ?? 'save';
+			const text = {
+				'rakaly-missing': m.errorRakalyMissing,
+				unstable: m.errorUnstable(file),
+				'read-failed': m.errorReadFailed(file),
+				unexpected: m.errorUnexpected
+			}[s.code];
+			return s.detail ? `${text} (${s.detail})` : text;
+		}
+		return null;
+	}
+
+	function pathProblem(kind: PathKind, p: PathStatus, m: Messages): string {
+		if (p.problem?.code === 'chosen-missing') return m.chosenMissing(p.problem.path);
+		return { userData: m.notFoundUserData, game: m.notFoundGame, rakaly: m.notFoundRakaly }[kind];
+	}
+
+	// Game terms stay English and are highlighted, as in the game.
+	const GAME_TERMS = ['Autosave Interval', 'Every month', 'Rakaly'];
+	function highlight(text: string): { text: string; term: boolean }[] {
+		const pattern = new RegExp(`(${GAME_TERMS.join('|')})`, 'g');
+		return text
+			.split(pattern)
+			.filter((part) => part !== '')
+			.map((part) => ({ text: part, term: GAME_TERMS.includes(part) }));
+	}
+
+	const pathLabel = (kind: PathKind) =>
+		({ userData: t.pathUserData, game: t.pathGame, rakaly: t.pathRakaly })[kind];
 	const pathKinds: PathKind[] = ['userData', 'game', 'rakaly'];
 
 	async function choosePath(kind: PathKind) {
@@ -119,6 +153,11 @@
 		reportSize();
 		return () => observer.disconnect();
 	});
+
+	// Keep the page language in sync (screen readers, hyphenation).
+	$effect(() => {
+		document.documentElement.lang = lang;
+	});
 </script>
 
 <div
@@ -127,7 +166,7 @@
 	class:opacity-80={clickThrough}
 	class:hidden={view === 'hidden'}
 	role="complementary"
-	aria-label="Victoria 3 Companion"
+	aria-label={t.appName}
 	onmouseenter={() => interaction.setHovering(true)}
 	onmousemove={() => interaction.setHovering(true)}
 	onmouseleave={() => interaction.setHovering(false)}
@@ -138,11 +177,12 @@
 			class="panel grid cursor-pointer grid-cols-[14px_30px_1fr_auto] items-center gap-2 rounded-full py-1.5 pr-2 pl-1.5"
 			role="button"
 			tabindex="0"
-			title="Klik om te openen"
+			title={t.tipOpen}
+			data-tip
 			onclick={() => setView('expanded')}
 			onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && setView('expanded')}
 		>
-			<span class="handle" role="presentation" title="Verslepen" onpointerdown={startDrag}></span>
+			<span class="handle" role="presentation" title={t.drag} onpointerdown={startDrag}></span>
 			<Emblem size={30} />
 			<span class="min-w-0">
 				<span
@@ -156,7 +196,7 @@
 			<button
 				type="button"
 				class="icon-btn"
-				title="Wegklikken (Alt+V haalt terug)"
+				title={t.hide}
 				onclick={(e) => {
 					e.stopPropagation();
 					setView('hidden');
@@ -171,135 +211,124 @@
 				<span
 					class="handle min-h-10 self-stretch"
 					role="presentation"
-					title="Verslepen"
+					title={t.drag}
 					onpointerdown={startDrag}
 				></span>
 				<Emblem size={42} />
 				<div>
-					<div class="text-[22px] leading-tight font-bold text-ink-strong">
-						Victoria 3 Companion
-					</div>
+					<div class="text-[22px] leading-tight font-bold text-ink-strong">{t.appName}</div>
 					<div class="text-[15px] text-ink-dim">
-						{#if save?.state === 'reading'}Save inlezen…{:else if summary}{summary.country} · {formatGameDate(
-								summary.gameDate
-							)}{:else}Wacht op een save{/if}
+						{#if save?.state === 'reading'}{t.tipReading}{:else if summary}{country} · {formatGameDate(
+								summary.gameDate,
+								lang
+							)}{:else}{t.tipWaiting}{/if}
 					</div>
 				</div>
 				<div class="ml-auto flex gap-0.5 self-start">
 					<button
 						type="button"
 						class="icon-btn"
-						title="Inklappen tot tipje"
+						title={t.collapse}
 						onclick={() => setView('collapsed')}>–</button
 					>
-					<button
-						type="button"
-						class="icon-btn"
-						title="Wegklikken (Alt+V haalt terug)"
-						onclick={() => setView('hidden')}>×</button
+					<button type="button" class="icon-btn" title={t.hide} onclick={() => setView('hidden')}
+						>×</button
 					>
 				</div>
 			</header>
 
 			{#if save?.state === 'error'}
-				<p class="notice mt-3">{save.message}</p>
+				<p class="notice mt-3">{saveMessage(save, t)}</p>
 			{:else if save?.state === 'waiting'}
-				<p class="mt-3 text-[15px] text-ink-dim">{save.message}</p>
+				<p class="mt-3 text-[15px] text-ink-dim">{saveMessage(save, t)}</p>
 			{/if}
 
 			{#if summary}
-				<div class="band">Je spel</div>
+				<div class="band">{t.sectionGame}</div>
 				<dl class="facts">
-					<dt>Land</dt>
-					<dd>{summary.country}</dd>
-					<dt>Datum</dt>
-					<dd>{formatGameDate(summary.gameDate)}</dd>
-					<dt>Spelversie</dt>
+					<dt>{t.factCountry}</dt>
+					<dd>{country}</dd>
+					<dt>{t.factDate}</dt>
+					<dd>{formatGameDate(summary.gameDate, lang)}</dd>
+					<dt>{t.factVersion}</dt>
 					<dd>{summary.gameVersion}</dd>
-					<dt>Modus</dt>
+					<dt>{t.factMode}</dt>
 					<dd>
-						{summary.ironman ? 'Ironman' : 'Gewone save'} · achievements
-						{summary.achievementsAllowed ? 'aan' : 'uit'}
+						{summary.ironman ? t.modeIronman : t.modeNormal} · {t.achievements(
+							summary.achievementsAllowed
+						)}
 					</dd>
-					<dt>Save</dt>
+					<dt>{t.factSave}</dt>
 					<dd class="truncate" title={summary.fileName}>{summary.fileName}</dd>
-					<dt>Ingelezen</dt>
-					<dd>
-						om {formatClock(summary.readAt)} ({(summary.durationMs / 1000).toLocaleString('nl-NL', {
-							maximumFractionDigits: 1
-						})} s)
-					</dd>
-					{#if summary.ironman && summary.autosaveInterval}
-						<!-- Ironman may fix the interval when the campaign starts: show it, don't advise. -->
-						<dt>Autosave</dt>
-						<dd>{intervalLabel(summary.autosaveInterval)}</dd>
-					{/if}
+					<dt>{t.factReadAt}</dt>
+					<dd>{t.readAt(formatClock(summary.readAt), formatSeconds(summary.durationMs, lang))}</dd>
 				</dl>
-				{#if !summary.ironman && suggestMonthlyAutosave(summary.autosaveInterval)}
-					<p class="mt-2 text-[15px] leading-snug text-ink-dim">
-						Je autosave staat op <b class="text-ink-strong"
-							>{intervalLabel(summary.autosaveInterval)}</b
-						>. Zet in het spel <span class="text-concept">Autosave Interval</span> op
-						<b class="text-ink-strong">Every month</b>, dan loop ik hooguit één maand achter.
-					</p>
-				{/if}
 
-				<div class="band">Advies</div>
-				<p class="text-[15px] leading-snug text-ink-dim">
-					Je save is ingelezen. Advies op basis van je spel volgt in een volgende versie.
-				</p>
+				<div class="band">{t.sectionAdvice}</div>
+				<p class="text-[15px] leading-snug text-ink-dim">{t.adviceComingSoon}</p>
 			{:else if save?.state !== 'reading'}
 				<p class="mt-2 text-[15px] text-ink-dim">
-					Tip: zet in het spel <span class="text-concept">Autosave Interval</span> op
-					<b class="text-ink-strong">Every month</b>.
+					{#each highlight(t.autosaveTip) as part, i (i)}{#if part.term}<span class="text-concept"
+								>{part.text}</span
+							>{:else}{part.text}{/if}{/each}
 				</p>
 			{/if}
 
 			{#if status}
-				<div class="band">Mappen</div>
+				<div class="band">{t.sectionFolders}</div>
 				<ul class="flex flex-col gap-2">
 					{#each pathKinds as kind (kind)}
 						{@const p = status.paths[kind]}
 						<li class="text-[14.5px] leading-snug">
 							<div class="flex items-baseline justify-between gap-2">
-								<span class="text-ink-strong">{PATH_LABELS[kind]}</span>
+								<span class="text-ink-strong">{pathLabel(kind)}</span>
 								<span class="flex flex-none gap-1">
 									<button type="button" class="small-btn" onclick={() => choosePath(kind)}
-										>Kies…</button
+										>{t.choose}</button
 									>
 									{#if p.source === 'manual'}
 										<button
 											type="button"
 											class="small-btn"
-											title="Weer automatisch zoeken"
-											onclick={() => resetPath(kind)}>Auto</button
+											title={t.autoTitle}
+											onclick={() => resetPath(kind)}>{t.auto}</button
 										>
 									{/if}
 								</span>
 							</div>
 							{#if p.path}
 								<div class="truncate text-ink-dim" title={p.path}>
-									{p.source === 'manual' ? 'Zelf gekozen: ' : 'Gevonden: '}{p.path}
+									{p.source === 'manual' ? t.pathChosen : t.pathFound}{p.path}
 								</div>
 							{:else}
-								<div class="text-bad">{p.problem}</div>
+								<div class="text-bad">{pathProblem(kind, p, t)}</div>
 							{/if}
 						</li>
 					{/each}
 				</ul>
 				{#if status.installedVersion}
 					<p class="mt-1 text-[13.5px] text-ink-dim">
-						Geïnstalleerde versie: {status.installedVersion}
+						{t.installedVersion(status.installedVersion)}
 					</p>
 				{/if}
 			{/if}
 
-			<p
-				class="mt-3 border-t border-[rgba(255,240,200,0.1)] pt-2 text-[13.5px] leading-snug text-ink-dim"
+			<div
+				class="mt-3 flex items-center justify-between gap-3 border-t border-[rgba(255,240,200,0.1)] pt-2"
 			>
-				Sleep aan ⠿ om te verplaatsen · – inklappen · × wegklikken · Alt+V terughalen · Alt+C alles
-				doorklikbaar
-			</p>
+				<p class="text-[13.5px] leading-snug text-ink-dim">{t.controlsHelp}</p>
+				<div class="flex flex-none gap-1" role="group" aria-label={t.language}>
+					{#each LOCALES as option (option)}
+						<button
+							type="button"
+							class="lang-btn"
+							class:active={option === lang}
+							aria-pressed={option === lang}
+							onclick={() => locale.set(option)}>{option.toUpperCase()}</button
+						>
+					{/each}
+				</div>
+			</div>
 		</section>
 	{/if}
 </div>
@@ -391,6 +420,22 @@
 		font: 500 13.5px/1.5 var(--font-serif);
 		cursor: pointer;
 	}
+	.lang-btn {
+		padding: 0 6px;
+		border: 1px solid var(--color-panel-edge);
+		border-radius: 3px;
+		background: none;
+		color: var(--color-ink-dim);
+		font: 600 12.5px/1.6 var(--font-serif);
+		letter-spacing: 0.5px;
+		cursor: pointer;
+	}
+	.lang-btn.active {
+		color: #f1f4e4;
+		border-color: var(--color-button-edge);
+		background: linear-gradient(180deg, var(--color-button-top), var(--color-button-bottom));
+	}
+
 	.small-btn:hover {
 		filter: brightness(1.12);
 	}

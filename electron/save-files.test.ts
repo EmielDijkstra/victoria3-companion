@@ -80,7 +80,7 @@ describe('summarizeSave', () => {
 
 	it('copes with a save that misses fields', () => {
 		const s = summarizeSave({}, meta);
-		expect(s.country).toBe('Onbekend land');
+		expect(s.country).toBe('');
 		expect(s.ironman).toBe(false);
 		expect(s.autosaveInterval).toBeNull();
 	});
