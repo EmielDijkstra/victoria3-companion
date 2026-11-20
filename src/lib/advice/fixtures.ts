@@ -184,6 +184,27 @@ export function belgium(patch: (s: Snapshot) => void = () => {}): Snapshot {
 				}
 			]
 		},
+		diplomacy: {
+			friends: [
+				{ tag: 'FRA', name: 'France', relations: 100 },
+				{ tag: 'GBR', name: 'Great Britain', relations: 80 }
+			],
+			hostile: [],
+			rivals: [{ tag: 'NET', name: 'Netherlands' }],
+			separatism: [{ tag: 'NET', name: 'Netherlands' }],
+			guarantors: [
+				{ tag: 'GBR', name: 'Great Britain' },
+				{ tag: 'PRU', name: 'Prussia' }
+			],
+			lobbies: [
+				{
+					target: { tag: 'FRA', name: 'France' },
+					pro: true,
+					appeasement: 0,
+					groups: ['Armed Forces', 'Intelligentsia']
+				}
+			]
+		},
 		journal: [
 			{ type: 'je_tutorial_grow_gdp', value: 3916769, goal: 4895962, since: '1839.3.4' },
 			{ type: 'je_without_texts', value: 0, goal: 0, since: '1840.1.1' }

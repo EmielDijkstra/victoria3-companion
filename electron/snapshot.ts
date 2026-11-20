@@ -7,6 +7,7 @@ import {
 	type LawGroupInfo,
 	type LawStance,
 	type NewProductionMethod,
+	type DiplomacyInfo,
 	type PeopleInfo,
 	type TechInfo,
 	type TradeInfo,
@@ -449,6 +450,64 @@ export function buildTech(
 	};
 }
 
+/** Relations, rivals, separatism, guarantees and lobbies of the player (spike S6). */
+export function buildDiplomacy(g: Json, playerId: number, names: GameNames | null): DiplomacyInfo {
+	const countries = obj(obj(g.country_manager).database);
+	const ref = (id: number) => {
+		const tag = str(obj(countries[String(id)]).definition) || String(id);
+		return { tag, name: names?.countries?.[tag] ?? tag };
+	};
+	const relations = Object.values(obj(obj(g.relations).database))
+		.map(obj)
+		.filter(
+			(r) => num(obj(r.first).country) === playerId || num(obj(r.second).country) === playerId
+		)
+		.map((r) => {
+			const first = num(obj(r.first).country);
+			const other = first === playerId ? num(obj(r.second).country) : first;
+			return { ...ref(other), relations: round(num(r.relations)) };
+		});
+	const pacts = Object.values(obj(obj(g.pacts).database)).map(obj);
+	const pact = (action: string, fromPlayer: boolean) =>
+		pacts
+			.filter((p) => str(p.action) === action)
+			.filter((p) =>
+				fromPlayer
+					? num(obj(p.targets).first) === playerId
+					: num(obj(p.targets).second) === playerId
+			)
+			.map((p) => ref(num(obj(p.targets)[fromPlayer ? 'second' : 'first'])));
+	const igName = (id: number) => {
+		const key = str(obj(obj(obj(g.interest_groups).database)[String(id)]).definition);
+		return names?.laws?.names[key] ?? titleCase(strip(key, 'ig_'));
+	};
+
+	return {
+		friends: relations
+			.filter((r) => r.relations >= 50)
+			.sort((a, b) => b.relations - a.relations)
+			.slice(0, 3),
+		hostile: relations.filter((r) => r.relations <= -20).sort((a, b) => a.relations - b.relations),
+		rivals: pact('rivalry', true),
+		separatism: pact('support_separatism', false),
+		guarantors: Object.values(obj(obj(g.treaty_article_manager).database))
+			.map(obj)
+			.filter(
+				(a) => str(a.article) === 'guarantee_independence' && num(a.target_country) === playerId
+			)
+			.map((a) => ref(num(a.source_country))),
+		lobbies: Object.values(obj(obj(g.political_lobbies).database))
+			.map(obj)
+			.filter((l) => num(l.country) === playerId)
+			.map((l) => ({
+				target: ref(num(l.target_country)),
+				pro: str(l.type) === 'lobby_pro_country',
+				appeasement: round(num(l.appeasement)),
+				groups: arr(l.members).map(num).map(igName)
+			}))
+	};
+}
+
 export function buildSnapshot(
 	save: unknown,
 	goods: GoodDefinition[] | null,
@@ -644,6 +703,7 @@ export function buildSnapshot(
 		technology: names?.technology
 			? buildTech(g, playerId, myStates, names.technology, names.productionMethods ?? null)
 			: null,
+		diplomacy: buildDiplomacy(g, playerId, names),
 		journal: Object.values(obj(obj(g.journal_entry_manager).database))
 			.map(obj)
 			.filter((j) => num(j.country) === playerId && j.active === true)

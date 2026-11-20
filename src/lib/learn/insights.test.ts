@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { belgium } from '../advice/fixtures';
-import { lawInsights, peopleInsights, techInsights, tradeInsights } from './insights';
+import {
+	diplomacyInsights,
+	lawInsights,
+	peopleInsights,
+	techInsights,
+	tradeInsights
+} from './insights';
 
 const place = (key: string) => ({ gelre: 'Belgian Gelre' })[key] ?? key;
 
@@ -71,6 +77,16 @@ describe('techInsights', () => {
 			'Psychiatry en Shell Gun verspreiden zich vanuit andere landen naar jou: daar krijg je vanzelf voortgang op.',
 			'Ook nuttig: Steel-Frame Buildings geeft Covered Markets aan je Urban Center.',
 			'Geletterdheid is 42%. Meer geletterdheid en Universities geven meer Innovation, dus sneller onderzoek.'
+		]);
+	});
+});
+
+describe('diplomacyInsights', () => {
+	it('explains friends, guarantees and what a lobby wants', () => {
+		expect(diplomacyInsights(belgium(), 'nl')).toEqual([
+			'Je beste relaties heb je met France en Great Britain: logische partners voor handel en verdragen.',
+			'Great Britain en Prussia garanderen je onafhankelijkheid. Wie jou bedreigt, krijgt met hen te maken.',
+			'Armed Forces en Intelligentsia vormen een lobby voor France. Goede relaties en verdragen met France houden hen tevreden.'
 		]);
 	});
 });

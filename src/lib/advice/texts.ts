@@ -232,6 +232,25 @@ const nl: Table = {
 			`Zoek ${a.tech} en klik op Research, of zet hem in de wachtrij.`
 		]
 	}),
+	'separatism-support': (a) => ({
+		title: `${a.country} steunt separatisme in jouw land`,
+		why: `${a.country} steunt bewegingen die zich van je land willen afscheiden. Die worden daardoor sterker, vooral onder groepen die zich al achtergesteld voelen.${a.rival ? ` ${a.country} is ook je rivaal.` : ''}`,
+		caveat:
+			'tevreden minderheden zijn de beste verdediging: hun Standard of Living en je Citizenship-wet tellen mee.',
+		how: [
+			'Open het Politics-scherm en kijk bij Political Movements of er een afscheidingsbeweging groeit.',
+			`Verbeter je relatie met ${a.country}, of zoek steun bij landen die je onafhankelijkheid garanderen.`
+		]
+	}),
+	'unhappy-lobby': (a) => ({
+		title: `De lobby ${a.pro ? 'voor' : 'tegen'} ${a.country} is ontevreden`,
+		why: `${list(a.groups, 'nl')} ${a.groups.length === 1 ? 'wil' : 'willen'} ${a.pro ? 'betere banden' : 'meer afstand'} met ${a.country}, en vinden dat je daar te weinig aan doet. Hun Approval daalt.`,
+		caveat: 'je hoeft niet alles te doen wat een lobby wil; weeg het af tegen je andere doelen.',
+		how: [
+			'Open het Politics-scherm en kies de lobby.',
+			`Kijk welke acties de lobby tevreden maken, ${a.pro ? 'zoals relaties verbeteren of een verdrag sluiten' : 'zoals een rivaliteit of minder verdragen'}.`
+		]
+	}),
 	'new-production-methods': (a, _l, place) => ({
 		title:
 			a.methods.length === 1
@@ -464,6 +483,25 @@ const en: Table = {
 		how: [
 			'Open the Technology screen.',
 			`Find ${a.tech} and click Research, or add it to the queue.`
+		]
+	}),
+	'separatism-support': (a) => ({
+		title: `${a.country} supports separatism in your country`,
+		why: `${a.country} backs movements that want to break away from your country. They grow stronger, especially among groups that already feel left behind.${a.rival ? ` ${a.country} is also your rival.` : ''}`,
+		caveat:
+			'content minorities are the best defence: their Standard of Living and your Citizenship law matter.',
+		how: [
+			'Open the Politics screen and check Political Movements for a growing secession movement.',
+			`Improve your relations with ${a.country}, or seek support from countries that guarantee your independence.`
+		]
+	}),
+	'unhappy-lobby': (a) => ({
+		title: `The lobby ${a.pro ? 'for' : 'against'} ${a.country} is unhappy`,
+		why: `${list(a.groups, 'en')} ${a.groups.length === 1 ? 'wants' : 'want'} ${a.pro ? 'closer ties' : 'more distance'} with ${a.country} and feel you do too little about it. Their Approval drops.`,
+		caveat: 'you do not have to do everything a lobby wants; weigh it against your other goals.',
+		how: [
+			'Open the Politics screen and choose the lobby.',
+			`See which actions please the lobby, ${a.pro ? 'such as improving relations or signing a treaty' : 'such as a rivalry or fewer treaties'}.`
 		]
 	}),
 	'new-production-methods': (a, _l, place) => ({

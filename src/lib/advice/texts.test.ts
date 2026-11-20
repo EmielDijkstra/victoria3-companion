@@ -157,6 +157,14 @@ const samples: Advice[] = [
 		pm: 'Steam Donkey',
 		buildings: ['logging_camp', 'iron_mine'],
 		levels: 20
+	},
+	{ id: 'separatism-support', level: 'warn', country: 'Netherlands', rival: true },
+	{
+		id: 'unhappy-lobby',
+		level: 'warn',
+		country: 'France',
+		pro: true,
+		groups: ['Armed Forces', 'Intelligentsia']
 	}
 ];
 
@@ -339,5 +347,22 @@ describe('research text', () => {
 		expect(text.why).toBe(
 			'Steam Donkey geeft de Production Method Steam Donkey aan je Logging Camp en Iron Mine (samen 20 levels). Je onderzoekt nu Canneries; dat helpt minder van je gebouwen.'
 		);
+	});
+});
+
+describe('diplomacy texts', () => {
+	it('names the country and the groups', () => {
+		const sep = adviceText(
+			samples.find((x) => x.id === 'separatism-support')!,
+			'nl'
+		);
+		expect(sep.title).toBe('Netherlands steunt separatisme in jouw land');
+		expect(sep.why).toContain('Netherlands is ook je rivaal.');
+		const lobby = adviceText(
+			samples.find((x) => x.id === 'unhappy-lobby')!,
+			'en'
+		);
+		expect(lobby.title).toBe('The lobby for France is unhappy');
+		expect(lobby.why).toContain('Armed Forces and Intelligentsia want closer ties with France');
 	});
 });

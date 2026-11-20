@@ -47,6 +47,8 @@ export interface GameNames {
 	states: Record<string, string>;
 	/** BEL → "Belgian" */
 	adjectives: Record<string, string>;
+	/** BEL → "Belgium" (optional: older callers and tests leave it out) */
+	countries?: Record<string, string>;
 	/** Production method groups and names; null when they could not be read */
 	productionMethods?: ProductionMethodData | null;
 	/** Laws, what ideologies think of them, and names; null when they could not be read */
@@ -76,17 +78,22 @@ export function readGameNames(gameDir: string | null): GameNames | null {
 			readFileSync(path.join(loc, 'map', 'states_l_english.yml'), 'utf8'),
 			/^STATE_/
 		);
+		const countryLoc = parseLocalization(
+			readFileSync(path.join(loc, 'countries_l_english.yml'), 'utf8'),
+			/^[A-Z0-9]{3}(_ADJ)?$/
+		);
 		const adjectives = Object.fromEntries(
-			Object.entries(
-				parseLocalization(
-					readFileSync(path.join(loc, 'countries_l_english.yml'), 'utf8'),
-					/^[A-Z0-9]{3}_ADJ$/
-				)
-			).map(([k, v]) => [k.slice(0, -4), v])
+			Object.entries(countryLoc)
+				.filter(([k]) => k.endsWith('_ADJ'))
+				.map(([k, v]) => [k.slice(0, -4), v])
+		);
+		const countries = Object.fromEntries(
+			Object.entries(countryLoc).filter(([k]) => !k.endsWith('_ADJ'))
 		);
 		return {
 			states,
 			adjectives,
+			countries,
 			productionMethods: readProductionMethods(gameDir),
 			laws: readLawData(gameDir),
 			population: readPopulationData(gameDir),
