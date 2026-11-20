@@ -6,6 +6,10 @@
 	import { locale } from '../i18n/locale.svelte';
 	import { LOCALES, type Messages } from '../i18n/messages';
 	import { formatClock, formatGameDate, formatGameDateShort, formatSeconds } from '../format';
+	import { adviseFor } from '../advice/rules';
+	import { adviceText, LEVEL_LABEL } from '../advice/texts';
+	import AdviceList from './AdviceList.svelte';
+	import GameText from './GameText.svelte';
 
 	const t = $derived(locale.t);
 	const lang = $derived(locale.current);
@@ -15,15 +19,30 @@
 	const summary = $derived(
 		save?.state === 'ready' ? save.summary : save?.state === 'error' ? save.summary : undefined
 	);
+	const snapshot = $derived(
+		save?.state === 'ready' ? save.snapshot : save?.state === 'error' ? save.snapshot : undefined
+	);
+	const advice = $derived(snapshot ? adviseFor(snapshot) : []);
+	// State names as the game shows them ("Belgian Gelre" for a split state)
+	const stateNames = $derived(snapshot?.stateNames ?? {});
 	const country = $derived(summary ? summary.country || t.unknownCountry : '');
 
-	// What the small tip says
+	const TONE = { urgent: 'bad', warn: 'warn', smart: 'concept', patience: 'good', consider: 'dim' };
+
+	// What the small tip says: the most important advice, or the loading state
 	const tip = $derived.by(() => {
 		if (!save) return { tag: t.tipTagCompanion, title: t.tipStarting, tone: 'dim' };
 		switch (save.state) {
 			case 'reading':
 				return { tag: t.tipTagBusy, title: t.tipReading, tone: 'dim' };
 			case 'ready':
+				if (advice.length > 0) {
+					return {
+						tag: LEVEL_LABEL[lang][advice[0].level],
+						title: adviceText(advice[0], lang, stateNames).title,
+						tone: TONE[advice[0].level]
+					};
+				}
 				return {
 					tag: t.tipTagLoaded,
 					title: `${country} · ${formatGameDateShort(save.summary.gameDate, lang)}`,
@@ -63,16 +82,6 @@
 		return { userData: m.notFoundUserData, game: m.notFoundGame, rakaly: m.notFoundRakaly }[kind];
 	}
 
-	// Game terms stay English and are highlighted, as in the game.
-	const GAME_TERMS = ['Autosave Interval', 'Every month', 'Rakaly'];
-	function highlight(text: string): { text: string; term: boolean }[] {
-		const pattern = new RegExp(`(${GAME_TERMS.join('|')})`, 'g');
-		return text
-			.split(pattern)
-			.filter((part) => part !== '')
-			.map((part) => ({ text: part, term: GAME_TERMS.includes(part) }));
-	}
-
 	const pathLabel = (kind: PathKind) =>
 		({ userData: t.pathUserData, game: t.pathGame, rakaly: t.pathRakaly })[kind];
 	const pathKinds: PathKind[] = ['userData', 'game', 'rakaly'];
@@ -87,6 +96,9 @@
 	type View = 'collapsed' | 'expanded' | 'hidden';
 
 	let view = $state<View>('collapsed');
+	// Settings (game facts, folders, language) are rarely needed once it runs: separate view
+	let showSettings = $state(false);
+	const pathTrouble = $derived(status ? Object.values(status.paths).some((p) => p.problem) : false);
 	let root: HTMLDivElement;
 	let clickThrough = $state(false);
 
@@ -174,7 +186,7 @@
 	{#if view === 'collapsed'}
 		<!-- The tip: small, out of the way, click to open -->
 		<div
-			class="panel grid cursor-pointer grid-cols-[14px_30px_1fr_auto] items-center gap-2 rounded-full py-1.5 pr-2 pl-1.5"
+			class="panel grid cursor-pointer grid-cols-[14px_30px_1fr_auto_auto] items-center gap-2 rounded-full py-1.5 pr-2 pl-1.5"
 			role="button"
 			tabindex="0"
 			title={t.tipOpen}
@@ -189,10 +201,17 @@
 					class="block text-[12.5px] leading-none tracking-wider uppercase"
 					class:text-ink-dim={tip.tone === 'dim'}
 					class:text-good={tip.tone === 'good'}
-					class:text-bad={tip.tone === 'bad'}>{tip.tag}</span
+					class:text-bad={tip.tone === 'bad'}
+					class:text-warn={tip.tone === 'warn'}
+					class:text-concept={tip.tone === 'concept'}>{tip.tag}</span
 				>
-				<span class="block truncate text-base font-semibold text-ink-strong">{tip.title}</span>
+				<span class="block truncate text-base font-semibold text-ink-strong" title={tip.title}
+					>{tip.title}</span
+				>
 			</span>
+			{#if advice.length > 1}
+				<span class="badge" title={t.adviceCount(advice.length)}>{advice.length}</span>
+			{/if}
 			<button
 				type="button"
 				class="icon-btn"
@@ -237,87 +256,100 @@
 				</div>
 			</header>
 
-			{#if save?.state === 'error'}
-				<p class="notice mt-3">{saveMessage(save, t)}</p>
-			{:else if save?.state === 'waiting'}
-				<p class="mt-3 text-[15px] text-ink-dim">{saveMessage(save, t)}</p>
-			{/if}
-
-			{#if summary}
-				<div class="band">{t.sectionGame}</div>
-				<dl class="facts">
-					<dt>{t.factCountry}</dt>
-					<dd>{country}</dd>
-					<dt>{t.factDate}</dt>
-					<dd>{formatGameDate(summary.gameDate, lang)}</dd>
-					<dt>{t.factVersion}</dt>
-					<dd>{summary.gameVersion}</dd>
-					<dt>{t.factMode}</dt>
-					<dd>
-						{summary.ironman ? t.modeIronman : t.modeNormal} · {t.achievements(
-							summary.achievementsAllowed
-						)}
-					</dd>
-					<dt>{t.factSave}</dt>
-					<dd class="truncate" title={summary.fileName}>{summary.fileName}</dd>
-					<dt>{t.factReadAt}</dt>
-					<dd>{t.readAt(formatClock(summary.readAt), formatSeconds(summary.durationMs, lang))}</dd>
-				</dl>
-
-				<div class="band">{t.sectionAdvice}</div>
-				<p class="text-[15px] leading-snug text-ink-dim">{t.adviceComingSoon}</p>
-			{:else if save?.state !== 'reading'}
-				<p class="mt-2 text-[15px] text-ink-dim">
-					{#each highlight(t.autosaveTip) as part, i (i)}{#if part.term}<span class="text-concept"
-								>{part.text}</span
-							>{:else}{part.text}{/if}{/each}
-				</p>
-			{/if}
-
-			{#if status}
-				<div class="band">{t.sectionFolders}</div>
-				<ul class="flex flex-col gap-2">
-					{#each pathKinds as kind (kind)}
-						{@const p = status.paths[kind]}
-						<li class="text-[14.5px] leading-snug">
-							<div class="flex items-baseline justify-between gap-2">
-								<span class="text-ink-strong">{pathLabel(kind)}</span>
-								<span class="flex flex-none gap-1">
-									<button type="button" class="small-btn" onclick={() => choosePath(kind)}
-										>{t.choose}</button
-									>
-									{#if p.source === 'manual'}
-										<button
-											type="button"
-											class="small-btn"
-											title={t.autoTitle}
-											onclick={() => resetPath(kind)}>{t.auto}</button
-										>
-									{/if}
-								</span>
-							</div>
-							{#if p.path}
-								<div class="truncate text-ink-dim" title={p.path}>
-									{p.source === 'manual' ? t.pathChosen : t.pathFound}{p.path}
-								</div>
-							{:else}
-								<div class="text-bad">{pathProblem(kind, p, t)}</div>
-							{/if}
-						</li>
-					{/each}
-				</ul>
-				{#if status.installedVersion}
-					<p class="mt-1 text-[13.5px] text-ink-dim">
-						{t.installedVersion(status.installedVersion)}
+			{#if !showSettings}
+				<!-- Advice view: what the player needs during play -->
+				{#if save?.state === 'error'}
+					<p class="notice mt-3">{saveMessage(save, t)}</p>
+				{:else if save?.state === 'waiting'}
+					<p class="mt-3 text-[15px] text-ink-dim">{saveMessage(save, t)}</p>
+				{/if}
+				{#if pathTrouble}
+					<p class="notice mt-3">
+						{t.settingsProblem}
+						<button type="button" class="link-btn" onclick={() => (showSettings = true)}
+							>{t.openSettings}</button
+						>
 					</p>
 				{/if}
-			{/if}
 
-			<div
-				class="mt-3 flex items-center justify-between gap-3 border-t border-[rgba(255,240,200,0.1)] pt-2"
-			>
-				<p class="text-[13.5px] leading-snug text-ink-dim">{t.controlsHelp}</p>
-				<div class="flex flex-none gap-1" role="group" aria-label={t.language}>
+				{#if snapshot}
+					<div class="band">{t.sectionAdvice}</div>
+					{#if !snapshot.versionTested}
+						<p class="notice mb-2">{t.untestedVersion(snapshot.gameVersion)}</p>
+					{/if}
+					<AdviceList {advice} {stateNames} gameVersion={snapshot.gameVersion} />
+				{:else if save?.state !== 'reading'}
+					<p class="mt-2 text-[15px] text-ink-dim"><GameText text={t.autosaveTip} /></p>
+				{/if}
+			{:else}
+				<!-- Settings view: rarely needed once it runs -->
+				<div class="band">{t.settings}</div>
+
+				{#if summary}
+					<h3 class="sub">{t.sectionGame}</h3>
+					<dl class="facts">
+						<dt>{t.factCountry}</dt>
+						<dd>{country}</dd>
+						<dt>{t.factDate}</dt>
+						<dd>{formatGameDate(summary.gameDate, lang)}</dd>
+						<dt>{t.factVersion}</dt>
+						<dd>{summary.gameVersion}</dd>
+						<dt>{t.factMode}</dt>
+						<dd>
+							{summary.ironman ? t.modeIronman : t.modeNormal} · {t.achievements(
+								summary.achievementsAllowed
+							)}
+						</dd>
+						<dt>{t.factSave}</dt>
+						<dd class="truncate" title={summary.fileName}>{summary.fileName}</dd>
+						<dt>{t.factReadAt}</dt>
+						<dd>
+							{t.readAt(formatClock(summary.readAt), formatSeconds(summary.durationMs, lang))}
+						</dd>
+					</dl>
+				{/if}
+
+				{#if status}
+					<h3 class="sub">{t.sectionFolders}</h3>
+					<ul class="flex flex-col gap-2">
+						{#each pathKinds as kind (kind)}
+							{@const p = status.paths[kind]}
+							<li class="text-[14.5px] leading-snug">
+								<div class="flex items-baseline justify-between gap-2">
+									<span class="text-ink-strong">{pathLabel(kind)}</span>
+									<span class="flex flex-none gap-1">
+										<button type="button" class="small-btn" onclick={() => choosePath(kind)}
+											>{t.choose}</button
+										>
+										{#if p.source === 'manual'}
+											<button
+												type="button"
+												class="small-btn"
+												title={t.autoTitle}
+												onclick={() => resetPath(kind)}>{t.auto}</button
+											>
+										{/if}
+									</span>
+								</div>
+								{#if p.path}
+									<div class="truncate text-ink-dim" title={p.path}>
+										{p.source === 'manual' ? t.pathChosen : t.pathFound}{p.path}
+									</div>
+								{:else}
+									<div class="text-bad">{pathProblem(kind, p, t)}</div>
+								{/if}
+							</li>
+						{/each}
+					</ul>
+					{#if status.installedVersion}
+						<p class="mt-1 text-[13.5px] text-ink-dim">
+							{t.installedVersion(status.installedVersion)}
+						</p>
+					{/if}
+				{/if}
+
+				<h3 class="sub">{t.language}</h3>
+				<div class="flex gap-1" role="group" aria-label={t.language}>
 					{#each LOCALES as option (option)}
 						<button
 							type="button"
@@ -328,6 +360,19 @@
 						>
 					{/each}
 				</div>
+
+				<h3 class="sub">{t.controls}</h3>
+				<p class="text-[14px] leading-snug text-ink-dim">{t.controlsHelp}</p>
+			{/if}
+
+			<div class="mt-3 flex justify-end border-t border-[rgba(255,240,200,0.1)] pt-2">
+				<button
+					type="button"
+					class="small-btn"
+					data-settings-toggle
+					onclick={() => (showSettings = !showSettings)}
+					>{showSettings ? t.backToAdvice : `⚙ ${t.settings}`}</button
+				>
 			</div>
 		</section>
 	{/if}
@@ -420,6 +465,23 @@
 		font: 500 13.5px/1.5 var(--font-serif);
 		cursor: pointer;
 	}
+	.sub {
+		margin: 12px 0 6px;
+		font-size: 15px;
+		font-weight: 600;
+		color: var(--color-ink-strong);
+	}
+
+	.link-btn {
+		border: 0;
+		padding: 0;
+		background: none;
+		color: var(--color-concept);
+		font: inherit;
+		text-decoration: underline;
+		cursor: pointer;
+	}
+
 	.lang-btn {
 		padding: 0 6px;
 		border: 1px solid var(--color-panel-edge);
@@ -438,6 +500,19 @@
 
 	.small-btn:hover {
 		filter: brightness(1.12);
+	}
+
+	.badge {
+		display: grid;
+		place-items: center;
+		min-width: 22px;
+		height: 22px;
+		padding: 0 6px;
+		border-radius: 11px;
+		background: var(--color-warn);
+		color: #1d1a15;
+		font-size: 13.5px;
+		font-weight: 700;
 	}
 
 	.icon-btn:hover {

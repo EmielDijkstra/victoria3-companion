@@ -3,7 +3,9 @@
 import { existsSync, watch, type FSWatcher } from 'node:fs';
 import path from 'node:path';
 import { Worker } from 'node:worker_threads';
+import type { Snapshot } from '../src/lib/snapshot';
 import type { AppStatus, PathKind, PathStatus, SaveSummary } from '../src/lib/status';
+import { readGameNames, readGoods, type GameNames, type GoodDefinition } from './game-data';
 import {
 	findGameDir,
 	findUserDataDir,
@@ -36,6 +38,8 @@ export class Companion {
 	private reading = false;
 	private pending = false;
 	private lastRead: { name: string; mtimeMs: number } | null = null;
+	private goods: GoodDefinition[] | null = null;
+	private names: GameNames | null = null;
 
 	constructor(private readonly opts: CompanionOptions) {
 		this.settings = loadSettings(this.settingsFile);
@@ -64,6 +68,8 @@ export class Companion {
 		this.stopWatching();
 		this.lastRead = null;
 		const paths = this.resolvePaths();
+		this.goods = readGoods(paths.game.path);
+		this.names = readGameNames(paths.game.path);
 		this.status = {
 			...this.status,
 			paths,
@@ -157,21 +163,22 @@ export class Companion {
 			const copy = await copyToWorkDir(original, path.join(this.opts.appDataDir, 'work'));
 			const result = await this.readInWorker(copy, newest.name);
 			this.lastRead = { name: newest.name, mtimeMs: newest.mtimeMs };
-			if (result.ok) this.setSave({ state: 'ready', summary: result.summary });
+			if (result.ok)
+				this.setSave({ state: 'ready', summary: result.summary, snapshot: result.snapshot });
 			else
 				this.setSave({
 					state: 'error',
 					code: 'read-failed',
 					fileName: newest.name,
 					detail: result.message,
-					summary: this.lastSummary()
+					...this.lastGood()
 				});
 		} catch (error) {
 			this.setSave({
 				state: 'error',
 				code: 'unexpected',
 				detail: error instanceof Error ? error.message : String(error),
-				summary: this.lastSummary()
+				...this.lastGood()
 			});
 		} finally {
 			this.reading = false;
@@ -185,10 +192,18 @@ export class Companion {
 	private readInWorker(
 		savePath: string,
 		fileName: string
-	): Promise<{ ok: true; summary: SaveSummary } | { ok: false; message: string }> {
+	): Promise<
+		{ ok: true; summary: SaveSummary; snapshot: Snapshot } | { ok: false; message: string }
+	> {
 		return new Promise((resolve) => {
 			const worker = new Worker(this.opts.workerScript, {
-				workerData: { savePath, fileName, rakalyPath: this.status.paths.rakaly.path }
+				workerData: {
+					savePath,
+					fileName,
+					rakalyPath: this.status.paths.rakaly.path,
+					goods: this.goods,
+					names: this.names
+				}
 			});
 			worker.once('message', resolve);
 			worker.once('error', (e) => resolve({ ok: false, message: e.message }));
@@ -198,9 +213,12 @@ export class Companion {
 		});
 	}
 
-	private lastSummary(): SaveSummary | undefined {
+	/** Keep showing the last good result when a newer save fails. */
+	private lastGood(): { summary?: SaveSummary; snapshot?: Snapshot } {
 		const s = this.status.save;
-		return s.state === 'ready' ? s.summary : s.state === 'error' ? s.summary : undefined;
+		if (s.state === 'ready') return { summary: s.summary, snapshot: s.snapshot };
+		if (s.state === 'error') return { summary: s.summary, snapshot: s.snapshot };
+		return {};
 	}
 
 	private setSave(save: AppStatus['save']) {

@@ -4,6 +4,13 @@
 		"strict": true,
 		"types": ["$app/types", "node"]
 	},
-	"include": ["src", "vite.config.ts", "eslint.config.js", "prettier.config.js"],
+	"include": [
+		"src",
+		"vite.config.ts",
+		"eslint.config.js",
+		"prettier.config.js",
+		"e2e",
+		"playwright.config.ts"
+	],
 	"exclude": ["src/service-worker"]
 }

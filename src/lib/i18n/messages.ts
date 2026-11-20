@@ -54,8 +54,17 @@ const nl = {
 
 	// panel: advice
 	sectionAdvice: 'Advies',
-	adviceComingSoon:
-		'Je save is ingelezen. Advies op basis van je spel volgt in een volgende versie.',
+	noAdvice: 'Geen advies op dit moment: ik zie niets wat dringend aandacht nodig heeft.',
+	caveatPrefix: 'Let op:',
+	howTo: 'Hoe doe ik dat?',
+	howToChecked: (v: string) => `Stappen gecontroleerd in versie ${v}.`,
+	howToOtherVersion: (checked: string, v: string) =>
+		`Stappen gecontroleerd in versie ${checked}; jij speelt ${v}. Schermen kunnen verschoven zijn.`,
+	howToUnchecked: (v: string) =>
+		`Stappen voor versie ${v}, nog niet in het spel gecontroleerd. Klopt een stap niet? Laat het weten.`,
+	adviceCount: (n: number) => (n === 1 ? '1 advies' : `${n} adviezen`),
+	untestedVersion: (v: string) =>
+		`Spelversie ${v} is nog niet getest met deze app. Het advies kan afwijken; laat het weten als iets niet klopt.`,
 
 	// panel: folders
 	sectionFolders: 'Mappen',
@@ -75,8 +84,13 @@ const nl = {
 	chosenMissing: (path: string) => `Gekozen pad bestaat niet meer: ${path}`,
 	installedVersion: (v: string) => `Geïnstalleerde versie: ${v}`,
 
-	// language
-	language: 'Taal'
+	// language and settings
+	language: 'Taal',
+	settings: 'Instellingen',
+	backToAdvice: '← Terug naar advies',
+	controls: 'Bediening',
+	settingsProblem: 'Er is een probleem met een van de mappen.',
+	openSettings: 'Open instellingen'
 };
 
 export type Messages = typeof nl;
@@ -124,8 +138,17 @@ const en: Messages = {
 	autosaveTip: 'Tip: set Autosave Interval to Every month in the game.',
 
 	sectionAdvice: 'Advice',
-	adviceComingSoon:
-		'Your save has been read. Advice based on your game is coming in a next version.',
+	noAdvice: 'No advice right now: I see nothing that needs urgent attention.',
+	caveatPrefix: 'Mind:',
+	howTo: 'How do I do that?',
+	howToChecked: (v: string) => `Steps checked in version ${v}.`,
+	howToOtherVersion: (checked: string, v: string) =>
+		`Steps checked in version ${checked}; you are playing ${v}. Screens may have moved.`,
+	howToUnchecked: (v: string) =>
+		`Steps for version ${v}, not yet checked in the game. Is a step wrong? Let us know.`,
+	adviceCount: (n: number) => (n === 1 ? '1 piece of advice' : `${n} pieces of advice`),
+	untestedVersion: (v: string) =>
+		`Game version ${v} has not been tested with this app yet. Advice may be off; let us know if something is wrong.`,
 
 	sectionFolders: 'Folders',
 	pathUserData: 'Saves and settings',
@@ -144,7 +167,12 @@ const en: Messages = {
 	chosenMissing: (path: string) => `Chosen path no longer exists: ${path}`,
 	installedVersion: (v: string) => `Installed version: ${v}`,
 
-	language: 'Language'
+	language: 'Language',
+	settings: 'Settings',
+	backToAdvice: '← Back to advice',
+	controls: 'Controls',
+	settingsProblem: 'There is a problem with one of the folders.',
+	openSettings: 'Open settings'
 };
 
 export const MESSAGES: Record<Locale, Messages> = { nl, en };
