@@ -1,25 +1,25 @@
-name: Spike / onderzoek
-description: Een vraag die beantwoord moet worden voordat we bouwen
+name: Spike / research
+description: A question to answer before building / Een vraag die beantwoord moet worden voordat we bouwen
 labels: [spike]
 body:
   - type: textarea
     id: question
     attributes:
-      label: Vraag
-      description: Wat willen we weten?
+      label: Question / Vraag
+      description: What do we want to know?
     validations:
       required: true
   - type: textarea
     id: approach
     attributes:
-      label: Aanpak
-      description: Hoe zoeken we het uit? Wat proberen we?
+      label: Approach / Aanpak
+      description: How do we find out? What do we try?
   - type: textarea
     id: done
     attributes:
-      label: Klaar als
-      description: Wanneer weten we genoeg? Eén controleerbaar punt per regel.
+      label: Done when / Klaar als
+      description: When do we know enough? One checkable point per line.
       value: |
-        - [ ] Verslag in `docs/spikes/` met vraag, aanpak, resultaat en advies
+        - [ ] Report in `docs/spikes/` with question, approach, result and recommendation
     validations:
       required: true

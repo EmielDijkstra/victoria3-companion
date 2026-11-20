@@ -1,17 +1,20 @@
 name: Bug
-description: Iets werkt niet zoals bedoeld
+description: Something does not work as intended / Iets werkt niet zoals bedoeld
 labels: [bug]
 body:
+  - type: markdown
+    attributes:
+      value: English or Dutch is fine. Please do not attach save files or personal data.
   - type: textarea
     id: what
     attributes:
-      label: Wat gaat er mis?
+      label: What goes wrong? / Wat gaat er mis?
     validations:
       required: true
   - type: textarea
     id: steps
     attributes:
-      label: Stappen om het te zien
+      label: Steps to see it / Stappen om het te zien
       value: |
         1.
     validations:
@@ -19,11 +22,11 @@ body:
   - type: textarea
     id: expected
     attributes:
-      label: Wat had je verwacht?
+      label: What did you expect? / Wat had je verwacht?
     validations:
       required: true
   - type: input
     id: version
     attributes:
-      label: Spelversie en modus
-      placeholder: bijv. 1.13.11, ironman / gewone campagne
+      label: Game version and mode / Spelversie en modus
+      placeholder: e.g. 1.15.1, ironman / normal campaign
