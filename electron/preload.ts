@@ -1,7 +1,12 @@
 // Small, explicit bridge between the overlay page and the main process.
 // Runs sandboxed: only what the page needs, nothing else.
 import { contextBridge, ipcRenderer } from 'electron';
-import { IPC, type OverlayBridge, type OverlayState } from '../src/lib/overlay/bridge';
+import {
+	IPC,
+	type AdvisorEvent,
+	type OverlayBridge,
+	type OverlayState
+} from '../src/lib/overlay/bridge';
 import type { AppStatus } from '../src/lib/status';
 
 const bridge: OverlayBridge = {
@@ -17,7 +22,12 @@ const bridge: OverlayBridge = {
 		ipcRenderer.on(IPC.status, (_event, status: AppStatus) => callback(status)),
 	choosePath: (kind) => ipcRenderer.invoke(IPC.choosePath, kind),
 	resetPath: (kind) => ipcRenderer.invoke(IPC.resetPath, kind),
-	getKnowledge: () => ipcRenderer.invoke(IPC.getKnowledge)
+	getKnowledge: () => ipcRenderer.invoke(IPC.getKnowledge),
+	askAdvisor: (id, messages) => ipcRenderer.send(IPC.askAdvisor, { id, messages }),
+	cancelAdvisor: (id) => ipcRenderer.send(IPC.cancelAdvisor, id),
+	onAdvisor: (callback) =>
+		ipcRenderer.on(IPC.advisor, (_event, event: AdvisorEvent) => callback(event)),
+	releaseFocus: () => ipcRenderer.send(IPC.releaseFocus)
 };
 
 contextBridge.exposeInMainWorld('overlayBridge', bridge);

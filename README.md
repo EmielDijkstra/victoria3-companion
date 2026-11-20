@@ -62,6 +62,11 @@ Zet in het spel **Autosave Interval** op **Every month**.
   Geen tabellen met cijfers: die toont het spel zelf. De app legt uit waarom iets niet goed gaat en
   noemt hooguit het cijfer dat de tip veroorzaakt.
 - **Begrippen**: een onderstreept spelbegrip aanklikken toont de uitleg uit het spel (Esc sluit).
+- **💬 Vraag door** (bij elk advies en elk Leren-onderwerp): stel de AI-adviseur (Google Gemini, gratis
+  sleutel) een vervolgvraag. De app stuurt **alleen** iets als je zelf een vraag kiest of typt: het advies,
+  compacte cijfers uit je save, je spelversie en de begrippen. Nooit vanzelf, nooit persoonlijke gegevens.
+  Zet je sleutel als `GEMINI_API_KEY=…` in een bestand `.env` naast de app (zie `.env.example`).
+  Antwoorden zijn gemarkeerd als niet gecontroleerd.
 
 ### Checks (voor elke PR)
 

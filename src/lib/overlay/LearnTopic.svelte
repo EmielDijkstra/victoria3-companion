@@ -5,7 +5,9 @@
 	import type { Advice } from '../advice/rules';
 	import { locale } from '../i18n/locale.svelte';
 	import type { KnowledgeSheet } from '../learn/sheet';
+	import type { Snapshot } from '../snapshot';
 	import AdviceList from './AdviceList.svelte';
+	import AskAdvisor from './AskAdvisor.svelte';
 	import GameText from './GameText.svelte';
 	import { knowledge } from './knowledge.svelte';
 
@@ -17,8 +19,10 @@
 		advice,
 		country,
 		gameVersion,
-		stateNames
+		stateNames,
+		snapshot
 	}: {
+		snapshot: Snapshot;
 		topic: string;
 		title: string;
 		sheet: KnowledgeSheet;
@@ -67,12 +71,17 @@
 	{/if}
 	{#if advice.length > 0}
 		<div class="mt-2">
-			<AdviceList {advice} {stateNames} {gameVersion} />
+			<AdviceList {advice} {stateNames} {gameVersion} {snapshot} />
 		</div>
 	{/if}
 {:else}
 	<p class="text-[14px] text-ink-dim">{t.learnNothing}</p>
 {/if}
+
+<!-- Ask the AI advisor about the topic as a whole -->
+<div class="mt-2" data-topic-ask>
+	<AskAdvisor {snapshot} subject={{ kind: 'topic', title, sheet: sheet.points[lang], insights }} />
+</div>
 
 <style>
 	.sub {
