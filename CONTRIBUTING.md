@@ -1,6 +1,6 @@
 # Ontwikkelstandaard
 
-Deze repo werkt volgens dezelfde lichte standaard als de andere EmielLabs-projecten. Kort:
+Deze repo werkt volgens een lichte standaard. Kort:
 
 | Onderdeel     | Afspraak |
 | ------------- | -------- |

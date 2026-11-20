@@ -86,5 +86,11 @@ venster op en stopt (na `npm run build`). Met `--capture-click="selector|selecto
 - Waar staat wat in een save: [`docs/save-structuur.md`](docs/save-structuur.md)
 - Werkafspraken: [`CLAUDE.md`](CLAUDE.md) en [`CONTRIBUTING.md`](CONTRIBUTING.md)
 
+## Licentie
+
+De code valt onder de [MIT-licentie](LICENSE). Dat geldt niet voor Victoria 3 zelf: spelbestanden,
+spelteksten en savegames zitten niet in deze repo. De app leest ze alleen tijdens het draaien uit je
+eigen installatie.
+
 Onofficiële fan-tool. Victoria 3 is © Paradox Interactive. Deze repo bevat geen spelbestanden of
 savegames. Lettertype: EB Garamond (SIL Open Font License).

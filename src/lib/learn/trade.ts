@@ -1,5 +1,5 @@
 // Knowledge sheet "Trade": how trade works and what is smart, in our own words. Checked per game
-// version, like the how-to steps: only Emiel sets `checked`. Game concepts are explained by the
+// version, like the how-to steps: only the maintainer sets `checked`. Game concepts are explained by the
 // game itself (concept cards); this sheet adds the strategy.
 import type { KnowledgeSheet } from './sheet';
 

@@ -21,7 +21,7 @@ is een coach, geen cheat-tool. Plan en achtergrond: zie `docs/plan.md`.
 
 1. Werk alleen aan issues die bestaan. Geen issue? Stel er eerst een voor.
 2. Een branch is een **testbaar geheel**. Dat kan één issue zijn, maar ook een groepje issues
-   die samen horen. Emiel geeft aan welke issues samen gaan.
+   die samen horen. De maintainer geeft aan welke issues samen gaan.
    - Eén issue: `<type>/<issue-nr>-<omschrijving>`, bijv. `spike/1-read-ironman-saves`
    - Meerdere issues: `<type>/<onderdeel>`, bijv. `feat/dashboard`
 3. Kleine commits volgens Conventional Commits, in het Engels, met het issue-nummer:
@@ -30,9 +30,9 @@ is een coach, geen cheat-tool. Plan en achtergrond: zie `docs/plan.md`.
 4. Draai voor elke PR de checks (zodra het projectskelet er is):
    `npm run lint && npm run check && npm run test && npm run build`.
 5. Open een PR met het sjabloon, titel in Conventional Commits-stijl, en een `Closes #<nr>`-regel
-   voor elk issue dat de PR afrondt. Beschrijf hoe Emiel het geheel kan testen.
-6. Nooit direct naar `main` pushen. Emiel reviewt en merget (squash merge).
-   Uitzondering: alleen documentatie- of configwijzigingen mogen direct als Emiel dat vraagt.
+   voor elk issue dat de PR afrondt. Beschrijf hoe een reviewer het geheel kan testen.
+6. Nooit direct naar `main` pushen. De maintainer reviewt en merget (squash merge).
+   Uitzondering: alleen documentatie- of configwijzigingen mogen direct als de maintainer dat vraagt.
 
 ### Spikes
 
@@ -51,13 +51,13 @@ naar de app.
 
 ## Gouden regels: achievement-veilig en alleen-lezen
 
-Emiel speelt ironman voor de achievements. De app mag dat nooit in gevaar brengen.
+Spelers spelen ironman voor de achievements. De app mag dat nooit in gevaar brengen.
 
 - De app **leest alleen**. Nooit schrijven in de installatiemap, de map `Documents\Paradox Interactive\Victoria 3`
   of in savebestanden. Saves eerst kopiëren naar een eigen werkmap als dat nodig is.
 - De app start het spel niet en verandert geen opstartopties, instellingen of mods.
 - Een eigen mod (logger-mod) is alleen een terugval voor **gewone** campagnes, nooit voor ironman.
-- Testen met debugmodus of tekstsaves gebeurt in een **aparte testcampagne**, nooit in Emiels ironman-run.
+- Testen met debugmodus of tekstsaves gebeurt in een **aparte testcampagne**, nooit in een echte ironman-run.
 
 ## Licenties en spelinhoud
 
