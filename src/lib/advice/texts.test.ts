@@ -82,6 +82,89 @@ const samples: Advice[] = [
 		standardOfLiving: 8.77,
 		balance: 2508,
 		debtPct: 44
+	},
+	{
+		id: 'new-production-methods',
+		level: 'smart',
+		methods: [
+			{
+				name: 'Bessemer Process',
+				buildings: [
+					{ type: 'steel_mill', state: 'wallonia', levels: 4 },
+					{ type: 'steel_mill', state: 'gelre', levels: 1 }
+				]
+			},
+			{ name: 'Rifles', buildings: [{ type: 'arms_industry', state: 'wallonia', levels: 2 }] }
+		]
+	},
+	{
+		id: 'trade-capacity-full',
+		level: 'smart',
+		states: [
+			{ state: 'flanders', capacity: 123, used: 123 },
+			{ state: 'gelre', capacity: 10, used: 10 }
+		],
+		dearImports: ['tobacco']
+	},
+	{
+		id: 'subsidized-export',
+		level: 'consider',
+		goods: [{ good: 'paper', net: 6, policy: 'high_subventions' }]
+	},
+	{
+		id: 'import-what-you-make',
+		level: 'smart',
+		good: 'fabric',
+		imported: 19,
+		produced: 310,
+		price: 26,
+		base: 20,
+		vsBasePct: 30
+	},
+	{
+		id: 'law-with-support',
+		level: 'consider',
+		law: 'Dedicated Police Force',
+		groupName: 'Policing',
+		current: 'Local Police Force',
+		support: 0.69,
+		currentSupport: -0.1,
+		for: [{ name: 'Petite Bourgeoisie', cloutPct: 25.5, strong: true }],
+		against: [],
+		conditions: true
+	},
+	{
+		id: 'dear-basic-needs',
+		level: 'smart',
+		need: 'Basic Food',
+		vsBasePct: 31,
+		goods: [{ good: 'meat', vsBasePct: 40 }]
+	},
+	{
+		id: 'understaffed',
+		level: 'consider',
+		building: 'livestock_ranch',
+		buildingState: 'gelre',
+		staffingPct: 43,
+		stateUnemployed: 30486
+	},
+	{ id: 'no-research', level: 'warn' },
+	{
+		id: 'research-suggestion',
+		level: 'consider',
+		tech: 'Steam Donkey',
+		current: 'Canneries',
+		pm: 'Steam Donkey',
+		buildings: ['logging_camp', 'iron_mine'],
+		levels: 20
+	},
+	{ id: 'separatism-support', level: 'warn', country: 'Netherlands', rival: true },
+	{
+		id: 'unhappy-lobby',
+		level: 'warn',
+		country: 'France',
+		pro: true,
+		groups: ['Armed Forces', 'Intelligentsia']
 	}
 ];
 
@@ -196,5 +279,90 @@ describe('more-construction steps', () => {
 		expect(withState.how[0]).toContain('1.200');
 		expect(withState.how.some((step) => step.includes('Construction Queue'))).toBe(true);
 		expect(adviceText(base, 'en').how[1]).toContain('that state');
+	});
+});
+
+describe('new-production-methods text', () => {
+	it('lists each method with its buildings and states', () => {
+		const pm = samples.find((x) => x.id === 'new-production-methods')!;
+		const text = adviceText(pm, 'nl', NAMES);
+		expect(text.title).toBe('Nieuwe Production Methods beschikbaar');
+		expect(text.why).toContain(
+			'Bessemer Process voor je Steel Mill in Wallonia en Belgian Gelre en Rifles voor je Arms Industry in Wallonia'
+		);
+		expect(text.how[0]).toContain('Steel Mill in Wallonia');
+	});
+});
+
+describe('trade texts', () => {
+	const byId = (id: string) => samples.find((x) => x.id === id)!;
+
+	it('names the full states as the game does', () => {
+		const text = adviceText(byId('trade-capacity-full'), 'nl', NAMES);
+		expect(text.why).toContain('Flanders (123/123) en Belgian Gelre (10/10)');
+		expect(text.why).toContain('Tobacco');
+	});
+
+	it('explains the import subsidy on an exported good', () => {
+		const text = adviceText(byId('subsidized-export'), 'en', NAMES);
+		expect(text.title).toBe('You subsidise imports of Paper');
+		expect(text.why).toContain('Paper (High Subventions)');
+	});
+});
+
+describe('law text', () => {
+	it('names supporters, says nobody is against, and warns about conditions', () => {
+		const law = samples.find((x) => x.id === 'law-with-support')!;
+		const text = adviceText(law, 'nl');
+		expect(text.why).toContain('Voor: Petite Bourgeoisie (sterk) 25,5%');
+		expect(text.why).toContain('Geen enkele Interest Group is tegen.');
+		expect(text.caveat).toContain('extra voorwaarden');
+	});
+});
+
+describe('population texts', () => {
+	it('names the need, its dearest good and the split state as the game does', () => {
+		const need = adviceText(
+			samples.find((x) => x.id === 'dear-basic-needs')!,
+			'nl'
+		);
+		expect(need.title).toBe('Basic Food is duur voor je arbeiders');
+		expect(need.why).toContain('(Meat +40%)');
+		const empty = adviceText(
+			samples.find((x) => x.id === 'understaffed')!,
+			'nl',
+			NAMES
+		);
+		expect(empty.title).toBe('Livestock Ranch in Belgian Gelre blijft half leeg');
+		expect(empty.why).toContain('30.486 mensen werk zoeken');
+	});
+});
+
+describe('research text', () => {
+	it('says what the research gives and compares with the current research', () => {
+		const text = adviceText(
+			samples.find((x) => x.id === 'research-suggestion')!,
+			'nl'
+		);
+		expect(text.why).toBe(
+			'Steam Donkey geeft de Production Method Steam Donkey aan je Logging Camp en Iron Mine (samen 20 levels). Je onderzoekt nu Canneries; dat helpt minder van je gebouwen.'
+		);
+	});
+});
+
+describe('diplomacy texts', () => {
+	it('names the country and the groups', () => {
+		const sep = adviceText(
+			samples.find((x) => x.id === 'separatism-support')!,
+			'nl'
+		);
+		expect(sep.title).toBe('Netherlands steunt separatisme in jouw land');
+		expect(sep.why).toContain('Netherlands is ook je rivaal.');
+		const lobby = adviceText(
+			samples.find((x) => x.id === 'unhappy-lobby')!,
+			'en'
+		);
+		expect(lobby.title).toBe('The lobby for France is unhappy');
+		expect(lobby.why).toContain('Armed Forces and Intelligentsia want closer ties with France');
 	});
 });

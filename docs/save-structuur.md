@@ -111,7 +111,13 @@ Voorbeeld: een `building_government_administration` (3 levels) met `profit_after
 |---|---|---|
 | Prijzen in je markt | `C.budget.current_price_report.goods.<goed>.value` | Ook `previous_price_report` voor de verandering |
 | Wereldmarkt-trend | `market_manager.world_market.price_trend` | |
-| Handel per staat | `states.database.<id>.trade.goods` | |
+| Handel per staat | `states.database.<id>.trade.goods.<goed>.value` | Vermoedelijk + export, − import. Ook `traded_goods`, `last_trade_volume_increases` |
+| Trade Capacity | `states.database.<id>.trade_capacity`, `trade_capacity_usage` | Komt van Trade Centers; vol = geen extra handel (spike S6) |
+| Tarieven en subventies | `C.import_tariffs.<goed>.level`, `C.export_tariffs.<goed>.level` | Bijv. `low_tariffs`, `high_subventions`; met `previous` en `last_change` |
+| Belaste goederen | `C.taxed_goods` | Consumptiebelasting; mogelijke opbrengst per goed in `ai.<speler>.spending_variables.potential_consumption_taxes` |
+| Trade Centers | `building_manager` met `building_trade_center` | `trade_revenue`, `tariffs`, `subventions`, `tolls` per week |
+| World Market Hub | `market_manager.world_market.active_world_market_hubs[]` | `state`, `trade_centers`, `hub_connections` |
+| Handelsverdragen | `treaty_article_manager.database.<id>` met `article: trade_privilege` | `source_country` / `target_country` |
 | Vraag en aanbod per goed | – | **Niet gevonden.** Afleiden uit de in- en uitvoer van gebouwen en de pop-behoeften, of via de prijs t.o.v. de basisprijs |
 
 **Goederen-id's** zijn nummers. Het nummer is de volgorde van definitie in
@@ -123,13 +129,44 @@ Controle: een veehouderij met `pm_sheep_farms` heeft input 7 + 35 (grain, tools)
 **Basisprijzen** staan ook in `00_goods.txt` (`cost = …`). Prijs ÷ basisprijs geeft tekort (> 1) of
 overschot (< 1).
 
+## Meer onderdelen (spike S6)
+
+Uitgebreid beschreven in [`spikes/s6-alle-gegevens.md`](spikes/s6-alle-gegevens.md). In het kort, voor
+het land van de speler (`pid`):
+
+| Onderwerp | Pad | Belangrijkste velden |
+|---|---|---|
+| Investment Pool per gebouwtype | `C.budget.investment` | Waar privaat kapitaal heen wil |
+| Productiviteit en loon | `C.budget.average_productivity`, `base_wage` | |
+| Nieuwe Production Methods | `C.new_production_methods_v2` | Ontsloten sinds de laatste keer kijken |
+| Companies | `companies.database.<id>` met `country` | `company_type`, `prosperity`, `profit_trend`, `company_charters` |
+| Interest Groups | `interest_groups.database.<id>` met `country` | `definition`, `approval`, `approval_state`, `clout`, `influence_type`, `enabled_traits`, `ideologies` |
+| Wetten (alle opties) | `laws.database.<id>` met `country` | `law`, `active`, `was_enacted`, `activation_date`, `replace` |
+| Partijen en verkiezing | `parties`, `election_manager` | `votes`, `num_voters`; `next_election` |
+| Bewegingen | `political_movement_manager` | `ideology`, `identity.type`, `radicalism` |
+| Institutions, decrees | `institutions` (`country`), `decree_manager` (`owner`) | `investment`; `type`, `state` |
+| Technologie | `technology.database.<id>` met `country` | `research_technology`, `research_queue`, `progressed_technologies`, `acquired_technologies`, `currently_spreading_technologies` |
+| Authority, bureaucratie, innovatie | `ai.database.<id>.spending_variables` met `country` | `authority`, `authority_balance` (klopt met het spel), `bureaucracy_income/expenses` (wijkt af, uitzoeken), `innovation`, `max_innovation` (nog controleren) |
+| Relaties | `relations.database.<id>` | `first.country`, `second.country`, `relations`, `improve_relations` |
+| Pacten | `pacts.database.<id>` | `targets.first/second`, `action` (rivalry, support_separatism …) |
+| Verdragen | `treaty_manager`, `treaty_article_manager` | Artikelen per verdrag |
+| Interesses | `interest_manager` met `country` | `strategic_region`, `current_involvement` |
+| Tutorial-doelen | `objective_manager.database.<id>` met `country` | `completed_subgoals`, `active_subgoals` (bijv. `sg_grow_gdp`) |
+| Journal Entries | `journal_entry_manager.database.<id>` met `country` | `type`, `active`, `baseline_value`, `goal_value`, `objective_subgoal` |
+| Pops | `pops.database.<id>`, `location` = staat | `type`, `workforce`, `dependents`, `num_literate`, `qualifications`, `food_security`, `job_satisfaction` |
+| Pop-behoeften | `states.database.<id>.pop_needs` | Per laag, gewichten per goed |
+
+**Let op bij land-id's:** `relations`, `pacts` en verdragen gebruiken land-id's. Zoek de tag op via
+`country_manager.database.<id>.definition` (bijv. 1 = GBR, 4 = FRA, 29 = NET) en de naam via de
+localization. Niet raden.
+
 ## Niet (direct) in de save
 
 | Veld | Status | Voorstel |
 |---|---|---|
 | **Legitimacy** | Alleen een teller (`C.counters.legitimacy`), geen waarde | Afleiden (regels uit `common/`) of in v1 weglaten |
 | **Bureaucracy, Authority, Influence** | Niet op het land. Wel in een AI-cache: `ai.database.<id>.spending_variables` (`authority`, `authority_balance`, `bureaucracy_income`, `bureaucracy_expenses`) waar `country == speler` | Uitzoeken of de AI-cache voor het spelersland actueel is. Anders afleiden |
-| **Bouwcapaciteit** | Niet opgeslagen | Afleiden uit construction sectors |
+| **Bouwcapaciteit** | Waarschijnlijk `ai.<speler>.spending_variables.construction_output` (35 op 1-5-1850, spike S6) | In het spel controleren; anders afleiden uit construction sectors |
 | **Vraag/aanbod per goed** | Niet gevonden | Afleiden of prijsverhouding gebruiken |
 
 ## Nog te controleren in het spel (Emiel)

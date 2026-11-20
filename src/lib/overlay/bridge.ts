@@ -1,5 +1,7 @@
 // Contract between the page and the Electron preload script (window.overlayBridge).
 // Shared by both sides so they cannot drift apart.
+import type { ChatMessage } from '../advisor/prompt';
+import type { GameKnowledge } from '../knowledge';
 import type { AppStatus, PathKind } from '../status';
 
 export interface OverlayState {
@@ -8,6 +10,12 @@ export interface OverlayState {
 	/** Set when Alt+V brought the overlay back */
 	shown?: boolean;
 }
+
+/** Streamed answer of the AI advisor, per question id. */
+export type AdvisorEvent =
+	| { id: string; type: 'text'; text: string }
+	| { id: string; type: 'done' }
+	| { id: string; type: 'error'; code: 'no-key' | 'busy' | 'limit' | 'failed' };
 
 export interface OverlayBridge {
 	/** true while the mouse is over the tip or panel, so clicks land on the overlay */
@@ -29,6 +37,14 @@ export interface OverlayBridge {
 	choosePath(kind: PathKind): Promise<AppStatus>;
 	/** Go back to finding the path automatically */
 	resetPath(kind: PathKind): Promise<AppStatus>;
+	/** Explanations from the installed game (concepts, tutorial lessons); null without game files */
+	getKnowledge(): Promise<GameKnowledge | null>;
+	/** Ask the AI advisor; the answer arrives through onAdvisor */
+	askAdvisor(id: string, messages: ChatMessage[]): void;
+	cancelAdvisor(id: string): void;
+	onAdvisor(callback: (event: AdvisorEvent) => void): void;
+	/** After typing: give the keyboard back to the game */
+	releaseFocus(): void;
 }
 
 declare global {
@@ -47,5 +63,10 @@ export const IPC = {
 	getStatus: 'app:get-status',
 	status: 'app:status',
 	choosePath: 'app:choose-path',
-	resetPath: 'app:reset-path'
+	resetPath: 'app:reset-path',
+	getKnowledge: 'app:get-knowledge',
+	askAdvisor: 'advisor:ask',
+	cancelAdvisor: 'advisor:cancel',
+	advisor: 'advisor:event',
+	releaseFocus: 'overlay:release-focus'
 } as const;

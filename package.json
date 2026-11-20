@@ -2,6 +2,7 @@
 	"name": "victoria3-companion",
 	"version": "0.0.1",
 	"private": true,
+	"license": "MIT",
 	"description": "Lokale overlay-adviseur voor Victoria 3",
 	"type": "module",
 	"main": "dist-electron/main.cjs",

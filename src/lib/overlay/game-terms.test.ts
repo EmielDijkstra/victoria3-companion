@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { splitGameTerms } from './game-terms';
+import { splitGameTerms, usableConceptNames } from './game-terms';
 
 describe('splitGameTerms', () => {
 	it('marks game terms, longest match first', () => {
@@ -16,5 +16,35 @@ describe('splitGameTerms', () => {
 
 	it('returns plain text unchanged', () => {
 		expect(splitGameTerms('niets bijzonders')).toEqual([{ text: 'niets bijzonders', term: false }]);
+	});
+
+	it('adds concept names from the game, longest first', () => {
+		const extra = ['Trade Capacity', 'Trade'];
+		expect(splitGameTerms('More Trade Capacity means more Trade.', extra)).toEqual([
+			{ text: 'More ', term: false },
+			{ text: 'Trade Capacity', term: true },
+			{ text: ' means more ', term: false },
+			{ text: 'Trade', term: true },
+			{ text: '.', term: false }
+		]);
+	});
+});
+
+describe('usableConceptNames', () => {
+	it('keeps capitalised names of at least four letters', () => {
+		expect(
+			usableConceptNames(['Trade Capacity', 'GDP', 'Pop', 'odd name', 'Trade', 'x [y]'])
+		).toEqual(['Trade Capacity', 'Trade']);
+	});
+});
+
+describe('splitGameTerms: longer names', () => {
+	it('does not highlight the first word of a longer name', () => {
+		const parts = splitGameTerms('Je Trade Center en je Trade groeien.', ['Trade']);
+		expect(parts.filter((p) => p.term).map((p) => p.text)).toEqual(['Trade']);
+		expect(parts.map((p) => p.text).join('')).toBe('Je Trade Center en je Trade groeien.');
+		const hyphen = splitGameTerms('Steel-Frame Buildings en je Buildings', ['Buildings']);
+		expect(hyphen.filter((p) => p.term).map((p) => p.text)).toEqual(['Buildings']);
+		expect(hyphen[0].text).toBe('Steel-Frame Buildings en je ');
 	});
 });

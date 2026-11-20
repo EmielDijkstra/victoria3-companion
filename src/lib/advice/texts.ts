@@ -37,6 +37,8 @@ export const gameName = (key: string) =>
 		.map((w) => w.charAt(0).toUpperCase() + w.slice(1))
 		.join(' ');
 
+const unique = (items: string[]) => [...new Set(items)];
+
 const list = (items: string[], l: Locale) =>
 	items.length <= 1
 		? items.join('')
@@ -107,7 +109,7 @@ const nl: Table = {
 	}),
 	'more-construction': (a, l, place) => ({
 		title: 'Bouw meer Construction Sectors',
-		why: `Je Investment Pool bevat ${money(a.investmentPool, l)} die op private bouw wacht, maar je hebt maar ${a.sectorLevels} levels Construction Sector. Daardoor gaat alles langzaam.`,
+		why: `Je Investment Pool bevat ${money(a.investmentPool, l)} die op private bouw wacht, maar je hebt maar ${a.sectorLevels} levels Construction Sector. Daardoor gaat alles langzaam.${a.waitingFor?.length ? ` Je private investeerders willen vooral ${list(a.waitingFor.map(gameName), l)} bouwen.` : ''}`,
 		caveat: 'Construction Sectors kosten elke week bouwmaterialen; houd je weeksaldo positief.',
 		how: [
 			a.targetState
@@ -118,6 +120,155 @@ const nl: Table = {
 			'Voeg er twee of drie tegelijk toe: elk level geeft meer Construction per week.',
 			'Open je Construction Queue en zet ze bovenaan, zodat ze eerst gebouwd worden.',
 			'Kijk na een paar weken of je weeksaldo positief blijft.'
+		]
+	}),
+	'trade-capacity-full': (a, _l, place) => ({
+		title: 'Je Trade Capacity is vol',
+		why: `In ${list(
+			a.states.map((t) => `${place(t.state)} (${t.used}/${t.capacity})`),
+			'nl'
+		)} wordt alle Trade Capacity gebruikt. Meer handel kan er niet bij.${a.dearImports.length ? ` Intussen betaal je voor ${list(a.dearImports.map(gameName), 'nl')} meer dan op de wereldmarkt.` : ''}`,
+		caveat:
+			'Trade Centers hebben personeel nodig en kosten Merchant Marine. Bouw er één of twee levels bij en kijk dan opnieuw.',
+		how: [
+			`Klik op ${place(a.states[0].state)} op de kaart en open de tab Buildings.`,
+			'Klik bij Trade Center op + om een level toe te voegen. Staat er nog geen, kies Trade Center in het bouwmenu.'
+		]
+	}),
+	'subsidized-export': (a, l) => ({
+		title: `Je subsidieert de import van ${list(
+			a.goods.map((g) => gameName(g.good)),
+			'nl'
+		)}`,
+		why: `Op de import van ${list(
+			a.goods.map((g) => `${gameName(g.good)} (${gameName(g.policy)})`),
+			'nl'
+		)} betaal je subsidie, maar je exporteert ${a.goods.length === 1 ? 'het' : 'ze'} zelf (${list(
+			a.goods.map((g) => `+${count(g.net, l)}`),
+			'nl'
+		)}). Die subsidie kost je geld zonder dat je het goed tekortkomt.`,
+		caveat:
+			'had je de subsidie bewust gezet, bijvoorbeeld voor een fabriek die het nodig heeft? Kijk dan eerst of die nog genoeg krijgt.',
+		how: [
+			'Open het Market-scherm en zoek het goed op.',
+			'Zet de import op No Tariffs or Subventions (of een tarief).'
+		]
+	}),
+	'import-what-you-make': (a, l) => ({
+		title: `Maak meer ${gameName(a.good)} in plaats van te importeren`,
+		why: `Je importeert ${count(a.imported, l)} ${gameName(a.good)}, terwijl je eigen gebouwen er ${count(a.produced, l)} maken. De prijs is ${decimal(a.price, l)} tegen een basisprijs van ${a.base} (+${a.vsBasePct}%): er is tekort.`,
+		caveat: 'meer aanbod drukt de prijs. Breid één of twee levels uit en kijk dan opnieuw.',
+		how: [
+			`Zoek een gebouw dat ${gameName(a.good)} maakt (Buildings-tab van een staat).`,
+			'Klik op + om een level toe te voegen, liefst in een staat met werklozen.'
+		]
+	}),
+	'law-with-support': (a, l) => ({
+		title: `Een wet met veel steun: ${a.law}`,
+		why: `${a.law} (${a.groupName}) heeft meer steun dan je huidige ${a.current}.${
+			a.for.length
+				? ` Voor: ${list(
+						a.for.map((x) => `${x.name}${x.strong ? ' (sterk)' : ''} ${decimal(x.cloutPct, l)}%`),
+						'nl'
+					)}.`
+				: ''
+		} ${
+			a.against.length
+				? `Tegen: ${list(
+						a.against.map(
+							(x) => `${x.name}${x.strong ? ' (sterk)' : ''} ${decimal(x.cloutPct, l)}%`
+						),
+						'nl'
+					)}.`
+				: 'Geen enkele Interest Group is tegen.'
+		}`,
+		caveat: `steun zegt of het haalbaar is, niet of het goed is voor je land. Lees eerst wat de wet doet (Leren → Wetten).${a.conditions ? ' Het spel kan nog extra voorwaarden stellen.' : ''}`,
+		how: [
+			'Open het Politics-scherm en kies de tab Laws.',
+			`Zoek ${a.groupName}, kies ${a.law} en klik op Enact.`,
+			'Invoeren duurt maanden; het lukt beter als Interest Groups in je regering ervoor zijn.'
+		]
+	}),
+	'dear-basic-needs': (a) => ({
+		title: `${a.need} is duur voor je arbeiders`,
+		why: `De goederen voor ${a.need} kosten +${a.vsBasePct}% boven de basisprijs${
+			a.goods.length
+				? ` (${list(
+						a.goods.map((gd) => `${gameName(gd.good)} +${gd.vsBasePct}%`),
+						'nl'
+					)})`
+				: ''
+		}. Arbeiders en boeren geven daar een groot deel van hun loon aan uit; dure basisbehoeften drukken hun Standard of Living.`,
+		caveat:
+			'meer aanbod drukt de prijs. Bouw er één of twee levels bij, of importeer het goedkoper.',
+		how: [
+			`Bouw of breid gebouwen uit die ${a.goods.length ? gameName(a.goods[0].good) : a.need} maken, liefst in een staat met werklozen.`,
+			'Of verlaag in het Market-scherm het importtarief van dat goed.'
+		]
+	}),
+	understaffed: (a, l, place) => ({
+		title: `${gameName(a.building)} in ${place(a.buildingState)} blijft half leeg`,
+		why: `Hij is maar voor ${a.staffingPct}% bezet, terwijl er in ${place(a.buildingState)} ${count(a.stateUnemployed, l)} mensen werk zoeken. Vaak ontbreken mensen met de juiste kwalificaties (geschoolde banen vragen geletterdheid), of betaalt het gebouw te weinig.`,
+		caveat:
+			'een gebouw neemt langzaam mensen aan. Is het net gebouwd of uitgebreid, geef het dan een paar maanden.',
+		how: [
+			'Open het gebouw en hover over het personeel: je ziet welke beroepen ontbreken.',
+			'Ontbreken geschoolde mensen? Verhoog geletterdheid met scholen en de Institution Schools.'
+		]
+	}),
+	'no-research': () => ({
+		title: 'Je onderzoekt niets',
+		why: 'Er staat geen technologie in onderzoek. Zo benut je je Innovation niet, en loop je achter op andere landen.',
+		caveat: 'kies liefst iets wat je gebouwen of je wetten vooruit helpt (Leren → Technologie).',
+		how: ['Open het Technology-scherm.', 'Kies een technologie en klik op Research.']
+	}),
+	'research-suggestion': (a) => ({
+		title: `Overweeg ${a.tech} als volgend onderzoek`,
+		why: `${a.tech} geeft de Production Method ${a.pm} aan je ${list(a.buildings.map(gameName), 'nl')} (samen ${a.levels} levels).${a.current ? ` Je onderzoekt nu ${a.current}; dat helpt minder van je gebouwen.` : ''}`,
+		caveat:
+			'een nieuwe Production Method gebruikt vaak andere grondstoffen. Kijk na het onderzoek of hij voor jou loont.',
+		how: [
+			'Open het Technology-scherm.',
+			`Zoek ${a.tech} en klik op Research, of zet hem in de wachtrij.`
+		]
+	}),
+	'separatism-support': (a) => ({
+		title: `${a.country} steunt separatisme in jouw land`,
+		why: `${a.country} steunt bewegingen die zich van je land willen afscheiden. Die worden daardoor sterker, vooral onder groepen die zich al achtergesteld voelen.${a.rival ? ` ${a.country} is ook je rivaal.` : ''}`,
+		caveat:
+			'tevreden minderheden zijn de beste verdediging: hun Standard of Living en je Citizenship-wet tellen mee.',
+		how: [
+			'Open het Politics-scherm en kijk bij Political Movements of er een afscheidingsbeweging groeit.',
+			`Verbeter je relatie met ${a.country}, of zoek steun bij landen die je onafhankelijkheid garanderen.`
+		]
+	}),
+	'unhappy-lobby': (a) => ({
+		title: `De lobby ${a.pro ? 'voor' : 'tegen'} ${a.country} is ontevreden`,
+		why: `${list(a.groups, 'nl')} ${a.groups.length === 1 ? 'wil' : 'willen'} ${a.pro ? 'betere banden' : 'meer afstand'} met ${a.country}, en vinden dat je daar te weinig aan doet. Hun Approval daalt.`,
+		caveat: 'je hoeft niet alles te doen wat een lobby wil; weeg het af tegen je andere doelen.',
+		how: [
+			'Open het Politics-scherm en kies de lobby.',
+			`Kijk welke acties de lobby tevreden maken, ${a.pro ? 'zoals relaties verbeteren of een verdrag sluiten' : 'zoals een rivaliteit of minder verdragen'}.`
+		]
+	}),
+	'new-production-methods': (a, _l, place) => ({
+		title:
+			a.methods.length === 1
+				? `Nieuwe Production Method: ${a.methods[0].name}`
+				: 'Nieuwe Production Methods beschikbaar',
+		why: `Het spel heeft nieuwe Production Methods vrijgespeeld die je gebouwen nog niet gebruiken: ${list(
+			a.methods.map(
+				(m) =>
+					`${m.name} voor je ${list(unique(m.buildings.map((b) => gameName(b.type))), 'nl')} in ${list(unique(m.buildings.map((b) => place(b.state))), 'nl')}`
+			),
+			'nl'
+		)}. Nieuwere methoden leveren vaak meer op per werknemer, maar niet altijd.`,
+		caveat:
+			'ze gebruiken vaak andere of duurdere grondstoffen. Vergelijk eerst in de tooltip wat er verandert aan kosten en winst.',
+		how: [
+			`Klik op je ${gameName(a.methods[0].buildings[0].type)} in ${place(a.methods[0].buildings[0].state)} en open de Production Methods.`,
+			`Kies ${a.methods[0].name}. De tooltip laat zien wat er verandert aan in- en uitvoer en winst.`,
+			'Wordt een grondstof duurder of schaars? Zorg dan eerst dat je er genoeg van maakt of kunt kopen.'
 		]
 	}),
 	'be-patient': (a, l, place) => ({
@@ -211,7 +362,7 @@ const en: Table = {
 	}),
 	'more-construction': (a, l, place) => ({
 		title: 'Build more Construction Sectors',
-		why: `Your Investment Pool holds ${money(a.investmentPool, l)} waiting for private construction, but you only have ${a.sectorLevels} levels of Construction Sector. Everything goes slowly.`,
+		why: `Your Investment Pool holds ${money(a.investmentPool, l)} waiting for private construction, but you only have ${a.sectorLevels} levels of Construction Sector. Everything goes slowly.${a.waitingFor?.length ? ` Your private investors mainly want to build ${list(a.waitingFor.map(gameName), l)}.` : ''}`,
 		caveat: 'Construction Sectors cost materials every week; keep your weekly balance positive.',
 		how: [
 			a.targetState
@@ -222,6 +373,155 @@ const en: Table = {
 			'Add two or three at once: every level gives more Construction per week.',
 			'Open your Construction Queue and move them to the top, so they are built first.',
 			'Check after a few weeks whether your weekly balance stays positive.'
+		]
+	}),
+	'trade-capacity-full': (a, _l, place) => ({
+		title: 'Your Trade Capacity is full',
+		why: `In ${list(
+			a.states.map((t) => `${place(t.state)} (${t.used}/${t.capacity})`),
+			'en'
+		)} all Trade Capacity is in use. No more trade fits.${a.dearImports.length ? ` Meanwhile you pay more for ${list(a.dearImports.map(gameName), 'en')} than on the world market.` : ''}`,
+		caveat:
+			'Trade Centers need workers and use Merchant Marine. Add one or two levels and check again.',
+		how: [
+			`Click ${place(a.states[0].state)} on the map and open the Buildings tab.`,
+			'Click + next to Trade Center to add a level. None there yet? Pick Trade Center in the build menu.'
+		]
+	}),
+	'subsidized-export': (a, l) => ({
+		title: `You subsidise imports of ${list(
+			a.goods.map((g) => gameName(g.good)),
+			'en'
+		)}`,
+		why: `You pay a subsidy on imports of ${list(
+			a.goods.map((g) => `${gameName(g.good)} (${gameName(g.policy)})`),
+			'en'
+		)}, but you export ${a.goods.length === 1 ? 'it' : 'them'} yourself (${list(
+			a.goods.map((g) => `+${count(g.net, l)}`),
+			'en'
+		)}). That subsidy costs money while you are not short of the good.`,
+		caveat:
+			'did you set it on purpose, e.g. for a factory that needs it? Check that it still gets enough first.',
+		how: [
+			'Open the Market screen and find the good.',
+			'Set imports to No Tariffs or Subventions (or a tariff).'
+		]
+	}),
+	'import-what-you-make': (a, l) => ({
+		title: `Make more ${gameName(a.good)} instead of importing`,
+		why: `You import ${count(a.imported, l)} ${gameName(a.good)} while your own buildings make ${count(a.produced, l)}. The price is ${decimal(a.price, l)} against a base price of ${a.base} (+${a.vsBasePct}%): there is a shortage.`,
+		caveat: 'more supply lowers the price. Expand one or two levels and check again.',
+		how: [
+			`Find a building that makes ${gameName(a.good)} (Buildings tab of a state).`,
+			'Click + to add a level, preferably in a state with unemployed people.'
+		]
+	}),
+	'law-with-support': (a, l) => ({
+		title: `A law with broad support: ${a.law}`,
+		why: `${a.law} (${a.groupName}) has more support than your current ${a.current}.${
+			a.for.length
+				? ` For: ${list(
+						a.for.map(
+							(x) => `${x.name}${x.strong ? ' (strongly)' : ''} ${decimal(x.cloutPct, l)}%`
+						),
+						'en'
+					)}.`
+				: ''
+		} ${
+			a.against.length
+				? `Against: ${list(
+						a.against.map(
+							(x) => `${x.name}${x.strong ? ' (strongly)' : ''} ${decimal(x.cloutPct, l)}%`
+						),
+						'en'
+					)}.`
+				: 'No interest group is against it.'
+		}`,
+		caveat: `support says whether it is feasible, not whether it is good for your country. Read what the law does first (Learn → Laws).${a.conditions ? ' The game may set extra conditions.' : ''}`,
+		how: [
+			'Open the Politics screen and choose the Laws tab.',
+			`Find ${a.groupName}, choose ${a.law} and click Enact.`,
+			'Enacting takes months; it goes better when interest groups in your government support it.'
+		]
+	}),
+	'dear-basic-needs': (a) => ({
+		title: `${a.need} is expensive for your workers`,
+		why: `The goods for ${a.need} cost +${a.vsBasePct}% above the base price${
+			a.goods.length
+				? ` (${list(
+						a.goods.map((gd) => `${gameName(gd.good)} +${gd.vsBasePct}%`),
+						'en'
+					)})`
+				: ''
+		}. Workers and peasants spend much of their income on it; expensive basic needs lower their Standard of Living.`,
+		caveat: 'more supply lowers the price. Add one or two levels, or import it more cheaply.',
+		how: [
+			`Build or expand buildings that make ${a.goods.length ? gameName(a.goods[0].good) : a.need}, preferably in a state with unemployed people.`,
+			'Or lower the import tariff of that good in the Market screen.'
+		]
+	}),
+	understaffed: (a, l, place) => ({
+		title: `${gameName(a.building)} in ${place(a.buildingState)} stays half empty`,
+		why: `It is only ${a.staffingPct}% staffed, while ${count(a.stateUnemployed, l)} people in ${place(a.buildingState)} are looking for work. Often people with the right qualifications are missing (skilled jobs need literacy), or the building pays too little.`,
+		caveat: 'a building hires slowly. If it was just built or expanded, give it a few months.',
+		how: [
+			'Open the building and hover over its staff: you see which professions are missing.',
+			'Skilled people missing? Raise literacy with schools and the Schools institution.'
+		]
+	}),
+	'no-research': () => ({
+		title: 'You are not researching anything',
+		why: 'No technology is being researched. That way you do not use your Innovation, and you fall behind other countries.',
+		caveat: 'preferably pick something that helps your buildings or laws (Learn → Technology).',
+		how: ['Open the Technology screen.', 'Choose a technology and click Research.']
+	}),
+	'research-suggestion': (a) => ({
+		title: `Consider ${a.tech} as your next research`,
+		why: `${a.tech} gives the Production Method ${a.pm} to your ${list(a.buildings.map(gameName), 'en')} (${a.levels} levels together).${a.current ? ` You are researching ${a.current} now; that helps fewer of your buildings.` : ''}`,
+		caveat:
+			'a new Production Method often uses other inputs. Check after the research whether it pays off for you.',
+		how: [
+			'Open the Technology screen.',
+			`Find ${a.tech} and click Research, or add it to the queue.`
+		]
+	}),
+	'separatism-support': (a) => ({
+		title: `${a.country} supports separatism in your country`,
+		why: `${a.country} backs movements that want to break away from your country. They grow stronger, especially among groups that already feel left behind.${a.rival ? ` ${a.country} is also your rival.` : ''}`,
+		caveat:
+			'content minorities are the best defence: their Standard of Living and your Citizenship law matter.',
+		how: [
+			'Open the Politics screen and check Political Movements for a growing secession movement.',
+			`Improve your relations with ${a.country}, or seek support from countries that guarantee your independence.`
+		]
+	}),
+	'unhappy-lobby': (a) => ({
+		title: `The lobby ${a.pro ? 'for' : 'against'} ${a.country} is unhappy`,
+		why: `${list(a.groups, 'en')} ${a.groups.length === 1 ? 'wants' : 'want'} ${a.pro ? 'closer ties' : 'more distance'} with ${a.country} and feel you do too little about it. Their Approval drops.`,
+		caveat: 'you do not have to do everything a lobby wants; weigh it against your other goals.',
+		how: [
+			'Open the Politics screen and choose the lobby.',
+			`See which actions please the lobby, ${a.pro ? 'such as improving relations or signing a treaty' : 'such as a rivalry or fewer treaties'}.`
+		]
+	}),
+	'new-production-methods': (a, _l, place) => ({
+		title:
+			a.methods.length === 1
+				? `New Production Method: ${a.methods[0].name}`
+				: 'New Production Methods available',
+		why: `The game unlocked Production Methods your buildings do not use yet: ${list(
+			a.methods.map(
+				(m) =>
+					`${m.name} for your ${list(unique(m.buildings.map((b) => gameName(b.type))), 'en')} in ${list(unique(m.buildings.map((b) => place(b.state))), 'en')}`
+			),
+			'en'
+		)}. Newer methods often produce more per worker, but not always.`,
+		caveat:
+			'they often use different or more expensive inputs. Compare the costs and profit in the tooltip first.',
+		how: [
+			`Click your ${gameName(a.methods[0].buildings[0].type)} in ${place(a.methods[0].buildings[0].state)} and open its Production Methods.`,
+			`Choose ${a.methods[0].name}. The tooltip shows how inputs, outputs and profit change.`,
+			'Does an input become more expensive or scarce? Make sure you produce or can buy enough of it first.'
 		]
 	}),
 	'be-patient': (a, l, place) => ({

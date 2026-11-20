@@ -2,17 +2,22 @@
 	import type { Advice } from '../advice/rules';
 	import { adviceText, howToStatus, LEVEL_LABEL } from '../advice/texts';
 	import { locale } from '../i18n/locale.svelte';
+	import type { Snapshot } from '../snapshot';
+	import AskAdvisor from './AskAdvisor.svelte';
 	import GameText from './GameText.svelte';
 
 	let {
 		advice,
 		stateNames = {},
-		gameVersion
+		gameVersion,
+		snapshot
 	}: {
 		advice: Advice[];
 		stateNames?: Readonly<Record<string, string>>;
 		/** The player's game version: the steps say for which version they are meant */
 		gameVersion: string;
+		/** With a snapshot, every advice gets an "ask more" button for the AI advisor */
+		snapshot?: Snapshot;
 	} = $props();
 	const t = $derived(locale.t);
 	const lang = $derived(locale.current);
@@ -59,6 +64,20 @@
 										: t.howToUnchecked(status.version)}
 							</p>
 						</details>
+					{/if}
+					{#if snapshot}
+						<div>
+							<AskAdvisor
+								{snapshot}
+								subject={{
+									kind: 'advice',
+									title: text.title,
+									why: text.why,
+									caveat: text.caveat,
+									how: text.how
+								}}
+							/>
+						</div>
 					{/if}
 				</div>
 			</li>

@@ -11,11 +11,11 @@ test('the tip shows the most important advice and opens into the full list', asy
 	const tip = page.locator('[data-tip]');
 	await expect(tip).toContainText('Urgent');
 	await expect(tip).toContainText('Zet je bouwlijst weer aan');
-	await expect(tip.locator('.badge')).toHaveText('7');
+	await expect(tip.locator('.badge')).toHaveText('15');
 
 	await tip.click();
 	const items = page.locator('[data-advice]');
-	await expect(items).toHaveCount(7);
+	await expect(items).toHaveCount(15);
 	await expect(items.first()).toHaveAttribute('data-advice', 'construction-paused');
 
 	const paper = page.locator('[data-advice="expand-best"]');
@@ -38,7 +38,7 @@ test('the tip shows the most important advice and opens into the full list', asy
 	await expect(page.getByText('Spelinstallatie')).toBeVisible();
 	await expect(page.locator('[data-advice]')).toHaveCount(0);
 	await page.getByText('← Terug naar advies').click();
-	await expect(page.locator('[data-advice]')).toHaveCount(7);
+	await expect(page.locator('[data-advice]')).toHaveCount(15);
 });
 
 test('switching to English translates the advice and the tip', async ({ page }) => {

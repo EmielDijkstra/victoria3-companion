@@ -10,6 +10,23 @@
 	import { adviceText, LEVEL_LABEL } from '../advice/texts';
 	import AdviceList from './AdviceList.svelte';
 	import GameText from './GameText.svelte';
+	import GoalList from './GoalList.svelte';
+	import LearnTopic from './LearnTopic.svelte';
+	import { TRADE } from '../learn/trade';
+	import { LAWS } from '../learn/laws';
+	import { POPULATION } from '../learn/population';
+	import { TECHNOLOGY } from '../learn/technology';
+	import { DIPLOMACY } from '../learn/diplomacy';
+	import {
+		diplomacyInsights,
+		lawInsights,
+		peopleInsights,
+		techInsights,
+		tradeInsights
+	} from '../learn/insights';
+	import { gameName } from '../advice/texts';
+	import ConceptCard from './ConceptCard.svelte';
+	import { knowledge } from './knowledge.svelte';
 
 	const t = $derived(locale.t);
 	const lang = $derived(locale.current);
@@ -96,13 +113,82 @@
 	type View = 'collapsed' | 'expanded' | 'hidden';
 
 	let view = $state<View>('collapsed');
-	// Settings (game facts, folders, language) are rarely needed once it runs: separate view
-	let showSettings = $state(false);
+	// Pages in the panel: advice (default), learn (topics such as trade) and settings (rarely
+	// needed once it runs)
+	let page = $state<'advice' | 'learn' | 'settings'>('advice');
+	let topic = $state<'trade' | 'laws' | 'population' | 'technology' | 'diplomacy'>('trade');
+
+	// Advice ids per Learn topic
+	const TOPIC_ADVICE: Record<typeof topic, string[]> = {
+		trade: ['trade-capacity-full', 'subsidized-export', 'import-what-you-make'],
+		laws: ['law-with-support'],
+		population: ['dear-basic-needs', 'understaffed', 'unemployment'],
+		technology: ['no-research', 'research-suggestion'],
+		diplomacy: ['separatism-support', 'unhappy-lobby']
+	};
+	const learn = $derived.by(() => {
+		if (!snapshot) return null;
+		const place = (key: string) => stateNames[key] ?? gameName(key);
+		const topicAdvice = advice.filter((a) => TOPIC_ADVICE[topic].includes(a.id));
+		if (topic === 'laws')
+			return {
+				topic,
+				title: t.learnLaws,
+				sheet: LAWS,
+				insights: lawInsights(
+					snapshot,
+					lang,
+					knowledge.current?.laws,
+					topicAdvice.find((x) => x.id === 'law-with-support' && 'law' in x)?.law
+				),
+				advice: topicAdvice
+			};
+		if (topic === 'diplomacy')
+			return {
+				topic,
+				title: t.learnDiplomacy,
+				sheet: DIPLOMACY,
+				insights: diplomacyInsights(snapshot, lang),
+				advice: topicAdvice
+			};
+		if (topic === 'technology')
+			return {
+				topic,
+				title: t.learnTechnology,
+				sheet: TECHNOLOGY,
+				insights: techInsights(
+					snapshot,
+					lang,
+					topicAdvice.find((x) => x.id === 'research-suggestion' && 'tech' in x)?.tech
+				),
+				advice: topicAdvice
+			};
+		if (topic === 'population')
+			return {
+				topic,
+				title: t.learnPopulation,
+				sheet: POPULATION,
+				insights: peopleInsights(snapshot, lang, place),
+				advice: topicAdvice
+			};
+		return {
+			topic,
+			title: t.learnTrade,
+			sheet: TRADE,
+			insights: tradeInsights(snapshot, lang),
+			advice: topicAdvice
+		};
+	});
 	const pathTrouble = $derived(status ? Object.values(status.paths).some((p) => p.problem) : false);
 	let root: HTMLDivElement;
 	let clickThrough = $state(false);
 
 	const bridge = typeof window !== 'undefined' ? window.overlayBridge : undefined;
+	// Explanations from the installed game; loaded again when the game folder changes
+	$effect(() => {
+		knowledge.load(bridge, status?.paths.game.path ?? null);
+	});
+
 	const interaction = new InteractionSync((interactive) => bridge?.setInteractive(interactive));
 
 	// The Electron window follows the size of the tip or panel.
@@ -256,7 +342,7 @@
 				</div>
 			</header>
 
-			{#if !showSettings}
+			{#if page === 'advice'}
 				<!-- Advice view: what the player needs during play -->
 				{#if save?.state === 'error'}
 					<p class="notice mt-3">{saveMessage(save, t)}</p>
@@ -266,7 +352,7 @@
 				{#if pathTrouble}
 					<p class="notice mt-3">
 						{t.settingsProblem}
-						<button type="button" class="link-btn" onclick={() => (showSettings = true)}
+						<button type="button" class="link-btn" onclick={() => (page = 'settings')}
 							>{t.openSettings}</button
 						>
 					</p>
@@ -277,8 +363,43 @@
 					{#if !snapshot.versionTested}
 						<p class="notice mb-2">{t.untestedVersion(snapshot.gameVersion)}</p>
 					{/if}
-					<AdviceList {advice} {stateNames} gameVersion={snapshot.gameVersion} />
+					<AdviceList {advice} {stateNames} gameVersion={snapshot.gameVersion} {snapshot} />
+					{#if knowledge.current && snapshot.journal?.length}
+						<div class="band">{t.sectionGoals}</div>
+						<GoalList journal={snapshot.journal} />
+					{/if}
 				{:else if save?.state !== 'reading'}
+					<p class="mt-2 text-[15px] text-ink-dim"><GameText text={t.autosaveTip} /></p>
+				{/if}
+			{:else if page === 'learn'}
+				<!-- Learn: topics explained, applied to the player's country -->
+				<div class="band">{t.learn}</div>
+				<div class="mt-2 flex flex-wrap gap-1" role="tablist" aria-label={t.learn}>
+					{#each [['trade', t.learnTrade], ['laws', t.learnLaws], ['population', t.learnPopulation], ['technology', t.learnTechnology], ['diplomacy', t.learnDiplomacy]] as [key, label] (key)}
+						<button
+							type="button"
+							role="tab"
+							class="lang-btn"
+							class:active={topic === key}
+							aria-selected={topic === key}
+							data-topic={key}
+							onclick={() => (topic = key as typeof topic)}>{label}</button
+						>
+					{/each}
+				</div>
+				{#if snapshot && learn}
+					<LearnTopic
+						topic={learn.topic}
+						title={learn.title}
+						sheet={learn.sheet}
+						insights={learn.insights}
+						advice={learn.advice}
+						country={snapshot.country.name}
+						gameVersion={snapshot.gameVersion}
+						{stateNames}
+						{snapshot}
+					/>
+				{:else}
 					<p class="mt-2 text-[15px] text-ink-dim"><GameText text={t.autosaveTip} /></p>
 				{/if}
 			{:else}
@@ -365,14 +486,28 @@
 				<p class="text-[14px] leading-snug text-ink-dim">{t.controlsHelp}</p>
 			{/if}
 
-			<div class="mt-3 flex justify-end border-t border-[rgba(255,240,200,0.1)] pt-2">
-				<button
-					type="button"
-					class="small-btn"
-					data-settings-toggle
-					onclick={() => (showSettings = !showSettings)}
-					>{showSettings ? t.backToAdvice : `⚙ ${t.settings}`}</button
-				>
+			<ConceptCard />
+
+			<div class="mt-3 flex justify-end gap-1.5 border-t border-[rgba(255,240,200,0.1)] pt-2">
+				{#if page === 'advice'}
+					<button type="button" class="small-btn" data-learn-toggle onclick={() => (page = 'learn')}
+						>📖 {t.learn}</button
+					>
+					<button
+						type="button"
+						class="small-btn"
+						data-settings-toggle
+						onclick={() => (page = 'settings')}>⚙ {t.settings}</button
+					>
+				{:else}
+					<button
+						type="button"
+						class="small-btn"
+						data-settings-toggle
+						data-back
+						onclick={() => (page = 'advice')}>{t.backToAdvice}</button
+					>
+				{/if}
 			</div>
 		</section>
 	{/if}

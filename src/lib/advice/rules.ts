@@ -61,6 +61,86 @@ export type Advice =
 			/** Where to build: the state with the most unemployed, so the new levels fill quickly */
 			targetState?: string;
 			stateUnemployed?: number;
+			/** Building types the private builders spend the most on (largest first, max 3) */
+			waitingFor?: string[];
+	  }
+	| {
+			id: 'trade-capacity-full';
+			level: 'smart';
+			states: { state: string; capacity: number; used: number }[];
+			/** Largest imports that cost more here than on the world market (max 2) */
+			dearImports: string[];
+	  }
+	| {
+			id: 'subsidized-export';
+			level: 'consider';
+			/** Goods with an import subsidy that the player exports */
+			goods: { good: string; net: number; policy: string }[];
+	  }
+	| {
+			id: 'import-what-you-make';
+			level: 'smart';
+			good: string;
+			imported: number;
+			produced: number;
+			price: number;
+			base: number;
+			vsBasePct: number;
+	  }
+	| {
+			id: 'law-with-support';
+			level: 'consider';
+			law: string;
+			groupName: string;
+			current: string;
+			support: number;
+			currentSupport: number;
+			/** Interest groups for (approve or more) and against, most clout first, max 3 each */
+			for: { name: string; cloutPct: number; strong: boolean }[];
+			against: { name: string; cloutPct: number; strong: boolean }[];
+			conditions: boolean;
+	  }
+	| {
+			id: 'dear-basic-needs';
+			level: 'smart';
+			need: string;
+			vsBasePct: number;
+			/** The goods of that need that are most expensive, max 2 */
+			goods: { good: string; vsBasePct: number }[];
+	  }
+	| {
+			id: 'understaffed';
+			level: 'consider';
+			building: string;
+			buildingState: string;
+			staffingPct: number;
+			stateUnemployed: number;
+	  }
+	| { id: 'no-research'; level: 'warn' }
+	| { id: 'separatism-support'; level: 'warn'; country: string; rival: boolean }
+	| {
+			id: 'unhappy-lobby';
+			level: 'warn';
+			country: string;
+			pro: boolean;
+			groups: string[];
+	  }
+	| {
+			id: 'research-suggestion';
+			level: 'consider';
+			tech: string;
+			/** Being researched now, when something else */
+			current: string | null;
+			pm: string;
+			/** Building types that profit, most levels first (max 3) */
+			buildings: string[];
+			levels: number;
+	  }
+	| {
+			id: 'new-production-methods';
+			level: 'smart';
+			/** Max 4, the ones with the most building levels first */
+			methods: { name: string; buildings: { type: string; state: string; levels: number }[] }[];
 	  }
 	| {
 			id: 'be-patient';
@@ -135,6 +215,11 @@ const NOT_A_PRODUCER =
 const GOVERNMENT = /^(government_administration|university)$/;
 
 const isProducer = (b: BuildingInfo) => !NOT_A_PRODUCER.test(b.type);
+
+const round = (n: number) => Math.round(n);
+
+/** low_subventions / high_subventions; not "no_tariffs_or_subventions" */
+export const isSubsidy = (policy: string) => /^(low|high|very_high)_subventions$/.test(policy);
 
 function priceOf(prices: PriceInfo[] | null, good: string | undefined) {
 	return good ? prices?.find((p) => p.good === good) : undefined;
@@ -220,9 +305,167 @@ export function adviseFor(s: Snapshot): Advice[] {
 			level: 'smart',
 			investmentPool: e.investmentPool,
 			sectorLevels: s.construction.sectorLevels,
-			...(target ? { targetState: target.state, stateUnemployed: target.unemployed } : {})
+			...(target ? { targetState: target.state, stateUnemployed: target.unemployed } : {}),
+			...(e.investmentByBuilding?.length
+				? { waitingFor: e.investmentByBuilding.slice(0, 3).map((i) => i.building) }
+				: {})
 		});
 	}
+
+	// Trade (spike S6): capacity, subsidies, imports
+	const trade = s.trade;
+	if (trade) {
+		const full = trade.states.filter((t) => t.capacity > 0 && t.used / t.capacity >= 0.95);
+		if (full.length > 0) {
+			out.push({
+				id: 'trade-capacity-full',
+				level: 'smart',
+				states: full,
+				dearImports: trade.goods
+					.filter((t) => t.net < 0 && t.worldPrice > 0 && t.localPrice > t.worldPrice * 1.1)
+					.slice(0, 2)
+					.map((t) => t.good)
+			});
+		}
+		const subsidized = trade.goods.filter((t) => t.net > 0 && isSubsidy(t.importPolicy));
+		if (subsidized.length > 0) {
+			out.push({
+				id: 'subsidized-export',
+				level: 'consider',
+				goods: subsidized.map((t) => ({ good: t.good, net: t.net, policy: t.importPolicy }))
+			});
+		}
+		const made = trade.goods.find(
+			(t) => t.net <= -5 && t.produced > 0 && t.base > 0 && t.localPrice >= t.base * 1.15
+		);
+		if (made) {
+			out.push({
+				id: 'import-what-you-make',
+				level: 'smart',
+				good: made.good,
+				imported: -made.net,
+				produced: made.produced,
+				price: made.localPrice,
+				base: made.base,
+				vsBasePct: round((made.localPrice / made.base - 1) * 100)
+			});
+		}
+	}
+
+	// A law with clearly more support than the current one in its group (spike S6). Support is
+	// the clout-weighted stance of the interest groups; it says what is feasible, not what is good.
+	const lawPick = (s.laws ?? [])
+		.flatMap((g) => g.options.map((o) => ({ g, o, gain: o.support - g.activeSupport })))
+		.filter(({ o, gain }) => o.support >= 0.3 && gain >= 0.3)
+		.sort((a, b) => b.gain - a.gain)[0];
+	if (lawPick) {
+		const side = (approve: boolean) =>
+			lawPick.o.stances
+				.filter((st) =>
+					approve
+						? /approve$/.test(st.stance) && !/disapprove/.test(st.stance)
+						: /disapprove/.test(st.stance)
+				)
+				.slice(0, 3)
+				.map((st) => ({
+					name: st.name,
+					cloutPct: st.cloutPct,
+					strong: st.stance.startsWith('strongly')
+				}));
+		out.push({
+			id: 'law-with-support',
+			level: 'consider',
+			law: lawPick.o.name,
+			groupName: lawPick.g.name,
+			current: lawPick.g.activeName,
+			support: lawPick.o.support,
+			currentSupport: lawPick.g.activeSupport,
+			for: side(true),
+			against: side(false),
+			conditions: lawPick.o.conditions
+		});
+	}
+
+	// Population (spike S6): expensive basic needs lower the Standard of Living of workers and
+	// peasants; half-empty buildings next to unemployed people point at missing qualifications
+	const people = s.people;
+	if (people) {
+		const need = people.needs[0];
+		if (need && need.vsBasePct >= 25) {
+			out.push({
+				id: 'dear-basic-needs',
+				level: 'smart',
+				need: need.name,
+				vsBasePct: need.vsBasePct,
+				goods: need.goods.filter((gd) => gd.vsBasePct >= 15).slice(0, 2)
+			});
+		}
+		const empty = people.understaffed[0];
+		if (empty) {
+			out.push({
+				id: 'understaffed',
+				level: 'consider',
+				building: empty.type,
+				buildingState: empty.state,
+				staffingPct: empty.staffingPct,
+				stateUnemployed: empty.stateUnemployed
+			});
+		}
+	}
+
+	// Diplomacy (spike S6): a country stirring up separatism, and lobbies that feel ignored
+	const diplo = s.diplomacy;
+	if (diplo) {
+		const stirrer = diplo.separatism[0];
+		if (stirrer) {
+			out.push({
+				id: 'separatism-support',
+				level: 'warn',
+				country: stirrer.name,
+				rival: diplo.rivals.some((r) => r.tag === stirrer.tag)
+			});
+		}
+		const lobby = diplo.lobbies.find((l) => l.appeasement < 0);
+		if (lobby) {
+			out.push({
+				id: 'unhappy-lobby',
+				level: 'warn',
+				country: lobby.target.name,
+				pro: lobby.pro,
+				groups: lobby.groups
+			});
+		}
+	}
+
+	// Research (spike S6): always research something, and prefer what helps your own buildings
+	const tech = s.technology;
+	if (tech) {
+		if (!tech.researching) out.push({ id: 'no-research', level: 'warn' });
+		const pick = tech.suggestions[0];
+		if (pick && pick.tech !== tech.researching?.tech && pick.levels >= 5) {
+			const main = pick.unlocks[0];
+			out.push({
+				id: 'research-suggestion',
+				level: 'consider',
+				tech: pick.name,
+				current: tech.researching?.name ?? null,
+				pm: main.pm,
+				buildings: [
+					...new Set(pick.unlocks.filter((u) => u.pm === main.pm).map((u) => u.building))
+				].slice(0, 3),
+				levels: pick.unlocks.filter((u) => u.pm === main.pm).reduce((n, u) => n + u.levels, 0)
+			});
+		}
+	}
+
+	// The game unlocked production methods that the player's buildings do not use yet
+	const levelsOf = (m: { buildings: { levels: number }[] }) =>
+		m.buildings.reduce((n, b) => n + b.levels, 0);
+	const methods = [...(s.newProductionMethods ?? [])]
+		.sort((a, b) => levelsOf(b) - levelsOf(a))
+		.slice(0, 4)
+		.map((m) => ({ name: m.name, buildings: m.buildings }));
+	if (methods.length > 0) out.push({ id: 'new-production-methods', level: 'smart', methods });
 
 	for (const b of s.buildings) {
 		// New producer of a scarce good, still hiring: be patient

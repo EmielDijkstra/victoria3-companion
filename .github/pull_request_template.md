@@ -7,7 +7,7 @@ Closes #
 
 ## Zo test je het
 
-<!-- Stappen voor Emiel om dit geheel te testen -->
+<!-- Stappen waarmee een reviewer dit geheel kan testen -->
 
 ## Gecontroleerd
 

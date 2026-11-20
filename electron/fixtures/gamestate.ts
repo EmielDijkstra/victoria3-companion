@@ -26,9 +26,13 @@ export function makeGamestate(overrides: { countryPatch?: Record<string, unknown
 		country_manager: {
 			database: {
 				'29': { definition: 'NET' },
+				'1': { definition: 'GBR' },
+				'4': { definition: 'FRA' },
 				'25': {
 					definition: 'BEL',
 					tax_level: 'very_high',
+					import_tariffs: { '1': { level: 'high_subventions' } },
+					export_tariffs: { '3': { level: 'low_tariffs' } },
 					states: [477, 476],
 					construction_paused: true,
 					government_queue: {
@@ -67,7 +71,9 @@ export function makeGamestate(overrides: { countryPatch?: Record<string, unknown
 						population_upper_strata: 61265,
 						population_radicals: 1222155,
 						population_loyalists: 33692,
-						population_unemployed_workforce: 168084
+						population_unemployed_workforce: 168084,
+						// [length, {index: value}, …]: 0 = academics, 1 = laborers (test order)
+						population_workforce_by_profession: [2, { '0': 500 }, { '1': 391050 }]
 					},
 					...overrides.countryPatch
 				}
@@ -78,6 +84,10 @@ export function makeGamestate(overrides: { countryPatch?: Record<string, unknown
 				'477': {
 					region: 'STATE_FLANDERS',
 					country: 25,
+					trade_capacity: 64,
+					trade_capacity_usage: 64,
+					// + export, − import (spike S6)
+					trade: { goods: { '1': { value: 6 }, '3': { value: -4 } } },
 					infrastructure: 124,
 					infrastructure_usage: 68,
 					pop_statistics: {
@@ -91,6 +101,7 @@ export function makeGamestate(overrides: { countryPatch?: Record<string, unknown
 				'476': {
 					region: 'STATE_GELRE',
 					country: 25,
+					trade: { goods: { '1': { value: 2 } } },
 					infrastructure: 32,
 					infrastructure_usage: 12,
 					pop_statistics: {
@@ -102,11 +113,33 @@ export function makeGamestate(overrides: { countryPatch?: Record<string, unknown
 				}
 			}
 		},
+		market_manager: {
+			world_market: { price_trend: { channels: { '1': { index: 1, values: [41.04] } } } }
+		},
+		treaty_article_manager: {
+			database: {
+				'1': { article: 'trade_privilege', source_country: 25, target_country: 29 },
+				'2': { article: 'trade_privilege', source_country: 29, target_country: 25 },
+				'3': { article: 'guarantee_independence', source_country: 25, target_country: 1 },
+				'4': { article: 'guarantee_independence', source_country: 1, target_country: 25 }
+			}
+		},
 		building_manager: {
 			database: {
+				'90': {
+					building: 'building_trade_center',
+					state: 477,
+					levels: 3,
+					staffing: 3,
+					trade_revenue: 100,
+					tariffs: 20,
+					subventions: 5,
+					profit_after_reserves: 10
+				},
 				'1': {
 					building: 'building_paper_mill',
 					state: 477,
+					output_goods: { goods: { '1': { value: 12 } } },
 					levels: 1,
 					staffing: 1,
 					profit_after_reserves: 1615
@@ -142,11 +175,80 @@ export function makeGamestate(overrides: { countryPatch?: Record<string, unknown
 				}
 			}
 		},
+		pops: {
+			database: {
+				'1': {
+					type: 'laborers',
+					location: 477,
+					workforce: 300,
+					dependents: 100,
+					food_security: { value: 0.5 }
+				},
+				'2': {
+					type: 'laborers',
+					location: 477,
+					workforce: 100,
+					dependents: 0,
+					food_security: { value: 0.9 }
+				},
+				'3': {
+					type: 'laborers',
+					location: 479,
+					workforce: 999,
+					dependents: 0,
+					food_security: { value: 0.1 }
+				}
+			}
+		},
+		relations: {
+			database: {
+				'1': { first: { country: 4 }, second: { country: 25 }, relations: 100 },
+				'2': { first: { country: 25 }, second: { country: 29 }, relations: -30 },
+				'3': { first: { country: 1 }, second: { country: 29 }, relations: 90 }
+			}
+		},
+		pacts: {
+			database: {
+				'1': { targets: { first: 25, second: 29 }, action: 'rivalry' },
+				'2': { targets: { first: 29, second: 25 }, action: 'support_separatism' },
+				'3': { targets: { first: 4, second: 25 }, action: 'increase_relations' }
+			}
+		},
+		political_lobbies: {
+			database: {
+				'1': {
+					country: 25,
+					target_country: 4,
+					type: 'lobby_pro_country',
+					appeasement: -2,
+					members: [88]
+				},
+				'2': {
+					country: 29,
+					target_country: 25,
+					type: 'lobby_anti_country',
+					appeasement: 0,
+					members: []
+				}
+			}
+		},
+		technology: {
+			database: {
+				'5': {
+					country: 25,
+					acquired_technologies: ['tech_a'],
+					research_technology: 'tech_c',
+					currently_spreading_technologies: ['tech_b']
+				},
+				'6': { country: 29, acquired_technologies: ['tech_b'] }
+			}
+		},
 		interest_groups: {
 			database: {
 				'88': {
 					country: 25,
 					definition: 'ig_intelligentsia',
+					ideologies: ['ideology_liberal'],
 					approval: 5,
 					clout: 0.417,
 					influence_type: 'influential'
@@ -172,6 +274,21 @@ export function makeGamestate(overrides: { countryPatch?: Record<string, unknown
 				'1': { law: 'law_monarchy', country: 25, active: true },
 				'2': { law: 'law_free_trade', country: 25 },
 				'3': { law: 'law_no_police', country: 25, active: true }
+			}
+		},
+		journal_entry_manager: {
+			database: {
+				'1': {
+					type: 'je_tutorial_grow_gdp',
+					country: 25,
+					active: true,
+					date_added: '1839.3.4',
+					baseline_value: 3916769.44,
+					goal_value: 4895961.8
+				},
+				'2': { type: 'je_done', country: 25, date_added: '1837.1.1' },
+				'3': { type: 'je_other_country', country: 29, active: true, date_added: '1837.1.1' },
+				'4': 'none'
 			}
 		}
 	};
