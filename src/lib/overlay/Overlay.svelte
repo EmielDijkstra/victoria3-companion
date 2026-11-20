@@ -2,6 +2,53 @@
 	import { onMount } from 'svelte';
 	import Emblem from './Emblem.svelte';
 	import { InteractionSync } from './interaction';
+	import type { AppStatus, PathKind } from '../status';
+	import {
+		formatClock,
+		formatGameDate,
+		formatGameDateShort,
+		intervalLabel,
+		suggestMonthlyAutosave
+	} from '../format';
+
+	let status = $state<AppStatus | null>(null);
+	const save = $derived(status?.save);
+	const summary = $derived(
+		save?.state === 'ready' ? save.summary : save?.state === 'error' ? save.summary : undefined
+	);
+
+	// What the small tip says
+	const tip = $derived.by(() => {
+		if (!save) return { tag: 'Companion', title: 'Opstarten…', tone: 'dim' };
+		switch (save.state) {
+			case 'reading':
+				return { tag: 'Bezig', title: 'Save inlezen…', tone: 'dim' };
+			case 'ready':
+				return {
+					tag: 'Ingelezen',
+					title: `${save.summary.country} · ${formatGameDateShort(save.summary.gameDate)}`,
+					tone: 'good'
+				};
+			case 'error':
+				return { tag: 'Let op', title: 'Probleem – klik voor info', tone: 'bad' };
+			default:
+				return { tag: 'Companion', title: 'Wacht op een save', tone: 'dim' };
+		}
+	});
+
+	const PATH_LABELS: Record<PathKind, string> = {
+		userData: 'Saves en instellingen',
+		game: 'Spelinstallatie',
+		rakaly: 'Rakaly (leest saves)'
+	};
+	const pathKinds: PathKind[] = ['userData', 'game', 'rakaly'];
+
+	async function choosePath(kind: PathKind) {
+		if (bridge) status = await bridge.choosePath(kind);
+	}
+	async function resetPath(kind: PathKind) {
+		if (bridge) status = await bridge.resetPath(kind);
+	}
 
 	type View = 'collapsed' | 'expanded' | 'hidden';
 
@@ -16,9 +63,14 @@
 	function reportSize() {
 		if (!bridge || !root) return;
 		requestAnimationFrame(() => {
-			const rect = root.getBoundingClientRect();
+			const box = root.firstElementChild as HTMLElement | null;
+			if (!box) return;
+			// Full content height, even while the window is still too small to show it all
+			// (spike S3: measuring inside the small window kept it small). Main caps it at the screen.
+			const borders = box.offsetHeight - box.clientHeight;
+			const height = box.scrollHeight + borders;
 			// + margin for the shadow
-			bridge.resize(Math.ceil(rect.width) + 8, Math.ceil(root.scrollHeight) + 8);
+			bridge.resize(Math.ceil(box.offsetWidth) + 8, Math.ceil(height) + 8);
 		});
 	}
 
@@ -62,6 +114,8 @@
 			// Alt+C or Alt+V changed the window: re-send whether the mouse is over us.
 			interaction.reset();
 		});
+		bridge.onStatus((s) => (status = s));
+		bridge.getStatus().then((s) => (status ??= s));
 		reportSize();
 		return () => observer.disconnect();
 	});
@@ -91,10 +145,13 @@
 			<span class="handle" role="presentation" title="Verslepen" onpointerdown={startDrag}></span>
 			<Emblem size={30} />
 			<span class="min-w-0">
-				<span class="block text-[12.5px] leading-none tracking-wider text-ink-dim uppercase"
-					>Companion</span
+				<span
+					class="block text-[12.5px] leading-none tracking-wider uppercase"
+					class:text-ink-dim={tip.tone === 'dim'}
+					class:text-good={tip.tone === 'good'}
+					class:text-bad={tip.tone === 'bad'}>{tip.tag}</span
 				>
-				<span class="block truncate text-base font-semibold text-ink-strong">Nog geen advies</span>
+				<span class="block truncate text-base font-semibold text-ink-strong">{tip.title}</span>
 			</span>
 			<button
 				type="button"
@@ -107,7 +164,9 @@
 			>
 		</div>
 	{:else if view === 'expanded'}
-		<section class="panel flex flex-col rounded-[7px] px-4 pt-3.5 pb-4">
+		<section
+			class="panel flex max-h-[calc(100vh-8px)] flex-col overflow-y-auto rounded-[7px] px-4 pt-3.5 pb-4"
+		>
 			<header class="flex items-center gap-3">
 				<span
 					class="handle min-h-10 self-stretch"
@@ -120,7 +179,11 @@
 					<div class="text-[22px] leading-tight font-bold text-ink-strong">
 						Victoria 3 Companion
 					</div>
-					<div class="text-[15px] text-ink-dim">Klaar om mee te kijken</div>
+					<div class="text-[15px] text-ink-dim">
+						{#if save?.state === 'reading'}Save inlezen…{:else if summary}{summary.country} · {formatGameDate(
+								summary.gameDate
+							)}{:else}Wacht op een save{/if}
+					</div>
 				</div>
 				<div class="ml-auto flex gap-0.5 self-start">
 					<button
@@ -138,15 +201,98 @@
 				</div>
 			</header>
 
-			<div class="band">Nog geen advies</div>
-			<p class="text-base leading-snug">
-				Zodra er een <span class="text-concept">autosave</span> is, lees ik je spel in en geef ik hier
-				advies: wat je nu het beste kunt doen, waarom, en hoe je het in het spel doet.
-			</p>
-			<p class="mt-2 text-[15px] text-ink-dim">
-				Tip: zet in het spel <span class="text-concept">Autosave Interval</span> op
-				<b class="text-ink-strong">Every month</b>.
-			</p>
+			{#if save?.state === 'error'}
+				<p class="notice mt-3">{save.message}</p>
+			{:else if save?.state === 'waiting'}
+				<p class="mt-3 text-[15px] text-ink-dim">{save.message}</p>
+			{/if}
+
+			{#if summary}
+				<div class="band">Je spel</div>
+				<dl class="facts">
+					<dt>Land</dt>
+					<dd>{summary.country}</dd>
+					<dt>Datum</dt>
+					<dd>{formatGameDate(summary.gameDate)}</dd>
+					<dt>Spelversie</dt>
+					<dd>{summary.gameVersion}</dd>
+					<dt>Modus</dt>
+					<dd>
+						{summary.ironman ? 'Ironman' : 'Gewone save'} · achievements
+						{summary.achievementsAllowed ? 'aan' : 'uit'}
+					</dd>
+					<dt>Save</dt>
+					<dd class="truncate" title={summary.fileName}>{summary.fileName}</dd>
+					<dt>Ingelezen</dt>
+					<dd>
+						om {formatClock(summary.readAt)} ({(summary.durationMs / 1000).toLocaleString('nl-NL', {
+							maximumFractionDigits: 1
+						})} s)
+					</dd>
+					{#if summary.ironman && summary.autosaveInterval}
+						<!-- Ironman may fix the interval when the campaign starts: show it, don't advise. -->
+						<dt>Autosave</dt>
+						<dd>{intervalLabel(summary.autosaveInterval)}</dd>
+					{/if}
+				</dl>
+				{#if !summary.ironman && suggestMonthlyAutosave(summary.autosaveInterval)}
+					<p class="mt-2 text-[15px] leading-snug text-ink-dim">
+						Je autosave staat op <b class="text-ink-strong"
+							>{intervalLabel(summary.autosaveInterval)}</b
+						>. Zet in het spel <span class="text-concept">Autosave Interval</span> op
+						<b class="text-ink-strong">Every month</b>, dan loop ik hooguit één maand achter.
+					</p>
+				{/if}
+
+				<div class="band">Advies</div>
+				<p class="text-[15px] leading-snug text-ink-dim">
+					Je save is ingelezen. Advies op basis van je spel volgt in een volgende versie.
+				</p>
+			{:else if save?.state !== 'reading'}
+				<p class="mt-2 text-[15px] text-ink-dim">
+					Tip: zet in het spel <span class="text-concept">Autosave Interval</span> op
+					<b class="text-ink-strong">Every month</b>.
+				</p>
+			{/if}
+
+			{#if status}
+				<div class="band">Mappen</div>
+				<ul class="flex flex-col gap-2">
+					{#each pathKinds as kind (kind)}
+						{@const p = status.paths[kind]}
+						<li class="text-[14.5px] leading-snug">
+							<div class="flex items-baseline justify-between gap-2">
+								<span class="text-ink-strong">{PATH_LABELS[kind]}</span>
+								<span class="flex flex-none gap-1">
+									<button type="button" class="small-btn" onclick={() => choosePath(kind)}
+										>Kies…</button
+									>
+									{#if p.source === 'manual'}
+										<button
+											type="button"
+											class="small-btn"
+											title="Weer automatisch zoeken"
+											onclick={() => resetPath(kind)}>Auto</button
+										>
+									{/if}
+								</span>
+							</div>
+							{#if p.path}
+								<div class="truncate text-ink-dim" title={p.path}>
+									{p.source === 'manual' ? 'Zelf gekozen: ' : 'Gevonden: '}{p.path}
+								</div>
+							{:else}
+								<div class="text-bad">{p.problem}</div>
+							{/if}
+						</li>
+					{/each}
+				</ul>
+				{#if status.installedVersion}
+					<p class="mt-1 text-[13.5px] text-ink-dim">
+						Geïnstalleerde versie: {status.installedVersion}
+					</p>
+				{/if}
+			{/if}
 
 			<p
 				class="mt-3 border-t border-[rgba(255,240,200,0.1)] pt-2 text-[13.5px] leading-snug text-ink-dim"
@@ -208,6 +354,47 @@
 		font: 600 17px/1 var(--font-serif);
 		cursor: pointer;
 	}
+	section {
+		scrollbar-color: var(--color-panel-edge-light) rgba(0, 0, 0, 0.25);
+	}
+
+	.facts {
+		display: grid;
+		grid-template-columns: auto 1fr;
+		gap: 2px 12px;
+		margin: 0;
+		font-size: 15.5px;
+	}
+	.facts dt {
+		color: var(--color-ink-dim);
+	}
+	.facts dd {
+		margin: 0;
+		min-width: 0;
+		color: var(--color-ink-strong);
+	}
+
+	.notice {
+		padding: 6px 8px;
+		border-left: 3px solid var(--color-bad);
+		background: rgba(236, 122, 98, 0.08);
+		font-size: 15px;
+		line-height: 1.35;
+	}
+
+	.small-btn {
+		padding: 0 8px;
+		border: 1px solid var(--color-button-edge);
+		border-radius: 3px;
+		background: linear-gradient(180deg, var(--color-button-top), var(--color-button-bottom));
+		color: #f1f4e4;
+		font: 500 13.5px/1.5 var(--font-serif);
+		cursor: pointer;
+	}
+	.small-btn:hover {
+		filter: brightness(1.12);
+	}
+
 	.icon-btn:hover {
 		color: var(--color-ink-strong);
 		border-color: var(--color-panel-edge);

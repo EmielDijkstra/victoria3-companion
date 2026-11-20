@@ -12,7 +12,7 @@
 		"dev": "concurrently -k -n web,app -c blue,yellow \"vite dev --port 5180 --strictPort\" \"wait-on tcp:localhost:5180 && npm run build:electron && electron . --dev-server=http://localhost:5180\"",
 		"start": "electron .",
 		"build": "vite build && npm run build:electron",
-		"build:electron": "esbuild electron/main.ts electron/preload.ts --bundle --platform=node --format=cjs --external:electron --outdir=dist-electron --out-extension:.js=.cjs --log-level=warning",
+		"build:electron": "esbuild electron/main.ts electron/preload.ts electron/save-reader-worker.ts --bundle --platform=node --format=cjs --external:electron --outdir=dist-electron --out-extension:.js=.cjs --log-level=warning",
 		"prepare": "svelte-kit sync || echo ''",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json && tsc -p electron/tsconfig.json",
 		"lint": "prettier --check . && eslint .",
