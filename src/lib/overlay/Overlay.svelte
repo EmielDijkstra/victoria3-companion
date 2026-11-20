@@ -363,7 +363,7 @@
 					{#if !snapshot.versionTested}
 						<p class="notice mb-2">{t.untestedVersion(snapshot.gameVersion)}</p>
 					{/if}
-					<AdviceList {advice} {stateNames} gameVersion={snapshot.gameVersion} />
+					<AdviceList {advice} {stateNames} gameVersion={snapshot.gameVersion} {snapshot} />
 					{#if knowledge.current && snapshot.journal?.length}
 						<div class="band">{t.sectionGoals}</div>
 						<GoalList journal={snapshot.journal} />
@@ -397,6 +397,7 @@
 						country={snapshot.country.name}
 						gameVersion={snapshot.gameVersion}
 						{stateNames}
+						{snapshot}
 					/>
 				{:else}
 					<p class="mt-2 text-[15px] text-ink-dim"><GameText text={t.autosaveTip} /></p>
