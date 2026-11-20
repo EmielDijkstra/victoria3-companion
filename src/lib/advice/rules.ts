@@ -116,6 +116,18 @@ export type Advice =
 			staffingPct: number;
 			stateUnemployed: number;
 	  }
+	| { id: 'no-research'; level: 'warn' }
+	| {
+			id: 'research-suggestion';
+			level: 'consider';
+			tech: string;
+			/** Being researched now, when something else */
+			current: string | null;
+			pm: string;
+			/** Building types that profit, most levels first (max 3) */
+			buildings: string[];
+			levels: number;
+	  }
 	| {
 			id: 'new-production-methods';
 			level: 'smart';
@@ -389,6 +401,27 @@ export function adviseFor(s: Snapshot): Advice[] {
 				buildingState: empty.state,
 				staffingPct: empty.staffingPct,
 				stateUnemployed: empty.stateUnemployed
+			});
+		}
+	}
+
+	// Research (spike S6): always research something, and prefer what helps your own buildings
+	const tech = s.technology;
+	if (tech) {
+		if (!tech.researching) out.push({ id: 'no-research', level: 'warn' });
+		const pick = tech.suggestions[0];
+		if (pick && pick.tech !== tech.researching?.tech && pick.levels >= 5) {
+			const main = pick.unlocks[0];
+			out.push({
+				id: 'research-suggestion',
+				level: 'consider',
+				tech: pick.name,
+				current: tech.researching?.name ?? null,
+				pm: main.pm,
+				buildings: [
+					...new Set(pick.unlocks.filter((u) => u.pm === main.pm).map((u) => u.building))
+				].slice(0, 3),
+				levels: pick.unlocks.filter((u) => u.pm === main.pm).reduce((n, u) => n + u.levels, 0)
 			});
 		}
 	}

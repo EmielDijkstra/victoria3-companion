@@ -29,13 +29,14 @@ const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 /**
  * A term followed by another capitalised word is part of a longer name ("Trade Center",
- * "Company Headquarter"), so it is not highlighted on its own.
+ * "Company Headquarter"), and so is a term after a hyphenated word ("Steel-Frame Buildings"):
+ * those are not highlighted on their own.
  */
 function buildPattern(terms: readonly string[]) {
 	const sorted = [...new Set(terms)].sort((a, b) => b.length - a.length);
 	return {
 		set: new Set(sorted),
-		re: new RegExp(`\\b(${sorted.map(escape).join('|')})\\b(?! [A-Z])`, 'g')
+		re: new RegExp(`(?<!-[A-Z][a-z]+ )\\b(${sorted.map(escape).join('|')})\\b(?! [A-Z])`, 'g')
 	};
 }
 

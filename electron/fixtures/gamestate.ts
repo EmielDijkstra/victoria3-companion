@@ -199,7 +199,12 @@ export function makeGamestate(overrides: { countryPatch?: Record<string, unknown
 		},
 		technology: {
 			database: {
-				'5': { country: 25, acquired_technologies: ['tech_a'] },
+				'5': {
+					country: 25,
+					acquired_technologies: ['tech_a'],
+					research_technology: 'tech_c',
+					currently_spreading_technologies: ['tech_b']
+				},
 				'6': { country: 29, acquired_technologies: ['tech_b'] }
 			}
 		},

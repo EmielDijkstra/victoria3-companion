@@ -15,7 +15,8 @@
 	import { TRADE } from '../learn/trade';
 	import { LAWS } from '../learn/laws';
 	import { POPULATION } from '../learn/population';
-	import { lawInsights, peopleInsights, tradeInsights } from '../learn/insights';
+	import { TECHNOLOGY } from '../learn/technology';
+	import { lawInsights, peopleInsights, techInsights, tradeInsights } from '../learn/insights';
 	import { gameName } from '../advice/texts';
 	import ConceptCard from './ConceptCard.svelte';
 	import { knowledge } from './knowledge.svelte';
@@ -108,13 +109,14 @@
 	// Pages in the panel: advice (default), learn (topics such as trade) and settings (rarely
 	// needed once it runs)
 	let page = $state<'advice' | 'learn' | 'settings'>('advice');
-	let topic = $state<'trade' | 'laws' | 'population'>('trade');
+	let topic = $state<'trade' | 'laws' | 'population' | 'technology'>('trade');
 
 	// Advice ids per Learn topic
 	const TOPIC_ADVICE: Record<typeof topic, string[]> = {
 		trade: ['trade-capacity-full', 'subsidized-export', 'import-what-you-make'],
 		laws: ['law-with-support'],
-		population: ['dear-basic-needs', 'understaffed', 'unemployment']
+		population: ['dear-basic-needs', 'understaffed', 'unemployment'],
+		technology: ['no-research', 'research-suggestion']
 	};
 	const learn = $derived.by(() => {
 		if (!snapshot) return null;
@@ -130,6 +132,18 @@
 					lang,
 					knowledge.current?.laws,
 					topicAdvice.find((x) => x.id === 'law-with-support' && 'law' in x)?.law
+				),
+				advice: topicAdvice
+			};
+		if (topic === 'technology')
+			return {
+				topic,
+				title: t.learnTechnology,
+				sheet: TECHNOLOGY,
+				insights: techInsights(
+					snapshot,
+					lang,
+					topicAdvice.find((x) => x.id === 'research-suggestion' && 'tech' in x)?.tech
 				),
 				advice: topicAdvice
 			};
@@ -345,7 +359,7 @@
 				<!-- Learn: topics explained, applied to the player's country -->
 				<div class="band">{t.learn}</div>
 				<div class="mt-2 flex gap-1" role="tablist" aria-label={t.learn}>
-					{#each [['trade', t.learnTrade], ['laws', t.learnLaws], ['population', t.learnPopulation]] as [key, label] (key)}
+					{#each [['trade', t.learnTrade], ['laws', t.learnLaws], ['population', t.learnPopulation], ['technology', t.learnTechnology]] as [key, label] (key)}
 						<button
 							type="button"
 							role="tab"

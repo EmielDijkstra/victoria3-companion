@@ -43,5 +43,8 @@ describe('splitGameTerms: longer names', () => {
 		const parts = splitGameTerms('Je Trade Center en je Trade groeien.', ['Trade']);
 		expect(parts.filter((p) => p.term).map((p) => p.text)).toEqual(['Trade']);
 		expect(parts.map((p) => p.text).join('')).toBe('Je Trade Center en je Trade groeien.');
+		const hyphen = splitGameTerms('Steel-Frame Buildings en je Buildings', ['Buildings']);
+		expect(hyphen.filter((p) => p.term).map((p) => p.text)).toEqual(['Buildings']);
+		expect(hyphen[0].text).toBe('Steel-Frame Buildings en je ');
 	});
 });

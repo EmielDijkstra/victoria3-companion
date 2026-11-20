@@ -8,12 +8,14 @@ import {
 	parseLocalization,
 	parsePmGroups,
 	parsePopNeeds,
-	parsePopTypeKeys
+	parsePopTypeKeys,
+	parseTechs
 } from './game-data';
 import {
 	buildLaws,
 	buildPeople,
 	buildSnapshot,
+	buildTech,
 	indexedArray,
 	newestOfChannel,
 	newestOfWeekly,
@@ -458,6 +460,66 @@ describe('population', () => {
 				levels: 3,
 				staffingPct: 40,
 				stateUnemployed: 99192
+			}
+		]);
+	});
+});
+
+describe('technology', () => {
+	const TECH_TXT = `tech_a = {
+	era = era_1
+	category = production
+}
+tech_b = {
+	era = era_1
+	category = society
+}
+tech_c = {
+	era = era_2
+	category = production
+	unlocking_technologies = {
+		tech_a
+	}
+}
+tech_d = {
+	era = era_2
+	category = production
+	unlocking_technologies = { tech_a tech_b }
+}`;
+
+	it('reads era, category and prerequisites', () => {
+		expect(parseTechs(TECH_TXT).tech_c).toEqual({
+			era: 'era_2',
+			category: 'production',
+			requires: ['tech_a']
+		});
+	});
+
+	it("suggests research that unlocks a method for the player's own building types", () => {
+		const tech = buildTech(
+			makeGamestate(),
+			25,
+			[477, 476],
+			{
+				techs: parseTechs(TECH_TXT),
+				pmTechs: { pm_better_paper: ['tech_c'], pm_future: ['tech_d'] },
+				names: { tech_c: 'Tech C', tech_b: 'Tech B' }
+			},
+			{
+				groups: { pm_better_paper: ['pmg_paper'], pm_future: ['pmg_paper'] },
+				buildingGroups: { building_paper_mill: ['pmg_paper'] },
+				names: { pm_better_paper: 'Better Paper' }
+			}
+		);
+		expect(tech.researching).toEqual({ tech: 'tech_c', name: 'Tech C' });
+		expect(tech.spreading).toEqual(['Tech B']);
+		// tech_d needs tech_b, which is not known yet: not suggested
+		expect(tech.suggestions).toEqual([
+			{
+				tech: 'tech_c',
+				name: 'Tech C',
+				levels: 1,
+				unlocks: [{ pm: 'Better Paper', building: 'paper_mill', levels: 1 }]
 			}
 		]);
 	});

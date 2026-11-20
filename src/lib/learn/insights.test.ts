@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { belgium } from '../advice/fixtures';
-import { lawInsights, peopleInsights, tradeInsights } from './insights';
+import { lawInsights, peopleInsights, techInsights, tradeInsights } from './insights';
 
 const place = (key: string) => ({ gelre: 'Belgian Gelre' })[key] ?? key;
 
@@ -62,5 +62,15 @@ describe('peopleInsights', () => {
 			place
 		);
 		expect(hungry.join(' ')).toContain('In Belgian Gelre people struggle to buy enough food.');
+	});
+});
+
+describe('techInsights', () => {
+	it('explains spreading technologies and other useful research, without the advised one', () => {
+		expect(techInsights(belgium(), 'nl', 'Steam Donkey')).toEqual([
+			'Psychiatry en Shell Gun verspreiden zich vanuit andere landen naar jou: daar krijg je vanzelf voortgang op.',
+			'Ook nuttig: Steel-Frame Buildings geeft Covered Markets aan je Urban Center.',
+			'Geletterdheid is 42%. Meer geletterdheid en Universities geven meer Innovation, dus sneller onderzoek.'
+		]);
 	});
 });

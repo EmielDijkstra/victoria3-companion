@@ -163,6 +163,27 @@ export function belgium(patch: (s: Snapshot) => void = () => {}): Snapshot {
 				}
 			]
 		},
+		technology: {
+			researching: { tech: 'canneries', name: 'Canneries' },
+			spreading: ['Psychiatry', 'Shell Gun'],
+			suggestions: [
+				{
+					tech: 'steam_donkey',
+					name: 'Steam Donkey',
+					levels: 20,
+					unlocks: [
+						{ pm: 'Steam Donkey', building: 'logging_camp', levels: 12 },
+						{ pm: 'Steam Donkey', building: 'iron_mine', levels: 8 }
+					]
+				},
+				{
+					tech: 'steel_frame_buildings',
+					name: 'Steel-Frame Buildings',
+					levels: 19,
+					unlocks: [{ pm: 'Covered Markets', building: 'urban_center', levels: 19 }]
+				}
+			]
+		},
 		journal: [
 			{ type: 'je_tutorial_grow_gdp', value: 3916769, goal: 4895962, since: '1839.3.4' },
 			{ type: 'je_without_texts', value: 0, goal: 0, since: '1840.1.1' }

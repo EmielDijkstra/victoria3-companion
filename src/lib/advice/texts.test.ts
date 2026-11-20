@@ -147,6 +147,16 @@ const samples: Advice[] = [
 		buildingState: 'gelre',
 		staffingPct: 43,
 		stateUnemployed: 30486
+	},
+	{ id: 'no-research', level: 'warn' },
+	{
+		id: 'research-suggestion',
+		level: 'consider',
+		tech: 'Steam Donkey',
+		current: 'Canneries',
+		pm: 'Steam Donkey',
+		buildings: ['logging_camp', 'iron_mine'],
+		levels: 20
 	}
 ];
 
@@ -317,5 +327,17 @@ describe('population texts', () => {
 		);
 		expect(empty.title).toBe('Livestock Ranch in Belgian Gelre blijft half leeg');
 		expect(empty.why).toContain('30.486 mensen werk zoeken');
+	});
+});
+
+describe('research text', () => {
+	it('says what the research gives and compares with the current research', () => {
+		const text = adviceText(
+			samples.find((x) => x.id === 'research-suggestion')!,
+			'nl'
+		);
+		expect(text.why).toBe(
+			'Steam Donkey geeft de Production Method Steam Donkey aan je Logging Camp en Iron Mine (samen 20 levels). Je onderzoekt nu Canneries; dat helpt minder van je gebouwen.'
+		);
 	});
 });

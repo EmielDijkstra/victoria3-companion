@@ -57,7 +57,7 @@ Zet in het spel **Autosave Interval** op **Every month**.
 - **⚙ Instellingen** (onderaan het paneel): je spel, mappen, taal (NL/EN) en bediening.
 - **Doelen van het spel**: wat het spel nu van je vraagt (Journal Entries), met voortgang en de
   officiële stappen uit de tutorial van je eigen spelversie.
-- **📖 Leren** (onderaan het paneel): Handel, Wetten en Bevolking. Per onderwerp de begrippen
+- **📖 Leren** (onderaan het paneel): Handel, Wetten, Bevolking en Technologie. Per onderwerp de begrippen
   (uitgelegd door het spel), hoe het werkt en wat slim is, wat er bij jouw land opvalt en het advies.
   Geen tabellen met cijfers: die toont het spel zelf. De app legt uit waarom iets niet goed gaat en
   noemt hooguit het cijfer dat de tip veroorzaakt.

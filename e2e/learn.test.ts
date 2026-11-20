@@ -55,3 +55,14 @@ test('population: what stands out and the population advice', async ({ page }) =
 	await expect(page.locator('[data-advice="understaffed"]')).toBeVisible();
 	await expect(page.locator('table')).toHaveCount(0);
 });
+
+test('technology: research that helps your own buildings', async ({ page }) => {
+	await page.locator('[data-topic="technology"]').click();
+	await expect(page.locator('[data-learn-topic="technology"]')).toHaveText('Technologie');
+	await expect(page.locator('[data-insights]')).toContainText(
+		'Psychiatry en Shell Gun verspreiden zich vanuit andere landen naar jou'
+	);
+	await expect(page.locator('[data-advice="research-suggestion"]')).toContainText(
+		'Overweeg Steam Donkey als volgend onderzoek'
+	);
+});

@@ -53,6 +53,8 @@ export interface GameNames {
 	laws?: LawData | null;
 	/** Professions, pop needs and their names; null when they could not be read */
 	population?: PopulationData | null;
+	/** Technologies and what they unlock; null when they could not be read */
+	technology?: TechData | null;
 }
 
 /** Simple reader for Paradox localization lines:  KEY:0 "Text"  (the :0 is optional). */
@@ -87,7 +89,8 @@ export function readGameNames(gameDir: string | null): GameNames | null {
 			adjectives,
 			productionMethods: readProductionMethods(gameDir),
 			laws: readLawData(gameDir),
-			population: readPopulationData(gameDir)
+			population: readPopulationData(gameDir),
+			technology: readTechData(gameDir)
 		};
 	} catch {
 		return null;
@@ -112,10 +115,14 @@ export function parseBuildingGroups(text: string): Record<string, string[]> {
 }
 
 /** Top-level blocks starting with `prefix` → the words in their `field = { … }` list. */
-function parseListBlocks(text: string, prefix: string, field: string): Record<string, string[]> {
+export function parseListBlocks(
+	text: string,
+	prefix: string,
+	field: string
+): Record<string, string[]> {
 	const out: Record<string, string[]> = {};
 	const clean = text.replace(/^\uFEFF/, '').replace(/#[^\n]*/g, '');
-	const starts = [...clean.matchAll(new RegExp(`^(${prefix}[A-Za-z0-9_]+)\\s*=\\s*\\{`, 'gm'))];
+	const starts = [...clean.matchAll(new RegExp(`^(${prefix}[A-Za-z0-9_-]+)\\s*=\\s*\\{`, 'gm'))];
 	const list = new RegExp(`${field}\\s*=\\s*\\{([^}]*)\\}`);
 	starts.forEach((m, i) => {
 		const body = clean.slice(m.index, starts[i + 1]?.index ?? clean.length);
@@ -336,6 +343,77 @@ export function readPopulationData(gameDir: string | null): PopulationData | nul
 			// names fall back to the key
 		}
 		return { popTypes, needs, needNames };
+	} catch {
+		return null;
+	}
+}
+
+export interface TechDefinition {
+	era: string;
+	/** production, military or society */
+	category: string;
+	/** Technologies needed first */
+	requires: string[];
+}
+
+/** Technologies from `common/technology/technologies/*.txt`. */
+export function parseTechs(text: string): Record<string, TechDefinition> {
+	const out: Record<string, TechDefinition> = {};
+	const clean = text.replace(/^\uFEFF/, '').replace(/#[^\n]*/g, '');
+	const starts = [...clean.matchAll(/^([a-z][A-Za-z0-9_-]*)\s*=\s*\{/gm)];
+	starts.forEach((m, i) => {
+		const body = clean.slice(m.index, starts[i + 1]?.index ?? clean.length);
+		const era = body.match(/^\s+era\s*=\s*([a-z0-9_]+)/m)?.[1];
+		if (!era) return;
+		const requires = body.match(/unlocking_technologies\s*=\s*\{([^}]*)\}/)?.[1];
+		out[m[1]] = {
+			era,
+			category: body.match(/^\s+category\s*=\s*([a-z_]+)/m)?.[1] ?? '',
+			requires: requires ? requires.split(/\s+/).filter(Boolean) : []
+		};
+	});
+	return out;
+}
+
+export interface TechData {
+	techs: Record<string, TechDefinition>;
+	/** Production method → technologies that unlock it */
+	pmTechs: Record<string, string[]>;
+	/** tech and production method keys → names as the game shows them */
+	names: Record<string, string>;
+}
+
+export function readTechData(gameDir: string | null): TechData | null {
+	if (!gameDir) return null;
+	const game = path.join(gameDir, 'game');
+	const readDir = (dir: string) =>
+		readdirSync(dir)
+			.filter((f) => f.endsWith('.txt'))
+			.map((f) => readFileSync(path.join(dir, f), 'utf8'));
+	try {
+		const techs = Object.assign(
+			{},
+			...readDir(path.join(game, 'common', 'technology', 'technologies')).map(parseTechs)
+		);
+		const pmTechs = Object.assign(
+			{},
+			...readDir(path.join(game, 'common', 'production_methods')).map((t) =>
+				parseListBlocks(t, '', 'unlocking_technologies')
+			)
+		);
+		let names: Record<string, string> = {};
+		try {
+			names = parseLocalization(
+				readFileSync(
+					path.join(game, 'localization', 'english', 'inventions_l_english.yml'),
+					'utf8'
+				),
+				/^[a-z][a-z0-9_]*$/
+			);
+		} catch {
+			// names fall back to the key
+		}
+		return { techs, pmTechs, names };
 	} catch {
 		return null;
 	}

@@ -149,6 +149,25 @@ export interface PeopleInfo {
 	}[];
 }
 
+/** A technology the player can research now, and what it unlocks for their own buildings. */
+export interface TechSuggestion {
+	tech: string;
+	name: string;
+	/** Production methods it unlocks for building types the player has, with their levels */
+	unlocks: { pm: string; building: string; levels: number }[];
+	/** Total building levels that profit */
+	levels: number;
+}
+
+export interface TechInfo {
+	/** Technology being researched; null when nothing is */
+	researching: { tech: string; name: string } | null;
+	/** Names of technologies spreading to the player from other countries */
+	spreading: string[];
+	/** Technologies that can be researched now and help the player's buildings, best first (max 3) */
+	suggestions: TechSuggestion[];
+}
+
 export interface Snapshot {
 	date: string;
 	gameVersion: string;
@@ -207,6 +226,8 @@ export interface Snapshot {
 	laws: LawGroupInfo[] | null;
 	/** Professions, basic needs and staffing; null without the game files */
 	people: PeopleInfo | null;
+	/** Research; null without the game files */
+	technology: TechInfo | null;
 	/** Active journal entries, oldest first */
 	journal: JournalProgress[];
 }

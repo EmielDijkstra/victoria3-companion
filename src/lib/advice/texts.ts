@@ -216,6 +216,22 @@ const nl: Table = {
 			'Ontbreken geschoolde mensen? Verhoog geletterdheid met scholen en de Institution Schools.'
 		]
 	}),
+	'no-research': () => ({
+		title: 'Je onderzoekt niets',
+		why: 'Er staat geen technologie in onderzoek. Zo benut je je Innovation niet, en loop je achter op andere landen.',
+		caveat: 'kies liefst iets wat je gebouwen of je wetten vooruit helpt (Leren → Technologie).',
+		how: ['Open het Technology-scherm.', 'Kies een technologie en klik op Research.']
+	}),
+	'research-suggestion': (a) => ({
+		title: `Overweeg ${a.tech} als volgend onderzoek`,
+		why: `${a.tech} geeft de Production Method ${a.pm} aan je ${list(a.buildings.map(gameName), 'nl')} (samen ${a.levels} levels).${a.current ? ` Je onderzoekt nu ${a.current}; dat helpt minder van je gebouwen.` : ''}`,
+		caveat:
+			'een nieuwe Production Method gebruikt vaak andere grondstoffen. Kijk na het onderzoek of hij voor jou loont.',
+		how: [
+			'Open het Technology-scherm.',
+			`Zoek ${a.tech} en klik op Research, of zet hem in de wachtrij.`
+		]
+	}),
 	'new-production-methods': (a, _l, place) => ({
 		title:
 			a.methods.length === 1
@@ -432,6 +448,22 @@ const en: Table = {
 		how: [
 			'Open the building and hover over its staff: you see which professions are missing.',
 			'Skilled people missing? Raise literacy with schools and the Schools institution.'
+		]
+	}),
+	'no-research': () => ({
+		title: 'You are not researching anything',
+		why: 'No technology is being researched. That way you do not use your Innovation, and you fall behind other countries.',
+		caveat: 'preferably pick something that helps your buildings or laws (Learn → Technology).',
+		how: ['Open the Technology screen.', 'Choose a technology and click Research.']
+	}),
+	'research-suggestion': (a) => ({
+		title: `Consider ${a.tech} as your next research`,
+		why: `${a.tech} gives the Production Method ${a.pm} to your ${list(a.buildings.map(gameName), 'en')} (${a.levels} levels together).${a.current ? ` You are researching ${a.current} now; that helps fewer of your buildings.` : ''}`,
+		caveat:
+			'a new Production Method often uses other inputs. Check after the research whether it pays off for you.',
+		how: [
+			'Open the Technology screen.',
+			`Find ${a.tech} and click Research, or add it to the queue.`
 		]
 	}),
 	'new-production-methods': (a, _l, place) => ({

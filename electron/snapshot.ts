@@ -8,6 +8,7 @@ import {
 	type LawStance,
 	type NewProductionMethod,
 	type PeopleInfo,
+	type TechInfo,
 	type TradeInfo,
 	type PriceInfo,
 	type Snapshot
@@ -18,7 +19,8 @@ import type {
 	LawData,
 	PopulationData,
 	ProductionMethodData,
-	Stance
+	Stance,
+	TechData
 } from './game-data';
 
 type Json = Record<string, unknown>;
@@ -382,6 +384,71 @@ export function buildPeople(
 	};
 }
 
+/**
+ * Research of the player: what is being researched, what spreads from other countries, and which
+ * technologies that can be researched now unlock production methods for the player's own building
+ * types (scored by the building levels that profit).
+ */
+export function buildTech(
+	g: Json,
+	playerId: number,
+	myStates: number[],
+	data: TechData,
+	pmData: ProductionMethodData | null
+): TechInfo {
+	const record = obj(
+		Object.values(obj(obj(g.technology).database))
+			.map(obj)
+			.find((t) => num(t.country) === playerId)
+	);
+	const acquired = new Set(arr(record.acquired_technologies).map(str));
+	const name = (key: string) => data.names[key] ?? titleCase(key);
+	const researching = str(record.research_technology);
+
+	// Building levels per type (with prefix, as in the game files)
+	const levels: Record<string, number> = {};
+	for (const b of Object.values(obj(obj(g.building_manager).database)).map(obj))
+		if (myStates.includes(num(b.state)) && num(b.levels) > 0)
+			levels[str(b.building)] = (levels[str(b.building)] ?? 0) + num(b.levels);
+
+	const suggestions = Object.entries(data.techs)
+		.filter(([tech, def]) => !acquired.has(tech) && def.requires.every((r) => acquired.has(r)))
+		.map(([tech]) => {
+			const unlocks = pmData
+				? Object.entries(data.pmTechs)
+						.filter(([, techs]) => techs.includes(tech))
+						.flatMap(([pm]) => {
+							const groups = new Set(pmData.groups[pm] ?? []);
+							return Object.entries(levels)
+								.filter(([type]) =>
+									(pmData.buildingGroups[type] ?? []).some((gr) => groups.has(gr))
+								)
+								.map(([type, n]) => ({
+									pm: pmData.names[pm] ?? titleCase(strip(pm, 'pm_')),
+									building: strip(type, 'building_'),
+									levels: n
+								}));
+						})
+						.sort((a, b) => b.levels - a.levels)
+				: [];
+			return {
+				tech,
+				name: name(tech),
+				unlocks,
+				levels: unlocks.reduce((n, u) => n + u.levels, 0)
+			};
+		})
+		.filter((t) => t.levels > 0)
+		.sort((a, b) => b.levels - a.levels)
+		.slice(0, 3);
+
+	return {
+		researching: researching ? { tech: researching, name: name(researching) } : null,
+		spreading: arr(record.currently_spreading_technologies).map(str).map(name),
+		suggestions
+	};
+}
+
 export function buildSnapshot(
 	save: unknown,
 	goods: GoodDefinition[] | null,
@@ -574,6 +641,9 @@ export function buildSnapshot(
 						stateKey
 					)
 				: null,
+		technology: names?.technology
+			? buildTech(g, playerId, myStates, names.technology, names.productionMethods ?? null)
+			: null,
 		journal: Object.values(obj(obj(g.journal_entry_manager).database))
 			.map(obj)
 			.filter((j) => num(j.country) === playerId && j.active === true)

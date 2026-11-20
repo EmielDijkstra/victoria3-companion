@@ -219,6 +219,25 @@ describe('adviseFor: other situations', () => {
 		});
 	});
 
+	it('suggests research that helps the most building levels, unless it is already researched', () => {
+		expect(adviseFor(belgium()).find((a) => a.id === 'research-suggestion')).toMatchObject({
+			tech: 'Steam Donkey',
+			current: 'Canneries',
+			pm: 'Steam Donkey',
+			buildings: ['logging_camp', 'iron_mine'],
+			levels: 20
+		});
+		const busy = adviseFor(
+			belgium((s) => (s.technology!.researching = { tech: 'steam_donkey', name: 'Steam Donkey' }))
+		);
+		expect(ids(busy)).not.toContain('research-suggestion');
+	});
+
+	it('warns when nothing is being researched', () => {
+		const idle = adviseFor(belgium((s) => (s.technology!.researching = null)));
+		expect(idle.find((a) => a.id === 'no-research')?.level).toBe('warn');
+	});
+
 	it('handles an empty country without crashing', () => {
 		const empty = belgium((s) => {
 			s.states = [];
@@ -238,6 +257,7 @@ describe('adviseFor: other situations', () => {
 			s.trade = null;
 			s.laws = null;
 			s.people = null;
+			s.technology = null;
 		});
 		expect(adviseFor(empty)).toEqual([]);
 	});

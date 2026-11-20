@@ -91,6 +91,44 @@ export function lawInsights(
 		});
 }
 
+/**
+ * Technology: what spreads to the player by itself, and other useful research besides the one
+ * that already has its own advice.
+ */
+export function techInsights(s: Snapshot, l: Locale, skip?: string): string[] {
+	const tech = s.technology;
+	if (!tech) return [];
+	const out: string[] = [];
+	if (tech.spreading.length > 0) {
+		out.push(
+			l === 'nl'
+				? `${list(tech.spreading, l)} ${tech.spreading.length === 1 ? 'verspreidt' : 'verspreiden'} zich vanuit andere landen naar jou: daar krijg je vanzelf voortgang op.`
+				: `${list(tech.spreading, l)} ${tech.spreading.length === 1 ? 'spreads' : 'spread'} to you from other countries: you gain progress on ${tech.spreading.length === 1 ? 'it' : 'them'} by itself.`
+		);
+	}
+	for (const t of tech.suggestions
+		.filter((x) => x.name !== skip && x.tech !== tech.researching?.tech)
+		.slice(0, 2)) {
+		const main = t.unlocks[0];
+		const buildings = [
+			...new Set(t.unlocks.filter((u) => u.pm === main.pm).map((u) => gameName(u.building)))
+		];
+		out.push(
+			l === 'nl'
+				? `Ook nuttig: ${t.name} geeft ${main.pm} aan je ${list(buildings, l)}.`
+				: `Also useful: ${t.name} gives ${main.pm} to your ${list(buildings, l)}.`
+		);
+	}
+	if (s.population.literacyPct < 50) {
+		out.push(
+			l === 'nl'
+				? `Geletterdheid is ${pct(s.population.literacyPct, l)}%. Meer geletterdheid en Universities geven meer Innovation, dus sneller onderzoek.`
+				: `Literacy is ${pct(s.population.literacyPct, l)}%. More literacy and Universities give more Innovation, so faster research.`
+		);
+	}
+	return out;
+}
+
 /** Population: where people work, what is expensive for them, and what holds the country back. */
 export function peopleInsights(s: Snapshot, l: Locale, place: Place): string[] {
 	const people = s.people;
