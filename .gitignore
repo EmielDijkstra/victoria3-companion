@@ -4,10 +4,10 @@ node_modules
 /.svelte-kit
 /build
 /dist
+/dist-electron
 
-# Rust / Tauri
-target/
-src-tauri/gen/
+# Claude Code: lokale instellingen
+/.claude
 
 # OS
 .DS_Store

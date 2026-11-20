@@ -1,0 +1,40 @@
+@import 'tailwindcss';
+@import '@fontsource/eb-garamond/400.css';
+@import '@fontsource/eb-garamond/500.css';
+@import '@fontsource/eb-garamond/600.css';
+@import '@fontsource/eb-garamond/700.css';
+
+/*
+ * Colours inspired by the Victoria 3 interface (own palette, no game assets).
+ * See the mockup in spikes/overlay-mockup and docs/spikes/s3-overlay.md.
+ */
+@theme {
+	--font-serif: 'EB Garamond', Garamond, Georgia, serif;
+
+	--color-panel-top: #3a3833;
+	--color-panel-bottom: #2a2824;
+	--color-panel-edge: #7d7158;
+	--color-panel-edge-light: #b5a57e;
+	--color-ink: #e9e1cf;
+	--color-ink-dim: #b9ae97;
+	--color-ink-strong: #fffaf0;
+	--color-concept: #f2a34b;
+	--color-band: #5b2730;
+	--color-button-top: #55693a;
+	--color-button-bottom: #34431f;
+	--color-button-edge: #a3b878;
+	--color-gold: #d1a868;
+	--color-good: #a6d47f;
+	--color-warn: #f2c35b;
+	--color-bad: #ec7a62;
+}
+
+html,
+body {
+	margin: 0;
+	/* The Electron window is transparent: only the tip and panel are visible. */
+	background: transparent;
+	font-family: var(--font-serif);
+	color: var(--color-ink);
+	overflow: hidden;
+}
