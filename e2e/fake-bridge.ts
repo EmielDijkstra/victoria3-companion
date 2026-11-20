@@ -72,12 +72,38 @@ export function testKnowledge(): GameKnowledge {
 	};
 }
 
-export async function installFakeBridge(page: Page, options: { locale?: 'nl' | 'en' } = {}) {
+/**
+ * `advisor`: what the fake AI advisor does. 'answer' streams a fixed answer in three pieces;
+ * an error code makes it fail with that code. The sent messages are kept in
+ * `window.__advisorMessages` so a test can check what would go to the AI.
+ */
+export async function installFakeBridge(
+	page: Page,
+	options: { locale?: 'nl' | 'en'; advisor?: 'answer' | 'no-key' | 'busy' } = {}
+) {
 	await page.addInitScript(
-		({ status, locale, knowledge }) => {
+		({ status, locale, knowledge, advisor }) => {
 			if (locale) localStorage.setItem('vic3-companion.locale', locale);
 			const noop = () => {};
+			type Listener = Parameters<NonNullable<typeof window.overlayBridge>['onAdvisor']>[0];
+			let listener: Listener = noop;
+			const sent: unknown[] = [];
+			(window as unknown as { __advisorMessages: unknown[] }).__advisorMessages = sent;
 			window.overlayBridge = {
+				askAdvisor: (id, messages) => {
+					sent.push(messages);
+					if (advisor !== 'answer') {
+						setTimeout(() => listener({ id, type: 'error', code: advisor }), 50);
+						return;
+					}
+					['Test answer: your ', '**Construction** ', 'is paused.'].forEach((text, i) =>
+						setTimeout(() => listener({ id, type: 'text', text }), 50 * (i + 1))
+					);
+					setTimeout(() => listener({ id, type: 'done' }), 250);
+				},
+				cancelAdvisor: noop,
+				onAdvisor: (callback) => (listener = callback),
+				releaseFocus: noop,
 				setInteractive: noop,
 				resize: noop,
 				moveBy: noop,
@@ -91,6 +117,11 @@ export async function installFakeBridge(page: Page, options: { locale?: 'nl' | '
 				getKnowledge: async () => knowledge
 			};
 		},
-		{ status: testStatus(), locale: options.locale, knowledge: testKnowledge() }
+		{
+			status: testStatus(),
+			locale: options.locale,
+			knowledge: testKnowledge(),
+			advisor: options.advisor ?? 'answer'
+		}
 	);
 }

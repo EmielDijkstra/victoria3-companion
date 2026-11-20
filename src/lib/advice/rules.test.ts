@@ -238,6 +238,24 @@ describe('adviseFor: other situations', () => {
 		expect(idle.find((a) => a.id === 'no-research')?.level).toBe('warn');
 	});
 
+	it('warns about separatism support, and says when it comes from a rival', () => {
+		expect(adviseFor(belgium()).find((a) => a.id === 'separatism-support')).toMatchObject({
+			level: 'warn',
+			country: 'Netherlands',
+			rival: true
+		});
+	});
+
+	it('warns about a lobby that feels ignored, not about a content one', () => {
+		expect(ids(adviseFor(belgium()))).not.toContain('unhappy-lobby');
+		const unhappy = adviseFor(belgium((s) => (s.diplomacy.lobbies[0].appeasement = -3)));
+		expect(unhappy.find((a) => a.id === 'unhappy-lobby')).toMatchObject({
+			country: 'France',
+			pro: true,
+			groups: ['Armed Forces', 'Intelligentsia']
+		});
+	});
+
 	it('handles an empty country without crashing', () => {
 		const empty = belgium((s) => {
 			s.states = [];
@@ -258,6 +276,14 @@ describe('adviseFor: other situations', () => {
 			s.laws = null;
 			s.people = null;
 			s.technology = null;
+			s.diplomacy = {
+				friends: [],
+				hostile: [],
+				rivals: [],
+				separatism: [],
+				guarantors: [],
+				lobbies: []
+			};
 		});
 		expect(adviseFor(empty)).toEqual([]);
 	});

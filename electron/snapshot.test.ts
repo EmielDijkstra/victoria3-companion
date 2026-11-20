@@ -14,6 +14,7 @@ import {
 import {
 	buildLaws,
 	buildPeople,
+	buildDiplomacy,
 	buildSnapshot,
 	buildTech,
 	indexedArray,
@@ -522,5 +523,31 @@ tech_d = {
 				unlocks: [{ pm: 'Better Paper', building: 'paper_mill', levels: 1 }]
 			}
 		]);
+	});
+});
+
+describe('diplomacy', () => {
+	it('reads friends, enemies, rivals, separatism, guarantees and lobbies of the player', () => {
+		const names = {
+			states: {},
+			adjectives: {},
+			countries: { FRA: 'France', NET: 'Netherlands', GBR: 'Great Britain' },
+			laws: { laws: {}, ideologies: {}, names: { ig_intelligentsia: 'Intelligentsia' } }
+		};
+		expect(buildDiplomacy(makeGamestate(), 25, names)).toEqual({
+			friends: [{ tag: 'FRA', name: 'France', relations: 100 }],
+			hostile: [{ tag: 'NET', name: 'Netherlands', relations: -30 }],
+			rivals: [{ tag: 'NET', name: 'Netherlands' }],
+			separatism: [{ tag: 'NET', name: 'Netherlands' }],
+			guarantors: [{ tag: 'GBR', name: 'Great Britain' }],
+			lobbies: [
+				{
+					target: { tag: 'FRA', name: 'France' },
+					pro: true,
+					appeasement: -2,
+					groups: ['Intelligentsia']
+				}
+			]
+		});
 	});
 });

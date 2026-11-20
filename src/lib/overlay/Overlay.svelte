@@ -16,7 +16,14 @@
 	import { LAWS } from '../learn/laws';
 	import { POPULATION } from '../learn/population';
 	import { TECHNOLOGY } from '../learn/technology';
-	import { lawInsights, peopleInsights, techInsights, tradeInsights } from '../learn/insights';
+	import { DIPLOMACY } from '../learn/diplomacy';
+	import {
+		diplomacyInsights,
+		lawInsights,
+		peopleInsights,
+		techInsights,
+		tradeInsights
+	} from '../learn/insights';
 	import { gameName } from '../advice/texts';
 	import ConceptCard from './ConceptCard.svelte';
 	import { knowledge } from './knowledge.svelte';
@@ -109,14 +116,15 @@
 	// Pages in the panel: advice (default), learn (topics such as trade) and settings (rarely
 	// needed once it runs)
 	let page = $state<'advice' | 'learn' | 'settings'>('advice');
-	let topic = $state<'trade' | 'laws' | 'population' | 'technology'>('trade');
+	let topic = $state<'trade' | 'laws' | 'population' | 'technology' | 'diplomacy'>('trade');
 
 	// Advice ids per Learn topic
 	const TOPIC_ADVICE: Record<typeof topic, string[]> = {
 		trade: ['trade-capacity-full', 'subsidized-export', 'import-what-you-make'],
 		laws: ['law-with-support'],
 		population: ['dear-basic-needs', 'understaffed', 'unemployment'],
-		technology: ['no-research', 'research-suggestion']
+		technology: ['no-research', 'research-suggestion'],
+		diplomacy: ['separatism-support', 'unhappy-lobby']
 	};
 	const learn = $derived.by(() => {
 		if (!snapshot) return null;
@@ -133,6 +141,14 @@
 					knowledge.current?.laws,
 					topicAdvice.find((x) => x.id === 'law-with-support' && 'law' in x)?.law
 				),
+				advice: topicAdvice
+			};
+		if (topic === 'diplomacy')
+			return {
+				topic,
+				title: t.learnDiplomacy,
+				sheet: DIPLOMACY,
+				insights: diplomacyInsights(snapshot, lang),
 				advice: topicAdvice
 			};
 		if (topic === 'technology')
@@ -347,7 +363,7 @@
 					{#if !snapshot.versionTested}
 						<p class="notice mb-2">{t.untestedVersion(snapshot.gameVersion)}</p>
 					{/if}
-					<AdviceList {advice} {stateNames} gameVersion={snapshot.gameVersion} />
+					<AdviceList {advice} {stateNames} gameVersion={snapshot.gameVersion} {snapshot} />
 					{#if knowledge.current && snapshot.journal?.length}
 						<div class="band">{t.sectionGoals}</div>
 						<GoalList journal={snapshot.journal} />
@@ -358,8 +374,8 @@
 			{:else if page === 'learn'}
 				<!-- Learn: topics explained, applied to the player's country -->
 				<div class="band">{t.learn}</div>
-				<div class="mt-2 flex gap-1" role="tablist" aria-label={t.learn}>
-					{#each [['trade', t.learnTrade], ['laws', t.learnLaws], ['population', t.learnPopulation], ['technology', t.learnTechnology]] as [key, label] (key)}
+				<div class="mt-2 flex flex-wrap gap-1" role="tablist" aria-label={t.learn}>
+					{#each [['trade', t.learnTrade], ['laws', t.learnLaws], ['population', t.learnPopulation], ['technology', t.learnTechnology], ['diplomacy', t.learnDiplomacy]] as [key, label] (key)}
 						<button
 							type="button"
 							role="tab"
@@ -381,6 +397,7 @@
 						country={snapshot.country.name}
 						gameVersion={snapshot.gameVersion}
 						{stateNames}
+						{snapshot}
 					/>
 				{:else}
 					<p class="mt-2 text-[15px] text-ink-dim"><GameText text={t.autosaveTip} /></p>

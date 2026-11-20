@@ -26,6 +26,8 @@ export function makeGamestate(overrides: { countryPatch?: Record<string, unknown
 		country_manager: {
 			database: {
 				'29': { definition: 'NET' },
+				'1': { definition: 'GBR' },
+				'4': { definition: 'FRA' },
 				'25': {
 					definition: 'BEL',
 					tax_level: 'very_high',
@@ -118,7 +120,8 @@ export function makeGamestate(overrides: { countryPatch?: Record<string, unknown
 			database: {
 				'1': { article: 'trade_privilege', source_country: 25, target_country: 29 },
 				'2': { article: 'trade_privilege', source_country: 29, target_country: 25 },
-				'3': { article: 'guarantee_independence', source_country: 25, target_country: 1 }
+				'3': { article: 'guarantee_independence', source_country: 25, target_country: 1 },
+				'4': { article: 'guarantee_independence', source_country: 1, target_country: 25 }
 			}
 		},
 		building_manager: {
@@ -194,6 +197,38 @@ export function makeGamestate(overrides: { countryPatch?: Record<string, unknown
 					workforce: 999,
 					dependents: 0,
 					food_security: { value: 0.1 }
+				}
+			}
+		},
+		relations: {
+			database: {
+				'1': { first: { country: 4 }, second: { country: 25 }, relations: 100 },
+				'2': { first: { country: 25 }, second: { country: 29 }, relations: -30 },
+				'3': { first: { country: 1 }, second: { country: 29 }, relations: 90 }
+			}
+		},
+		pacts: {
+			database: {
+				'1': { targets: { first: 25, second: 29 }, action: 'rivalry' },
+				'2': { targets: { first: 29, second: 25 }, action: 'support_separatism' },
+				'3': { targets: { first: 4, second: 25 }, action: 'increase_relations' }
+			}
+		},
+		political_lobbies: {
+			database: {
+				'1': {
+					country: 25,
+					target_country: 4,
+					type: 'lobby_pro_country',
+					appeasement: -2,
+					members: [88]
+				},
+				'2': {
+					country: 29,
+					target_country: 25,
+					type: 'lobby_anti_country',
+					appeasement: 0,
+					members: []
 				}
 			}
 		},

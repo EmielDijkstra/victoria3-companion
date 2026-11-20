@@ -117,6 +117,14 @@ export type Advice =
 			stateUnemployed: number;
 	  }
 	| { id: 'no-research'; level: 'warn' }
+	| { id: 'separatism-support'; level: 'warn'; country: string; rival: boolean }
+	| {
+			id: 'unhappy-lobby';
+			level: 'warn';
+			country: string;
+			pro: boolean;
+			groups: string[];
+	  }
 	| {
 			id: 'research-suggestion';
 			level: 'consider';
@@ -401,6 +409,30 @@ export function adviseFor(s: Snapshot): Advice[] {
 				buildingState: empty.state,
 				staffingPct: empty.staffingPct,
 				stateUnemployed: empty.stateUnemployed
+			});
+		}
+	}
+
+	// Diplomacy (spike S6): a country stirring up separatism, and lobbies that feel ignored
+	const diplo = s.diplomacy;
+	if (diplo) {
+		const stirrer = diplo.separatism[0];
+		if (stirrer) {
+			out.push({
+				id: 'separatism-support',
+				level: 'warn',
+				country: stirrer.name,
+				rival: diplo.rivals.some((r) => r.tag === stirrer.tag)
+			});
+		}
+		const lobby = diplo.lobbies.find((l) => l.appeasement < 0);
+		if (lobby) {
+			out.push({
+				id: 'unhappy-lobby',
+				level: 'warn',
+				country: lobby.target.name,
+				pro: lobby.pro,
+				groups: lobby.groups
 			});
 		}
 	}

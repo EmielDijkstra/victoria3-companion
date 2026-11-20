@@ -18,6 +18,8 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { IPC, type OverlayState } from '../src/lib/overlay/bridge';
 import type { PathKind } from '../src/lib/status';
+import type { ChatMessage } from '../src/lib/advisor/prompt';
+import { askAdvisor, DEFAULT_MODEL, readSetting } from './advisor';
 import { Companion } from './companion';
 import { clampToArea, defaultPosition, sanitizeSize } from './window-math';
 
@@ -114,6 +116,9 @@ const captureClicks = (
 )
 	.split('|')
 	.filter(Boolean);
+const captureAfter = Number(
+	process.argv.find((a) => a.startsWith('--capture-after='))?.split('=')[1] ?? 0
+);
 const captureWait = Number(
 	process.argv.find((a) => a.startsWith('--capture-wait='))?.split('=')[1]
 );
@@ -149,6 +154,8 @@ function captureAndQuit(file: string) {
 				);
 				await new Promise((r) => setTimeout(r, 400));
 			}
+			// --capture-after=ms: wait after the clicks (e.g. for a streamed AI answer)
+			if (captureAfter > 0) await new Promise((r) => setTimeout(r, captureAfter));
 			const image = await win.capturePage();
 			await writeFile(file, image.toPNG());
 			console.log('capture:', file, image.getSize());
@@ -192,6 +199,34 @@ function registerIpc() {
 	ipcMain.handle(IPC.getStatus, () => companion?.getStatus());
 	ipcMain.handle(IPC.getKnowledge, () => companion?.getKnowledge() ?? null);
 
+	// AI advisor: the key stays here (from .env next to the app or in the app's data folder)
+	const running = new Map<string, AbortController>();
+	ipcMain.on(IPC.askAdvisor, (_e, req: { id?: unknown; messages?: unknown }) => {
+		const id = typeof req?.id === 'string' ? req.id.slice(0, 64) : null;
+		if (!id || !isChat(req.messages)) return;
+		const envFiles = [
+			path.join(app.getAppPath(), '.env'),
+			path.join(app.getPath('userData'), '.env')
+		];
+		const controller = new AbortController();
+		running.set(id, controller);
+		const send = (event: unknown) => win?.webContents.send(IPC.advisor, event);
+		askAdvisor({
+			apiKey: readSetting('GEMINI_API_KEY', envFiles),
+			model: readSetting('GEMINI_MODEL', envFiles) ?? DEFAULT_MODEL,
+			messages: req.messages,
+			signal: controller.signal,
+			onText: (text) => send({ id, type: 'text', text })
+		}).then((error) => {
+			running.delete(id);
+			send(error ? { id, type: 'error', code: error } : { id, type: 'done' });
+		});
+	});
+	ipcMain.on(IPC.cancelAdvisor, (_e, id: unknown) => {
+		if (typeof id === 'string') running.get(id)?.abort();
+	});
+	ipcMain.on(IPC.releaseFocus, () => win?.blur());
+
 	ipcMain.handle(IPC.choosePath, async (_e, kind: PathKind) => {
 		if (!win || !companion || !isPathKind(kind)) return companion?.getStatus();
 		const result = await dialog.showOpenDialog(win, {
@@ -213,6 +248,20 @@ function registerIpc() {
 		return companion?.getStatus();
 	});
 }
+
+/** Only a list of plain chat messages of sensible size goes out. */
+const isChat = (m: unknown): m is ChatMessage[] =>
+	Array.isArray(m) &&
+	m.length > 0 &&
+	m.length <= 40 &&
+	m.every(
+		(x) =>
+			x &&
+			typeof x === 'object' &&
+			['system', 'user', 'assistant'].includes((x as ChatMessage).role) &&
+			typeof (x as ChatMessage).content === 'string' &&
+			(x as ChatMessage).content.length <= 60000
+	);
 
 const isPathKind = (k: unknown): k is PathKind =>
 	k === 'userData' || k === 'game' || k === 'rakaly';

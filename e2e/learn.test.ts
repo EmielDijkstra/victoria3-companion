@@ -66,3 +66,14 @@ test('technology: research that helps your own buildings', async ({ page }) => {
 		'Overweeg Steam Donkey als volgend onderzoek'
 	);
 });
+
+test('diplomacy: friends, lobbies and the separatism warning', async ({ page }) => {
+	await page.locator('[data-topic="diplomacy"]').click();
+	await expect(page.locator('[data-learn-topic="diplomacy"]')).toHaveText('Diplomatie');
+	await expect(page.locator('[data-insights]')).toContainText(
+		'Armed Forces en Intelligentsia vormen een lobby voor France'
+	);
+	await expect(page.locator('[data-advice="separatism-support"]')).toContainText(
+		'Netherlands steunt separatisme in jouw land'
+	);
+});

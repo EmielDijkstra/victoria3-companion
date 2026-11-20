@@ -129,6 +129,48 @@ export function techInsights(s: Snapshot, l: Locale, skip?: string): string[] {
 	return out;
 }
 
+/** Diplomacy: who your friends are, who protects you, and what your lobbies want. */
+export function diplomacyInsights(s: Snapshot, l: Locale): string[] {
+	const d = s.diplomacy;
+	if (!d) return [];
+	const out: string[] = [];
+	const names = (refs: { name: string }[]) =>
+		list(
+			refs.map((r) => r.name),
+			l
+		);
+	if (d.friends.length > 0) {
+		out.push(
+			l === 'nl'
+				? `Je beste relaties heb je met ${names(d.friends)}: logische partners voor handel en verdragen.`
+				: `Your best relations are with ${names(d.friends)}: natural partners for trade and treaties.`
+		);
+	}
+	if (d.guarantors.length > 0) {
+		out.push(
+			l === 'nl'
+				? `${names(d.guarantors)} ${d.guarantors.length === 1 ? 'garandeert' : 'garanderen'} je onafhankelijkheid. Wie jou bedreigt, krijgt met hen te maken.`
+				: `${names(d.guarantors)} ${d.guarantors.length === 1 ? 'guarantees' : 'guarantee'} your independence. Whoever threatens you has to deal with them.`
+		);
+	}
+	for (const lobby of d.lobbies.filter((x) => x.appeasement >= 0).slice(0, 2)) {
+		out.push(
+			l === 'nl'
+				? `${list(lobby.groups, l)} ${lobby.groups.length === 1 ? 'vormt' : 'vormen'} een lobby ${lobby.pro ? 'voor' : 'tegen'} ${lobby.target.name}. ${lobby.pro ? 'Goede relaties en verdragen' : 'Afstand en rivaliteit'} met ${lobby.target.name} ${lobby.pro ? 'houden' : 'houdt'} hen tevreden.`
+				: `${list(lobby.groups, l)} ${lobby.groups.length === 1 ? 'forms' : 'form'} a lobby ${lobby.pro ? 'for' : 'against'} ${lobby.target.name}. ${lobby.pro ? 'Good relations and treaties' : 'Distance and rivalry'} with ${lobby.target.name} keep them content.`
+		);
+	}
+	const enemies = d.hostile.filter((h) => !d.separatism.some((x) => x.tag === h.tag));
+	if (enemies.length > 0) {
+		out.push(
+			l === 'nl'
+				? `Je relatie met ${names(enemies)} is slecht. Verwacht van hen geen steun.`
+				: `Your relations with ${names(enemies)} are bad. Do not expect support from them.`
+		);
+	}
+	return out;
+}
+
 /** Population: where people work, what is expensive for them, and what holds the country back. */
 export function peopleInsights(s: Snapshot, l: Locale, place: Place): string[] {
 	const people = s.people;

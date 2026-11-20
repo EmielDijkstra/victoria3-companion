@@ -168,6 +168,27 @@ export interface TechInfo {
 	suggestions: TechSuggestion[];
 }
 
+/** Another country, as the game names it. */
+export interface CountryRef {
+	tag: string;
+	name: string;
+}
+
+export interface DiplomacyInfo {
+	/** Best relations (from +50), best first, max 3 */
+	friends: (CountryRef & { relations: number })[];
+	/** Worst relations (−20 or lower), worst first */
+	hostile: (CountryRef & { relations: number })[];
+	/** Countries the player declared rivals */
+	rivals: CountryRef[];
+	/** Countries that support separatism in the player's country */
+	separatism: CountryRef[];
+	/** Countries that guarantee the player's independence */
+	guarantors: CountryRef[];
+	/** Interest group lobbies about another country */
+	lobbies: { target: CountryRef; pro: boolean; appeasement: number; groups: string[] }[];
+}
+
 export interface Snapshot {
 	date: string;
 	gameVersion: string;
@@ -228,6 +249,8 @@ export interface Snapshot {
 	people: PeopleInfo | null;
 	/** Research; null without the game files */
 	technology: TechInfo | null;
+	/** Relations, rivals, guarantees and lobbies */
+	diplomacy: DiplomacyInfo;
 	/** Active journal entries, oldest first */
 	journal: JournalProgress[];
 }
