@@ -1,20 +1,20 @@
-name: Taak / feature
-description: Nieuwe functionaliteit, data-, uitleg- of infrataak
+name: Task / feature
+description: New functionality, data, explanation or infrastructure task / Nieuwe functionaliteit of taak
 labels: []
 body:
   - type: textarea
     id: story
     attributes:
       label: User story
-      description: Als <wie> wil ik <wat>, zodat <waarom>.
-      placeholder: Als speler wil ik ..., zodat ...
+      description: As <who> I want <what>, so that <why>. / Als <wie> wil ik <wat>, zodat <waarom>.
+      placeholder: As a player I want ..., so that ...
     validations:
       required: true
   - type: textarea
     id: criteria
     attributes:
-      label: Acceptatiecriteria
-      description: Wanneer is dit klaar? Eén controleerbaar punt per regel.
+      label: Acceptance criteria / Acceptatiecriteria
+      description: When is this done? One checkable point per line.
       value: |
         - [ ]
     validations:
@@ -22,5 +22,5 @@ body:
   - type: textarea
     id: notes
     attributes:
-      label: Technische notities
-      description: Aanpak, bronnen, afhankelijkheden (optioneel)
+      label: Technical notes / Technische notities
+      description: Approach, sources, dependencies (optional)

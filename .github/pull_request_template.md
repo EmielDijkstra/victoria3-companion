@@ -1,23 +1,23 @@
-## Wat verandert er
+## What changes / Wat verandert er
 
-<!-- Korte omschrijving -->
+<!-- Short description. English or Dutch is fine. -->
 
 Closes #
-<!-- Eén regel per afgerond issue -->
+<!-- One line per finished issue -->
 
-## Zo test je het
+## How to test / Zo test je het
 
-<!-- Stappen waarmee een reviewer dit geheel kan testen -->
+<!-- Steps a reviewer can follow -->
 
-## Gecontroleerd
+## Checked
 
-- [ ] `npm run lint && npm run check && npm run test && npm run build` groen
-- [ ] Bekeken als overlay boven het spel (borderless, 1920×1080) en als los venster
-- [ ] Nieuwe of gewijzigde regels en flows hebben een test
+- [ ] `npm run lint && npm run check && npm run test && npm run build` green
+- [ ] Looked at as an overlay above the game (borderless) and as a separate window
+- [ ] New or changed rules and flows have a test
 
 ## Checklist
 
-- [ ] Acceptatiecriteria van het issue zijn afgevinkt
-- [ ] Alleen-lezen: niets schrijft in spel- of savemappen
-- [ ] Geen spelbestanden, savegames of tokens in de repo
-- [ ] Geen secrets; nieuwe env-variabelen staan in `.env.example`
+- [ ] Acceptance criteria of the issue are met
+- [ ] Read-only: nothing writes to game or save folders
+- [ ] No game files, game texts, saves, personal data or keys in the repository
+- [ ] New environment variables are in `.env.example`

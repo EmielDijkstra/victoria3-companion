@@ -1,101 +1,129 @@
 # Victoria 3 Companion
 
-Een kleine overlay-adviseur voor Victoria 3. Hij leest je autosave en vertelt wat je nu het beste kunt
-doen, waarom, en hoe je dat in het spel doet, zodat je het spel beter leert begrijpen. Werkt met gewone
-en ironman-saves en past het spel niet aan.
+A small advisor overlay for Victoria 3. It reads your latest autosave and tells you what is smart to
+do now, why, and how to do it in the game, so you learn to understand the game better. It works with
+normal and ironman saves and never changes the game.
 
-> Status: fase 1. De overlay leest je nieuwste autosave en geeft advies op basis van je spel (NL/EN).
+> **Unofficial, fan-made tool.** Not affiliated with, sponsored, endorsed or approved by Paradox
+> Interactive. Victoria 3 is © Paradox Interactive. This repository contains no game files, game texts
+> or saves.
 
-## Lokaal starten
+[Nederlands](README.nl.md)
 
-Nodig: Windows en Node.js 24.
+## What it does
 
-```bash
-npm install
-```
+- **Advice from your save:** for example a paused construction queue, a deficit, a full Trade
+  Capacity, a law with broad support, or research that helps your own buildings. Each advice says why,
+  what to mind, and how to do it in the game. The steps state the game version they were written for.
+- **Goals of the game:** your active Journal Entries with progress, and the official tutorial steps
+  from your own game version.
+- **Concepts:** click an underlined game term to read the game's own explanation.
+- **📖 Learn:** Trade, Laws, Population, Technology and Diplomacy. How each works, what is smart, and
+  what stands out in your country. Tips and explanations, not tables: the game shows the figures itself.
+- **💬 Ask more (optional):** ask the AI advisor (Google Gemini, free key) a follow-up question. See
+  [AI advisor](#ai-advisor-optional).
+- **Dutch and English**, switchable in the settings.
+
+Read-only and achievement-safe: the app never writes to the game folders or your saves. A new save is
+first copied to the app's own folder and read there.
+
+## Install and run (Windows)
+
+There is no installer yet; you run it from the source. You need:
+
+- Windows 10 or 11
+- [Node.js 24](https://nodejs.org/)
+- Victoria 3 (Steam)
+
+1. Download this repository (Code → Download ZIP, or `git clone`) and open a terminal in the folder.
+2. Install and build once:
+
+   ```bash
+   npm install
+   ```
+
+   ```bash
+   npm run build
+   ```
+
+3. Get **Rakaly**, the open-source save converter from the maker of pdx.tools (MIT licence; not
+   included here):
+   - Download `rakaly-…-x86_64-pc-windows-msvc.zip` from
+     [github.com/rakaly/cli/releases](https://github.com/rakaly/cli/releases) and unzip `rakaly.exe`.
+   - Put it in `%APPDATA%\victoria3-companion\tools\rakaly.exe`, or choose it in the overlay under
+     **⚙ Settings → Folders → Rakaly → Choose…**.
+4. Start the overlay:
+
+   ```bash
+   npm start
+   ```
+
+In the game:
+
+- Set **Settings → Graphics → Window mode** to **Borderless**; in fullscreen the overlay disappears.
+- Set **Autosave Interval** to **Every month**, so the advice stays up to date.
+
+The app finds your save folder (`Documents\Paradox Interactive\Victoria 3`, also via OneDrive) and the
+game installation (via Steam) by itself; both can be changed under **⚙ Settings → Folders**.
+
+## Controls
+
+- The **tip** at the top right: click to open the panel.
+- **⠿** drag (the position is remembered) · **–** collapse · **×** hide.
+- **Alt+V** show or hide the overlay · **Alt+C** let all clicks pass through to the game.
+- **⚙ Settings** (bottom of the panel): your game, folders, language and controls.
+
+## AI advisor (optional)
+
+**💬 Ask more** sends a question to Google Gemini **only when you pick or type a question**, never by
+itself. What goes out: the advice or topic, compact figures from your save, your game version and the
+game's concept texts. No personal data. Answers are labelled as not checked and may contain mistakes.
+
+1. Get a free key at [Google AI Studio](https://aistudio.google.com/) → Get API key.
+2. Create a file `.env` in the repository folder (or in `%APPDATA%\victoria3-companion\`) with:
+
+   ```
+   GEMINI_API_KEY=your-key
+   ```
+
+   See [`.env.example`](.env.example). Never commit this file; it is ignored by git.
+
+Without a key the rest of the app works as usual.
+
+## Development
 
 ```bash
 npm run dev
 ```
 
-`npm run dev` start de pagina op `http://localhost:5180` en opent de overlay daarboven (Electron), met
-live herladen van de pagina. Een eigen build starten:
+starts the page with live reload and opens the overlay on top of it (Electron).
 
-```bash
-npm run build
-```
-
-```bash
-npm start
-```
-
-Tip: zet Victoria 3 op **Borderless** (Settings → Graphics), anders valt de overlay weg in fullscreen.
-
-### Saves lezen: Rakaly
-
-Saves zijn binair. De app zet ze om met de officiële **Rakaly CLI** (MIT, van de maker van pdx.tools),
-die niet in deze repo zit (zie #13). Eenmalig:
-
-1. Download `rakaly-…-x86_64-pc-windows-msvc.zip` van
-   [github.com/rakaly/cli/releases](https://github.com/rakaly/cli/releases) en pak `rakaly.exe` uit.
-2. Zet hem in `%APPDATA%\victoria3-companion\tools\rakaly.exe`, of kies hem in de overlay onder
-   **Mappen → Rakaly → Kies…**.
-
-Uitleg en tutorial-stappen leest de app tijdens het draaien uit je eigen spelinstallatie; die teksten
-zitten niet in deze repo.
-
-De app vindt je savemap (`Documents\Paradox Interactive\Victoria 3`, ook via OneDrive) en de
-spelinstallatie (via Steam) zelf; beide zijn aan te passen onder **Mappen**. Hij leest alleen: een nieuwe
-save wordt eerst gekopieerd naar `%APPDATA%\victoria3-companion\work` en dáár ingelezen.
-Zet in het spel **Autosave Interval** op **Every month**.
-
-### Bediening
-
-- Het **tipje** rechtsboven: klik om te openen.
-- **⠿** verslepen (de plek wordt onthouden) · **–** inklappen · **×** wegklikken.
-- **Alt+V** overlay tonen of verbergen · **Alt+C** alles doorklikbaar.
-- **⚙ Instellingen** (onderaan het paneel): je spel, mappen, taal (NL/EN) en bediening.
-- **Doelen van het spel**: wat het spel nu van je vraagt (Journal Entries), met voortgang en de
-  officiële stappen uit de tutorial van je eigen spelversie.
-- **📖 Leren** (onderaan het paneel): Handel, Wetten, Bevolking, Technologie en Diplomatie. Per onderwerp de begrippen
-  (uitgelegd door het spel), hoe het werkt en wat slim is, wat er bij jouw land opvalt en het advies.
-  Geen tabellen met cijfers: die toont het spel zelf. De app legt uit waarom iets niet goed gaat en
-  noemt hooguit het cijfer dat de tip veroorzaakt.
-- **Begrippen**: een onderstreept spelbegrip aanklikken toont de uitleg uit het spel (Esc sluit).
-- **💬 Vraag door** (bij elk advies en elk Leren-onderwerp): stel de AI-adviseur (Google Gemini, gratis
-  sleutel) een vervolgvraag. De app stuurt **alleen** iets als je zelf een vraag kiest of typt: het advies,
-  compacte cijfers uit je save, je spelversie en de begrippen. Nooit vanzelf, nooit persoonlijke gegevens.
-  Zet je sleutel als `GEMINI_API_KEY=…` in een bestand `.env` naast de app (zie `.env.example`).
-  Antwoorden zijn gemarkeerd als niet gecontroleerd.
-
-### Checks (voor elke PR)
+Checks for every pull request:
 
 ```bash
 npm run lint && npm run check && npm run test && npm run build
 ```
 
-`npm run test` draait de unit-tests (Vitest) én de browsertests (Playwright). Eenmalig de testbrowser
-installeren:
+`npm run test` runs the unit tests (Vitest) and the browser tests (Playwright). Install the test
+browser once:
 
 ```bash
 npx playwright install chromium
 ```
 
-Handig bij het ontwikkelen: `electron . --capture=venster.png [--expanded]` slaat een afbeelding van het
-venster op en stopt (na `npm run build`). Met `--capture-click="selector|selector"` klikt hij eerst op die elementen.
+Handy while developing: `electron . --capture=window.png [--expanded]` saves an image of the window and
+quits (after `npm run build`). `--capture-click="selector|selector"` clicks those elements first, and
+`--capture-after=ms` waits afterwards.
 
-## Meer
+Stack: Electron, SvelteKit, TypeScript, Tailwind CSS, Vitest and Playwright. Explanations and tutorial
+steps are read at runtime from your own game installation; tests use made-up lines in the game's
+format. How to contribute: [CONTRIBUTING.md](CONTRIBUTING.md).
 
-- Plan en inventarisatie: [`docs/plan.md`](docs/plan.md)
-- Onderzoek (spikes): [`docs/spikes/`](docs/spikes/), proefcode in [`spikes/`](spikes/)
-- Waar staat wat in een save: [`docs/save-structuur.md`](docs/save-structuur.md)
-- Werkafspraken: [`CLAUDE.md`](CLAUDE.md) en [`CONTRIBUTING.md`](CONTRIBUTING.md)
+More background (in Dutch): the [plan](docs/plan.md), the [spikes](docs/spikes/) and
+[where things are in a save](docs/save-structuur.md).
 
-## Licentie
+## Licence
 
-De code valt onder de [MIT-licentie](LICENSE). Dat geldt niet voor Victoria 3 zelf: spelbestanden,
-spelteksten en savegames zitten niet in deze repo. De app leest ze alleen tijdens het draaien uit je
-eigen installatie.
-
-Onofficiële fan-tool. Victoria 3 is © Paradox Interactive. Deze repo bevat geen spelbestanden of
-savegames. Lettertype: EB Garamond (SIL Open Font License).
+The code is under the [MIT licence](LICENSE). That does not cover Victoria 3: game files, game texts
+and saves are not in this repository, and the app only reads them at runtime from your own
+installation. Font: EB Garamond (SIL Open Font License).
