@@ -16,12 +16,13 @@
 		"build:electron": "esbuild electron/main.ts electron/preload.ts electron/save-reader-worker.ts --bundle --platform=node --format=cjs --external:electron --outdir=dist-electron --out-extension:.js=.cjs --log-level=warning",
 		"prepare": "svelte-kit sync || echo ''",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json && tsc -p electron/tsconfig.json",
-		"lint": "prettier --check . && eslint .",
+		"lint": "prettier --check . && eslint . && node scripts/check-public.mjs",
 		"format": "prettier --write .",
 		"test:unit": "vitest",
 		"test": "vitest --run && playwright test",
 		"build:web": "vite build",
-		"test:e2e": "playwright test"
+		"test:e2e": "playwright test",
+		"check:public": "node scripts/check-public.mjs"
 	},
 	"devDependencies": {
 		"@eslint/js": "^10.0.1",

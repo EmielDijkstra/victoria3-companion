@@ -116,7 +116,8 @@ Handig bij het ontwikkelen: `electron . --capture=venster.png [--expanded]` slaa
 het venster op en stopt (na `npm run build`). `--capture-click="selector|selector"` klikt eerst op die
 elementen, en `--capture-after=ms` wacht daarna.
 
-Meer achtergrond: het [plan](docs/plan.md), de [spikes](docs/spikes/) en
+Hoe het werkt: [architectuur](docs/architecture.md) (Engels). Meer achtergrond: de
+[spikes](docs/spikes/) en
 [waar staat wat in een save](docs/save-structuur.md). Werkafspraken: [CLAUDE.md](CLAUDE.md) en
 [CONTRIBUTING.md](CONTRIBUTING.md).
 

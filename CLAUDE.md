@@ -6,7 +6,7 @@ Werkafspraken voor elke Claude Code-sessie in deze repo. Lees dit eerst.
 
 Een lokale companion-app voor Victoria 3. De app staat als overlay over het spel, laat zien hoe je ervoor
 staat, waarschuwt voor problemen en legt vooral uit **waarom** iets een probleem is en wat je kunt doen. Het
-is een coach, geen cheat-tool. Plan en achtergrond: zie `docs/plan.md`.
+is een coach, geen cheat-tool. Hoe het werkt: zie `docs/architecture.md`.
 
 ## Stack
 

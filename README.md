@@ -119,7 +119,8 @@ Stack: Electron, SvelteKit, TypeScript, Tailwind CSS, Vitest and Playwright. Exp
 steps are read at runtime from your own game installation; tests use made-up lines in the game's
 format. How to contribute: [CONTRIBUTING.md](CONTRIBUTING.md).
 
-More background (in Dutch): the [plan](docs/plan.md), the [spikes](docs/spikes/) and
+How it works: [architecture](docs/architecture.md). More background (in Dutch): the
+[spikes](docs/spikes/) and
 [where things are in a save](docs/save-structuur.md).
 
 ## Licence
