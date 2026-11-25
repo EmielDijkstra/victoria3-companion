@@ -27,6 +27,8 @@ test-results
 
 # Lokale testdata: savegames, gemelte saves, spelbestanden, tokens. Nooit committen.
 /testdata
+# rakaly.exe next to the app (downloaded by each player, never in the repo)
+/tools
 *.v3
 tokens*.txt
 /playwright-report
