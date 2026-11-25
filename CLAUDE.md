@@ -1,4 +1,4 @@
-# CLAUDE.md – victoria3-companion (EmielLabs)
+# CLAUDE.md – victoria3-companion
 
 Werkafspraken voor elke Claude Code-sessie in deze repo. Lees dit eerst.
 
