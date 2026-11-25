@@ -14,6 +14,9 @@ commits and branch names are in English; the app has Dutch and English texts.
   Interactive. Free and non-commercial.
 - **No personal data or secrets.** No keys, `.env` files, saves or personal paths in files, issues or
   commits. New environment variables go into `.env.example`.
+  `npm run lint` runs [`scripts/check-public.mjs`](scripts/check-public.mjs), which stops personal
+  notes in the root, saves, executables, logs, large files, email addresses, personal Windows paths and
+  API keys. Locally it also looks at files you have not added yet.
 - **Tips, not tables.** The game shows the figures; the app explains why something goes wrong and
   what is smart, naming at most the figure that triggers a tip.
 - **The AI advisor is on demand only.** Nothing is sent to an AI unless the player asks a question.

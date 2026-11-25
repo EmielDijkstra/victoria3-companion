@@ -19,7 +19,7 @@ export default defineConfig({
 	],
 	test: {
 		expect: { requireAssertions: true },
-		include: ['src/**/*.test.ts', 'electron/**/*.test.ts'],
+		include: ['src/**/*.test.ts', 'electron/**/*.test.ts', 'scripts/**/*.test.ts'],
 		environment: 'node'
 	}
 });
