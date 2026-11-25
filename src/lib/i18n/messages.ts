@@ -66,6 +66,7 @@ const nl = {
 	close: 'Sluiten',
 	// learn
 	learn: 'Leren',
+	learnBudget: 'Begroting',
 	learnTrade: 'Handel',
 	learnLaws: 'Wetten',
 	learnPopulation: 'Bevolking',
@@ -185,6 +186,7 @@ const en: Messages = {
 	conceptFromGame: (v: string) => `Explanation from the game (version ${v})`,
 	close: 'Close',
 	learn: 'Learn',
+	learnBudget: 'Budget',
 	learnTrade: 'Trade',
 	learnLaws: 'Laws',
 	learnPopulation: 'Population',

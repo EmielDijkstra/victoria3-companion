@@ -171,6 +171,122 @@ export function diplomacyInsights(s: Snapshot, l: Locale): string[] {
 	return out;
 }
 
+const MONEY = (n: number, l: Locale) => {
+	const a = Math.abs(n);
+	const f = (x: number, d: number) =>
+		x.toLocaleString(l === 'nl' ? 'nl-NL' : 'en-GB', { maximumFractionDigits: d });
+	const v = a >= 1000 ? `£${f(a / 1000, 1)}K` : `£${f(a, 0)}`;
+	return n < 0 ? `−${v}` : v;
+};
+
+const GROUPS: Record<Locale, Record<string, string>> = {
+	nl: {
+		military: 'het leger',
+		government: 'overheidsgebouwen',
+		construction: 'bouwen',
+		interest: 'rente',
+		subsidies: 'subsidies',
+		other: 'overige posten'
+	},
+	en: {
+		military: 'the army',
+		government: 'government buildings',
+		construction: 'construction',
+		interest: 'interest',
+		subsidies: 'subsidies',
+		other: 'other items'
+	}
+};
+
+/**
+ * Budget: construction versus fixed costs, the largest fixed cost, a sudden change in the weekly
+ * balance, how long a deficit lasts, and taxes that are still possible.
+ */
+export function budgetInsights(s: Snapshot, l: Locale): string[] {
+	const b = s.budget;
+	if (!b) return [];
+	const out: string[] = [];
+	const nl = l === 'nl';
+
+	// 1. Construction versus fixed costs
+	if (b.construction > 0) {
+		out.push(
+			nl
+				? `Van je uitgaven gaat ${MONEY(b.construction, l)} per week naar bouwen. Zonder bouw is je saldo ${MONEY(b.structuralBalance, l)}: ${b.structuralBalance >= 0 ? 'je vaste lasten zijn gedekt' : 'ook je vaste lasten zijn niet gedekt'}.`
+				: `Of your expenses, ${MONEY(b.construction, l)} per week goes to construction. Without it your balance is ${MONEY(b.structuralBalance, l)}: ${b.structuralBalance >= 0 ? 'your fixed costs are covered' : 'even your fixed costs are not covered'}.`
+		);
+	} else {
+		out.push(
+			nl
+				? `Je bouwt nu niets, dus dit saldo (${MONEY(b.balance, l)}) is je structurele saldo. Bouwen kost straks geld, maar laat je economie groeien.`
+				: `You are not building now, so this balance (${MONEY(b.balance, l)}) is your structural balance. Building will cost money, but makes your economy grow.`
+		);
+	}
+
+	// 2. Largest fixed cost and what is behind it
+	const fixed = b.groups.filter((g) => g.key !== 'construction');
+	const total = fixed.reduce((n, g) => n + g.perWeek, 0);
+	const top = fixed[0];
+	if (top && total > 0) {
+		const share = Math.round((top.perWeek / total) * 100);
+		const behind = top.buildings
+			.slice(0, 2)
+			.map((x) => (x.levels ? `${x.levels} levels ${gameName(x.type)}` : gameName(x.type)));
+		out.push(
+			nl
+				? `Je grootste vaste post is ${GROUPS.nl[top.key]}: ${share}% van je vaste uitgaven${behind.length ? ` (${list(behind, l)})` : ''}.`
+				: `Your largest fixed cost is ${GROUPS.en[top.key]}: ${share}% of your fixed expenses${behind.length ? ` (${list(behind, l)})` : ''}.`
+		);
+	}
+
+	// 3. A sudden change in the weekly balance
+	let jump = { at: -1, from: 0, to: 0 };
+	for (let i = 1; i < b.trend.length; i++) {
+		const d = Math.abs(b.trend[i] - b.trend[i - 1]);
+		if (d > Math.abs(jump.to - jump.from)) jump = { at: i, from: b.trend[i - 1], to: b.trend[i] };
+	}
+	const size = Math.abs(jump.to - jump.from);
+	if (jump.at > 0 && size >= Math.max(2000, Math.abs(b.balance) * 0.3)) {
+		const weeksAgo = b.trend.length - jump.at;
+		const up = jump.to > jump.from;
+		const hint =
+			up && b.construction === 0 && s.construction.paused
+				? nl
+					? ' Je bouwlijst staat nu stil: als je toen de bouw pauzeerde, verklaart dat de sprong.'
+					: ' Your construction is paused now: if you paused it then, that explains the jump.'
+				: !up
+					? nl
+						? ' Kijk wat je rond die tijd bouwde of veranderde: lonen, wetten of nieuwe levels.'
+						: ' Check what you built or changed around then: wages, laws or new levels.'
+					: '';
+		out.push(
+			nl
+				? `Ongeveer ${weeksAgo} weken geleden ${up ? 'steeg' : 'daalde'} je saldo in één week van ${MONEY(jump.from, l)} naar ${MONEY(jump.to, l)}.${hint}`
+				: `About ${weeksAgo} weeks ago your balance ${up ? 'rose' : 'fell'} in one week from ${MONEY(jump.from, l)} to ${MONEY(jump.to, l)}.${hint}`
+		);
+	}
+
+	// 4. How long a deficit lasts
+	if (b.weeksToCreditLimit != null) {
+		out.push(
+			nl
+				? `Bij dit tekort raak je over ongeveer ${b.weeksToCreditLimit} weken je Credit Limit; daarna volgt Default.`
+				: `At this deficit you reach your Credit Limit in about ${b.weeksToCreditLimit} weeks; then comes Default.`
+		);
+	}
+
+	// 5. Taxes that are still possible
+	const options = b.consumptionTaxOptions.map((o) => gameName(o.good));
+	if (options.length > 0) {
+		out.push(
+			nl
+				? `Je kunt nog Consumption Tax heffen op ${list(options, l)} (tot ongeveer ${MONEY(b.consumptionTaxOptions[0].perWeek, l)} per week). Dat maakt die goederen duurder voor je bevolking.`
+				: `You could still add a Consumption Tax on ${list(options, l)} (up to about ${MONEY(b.consumptionTaxOptions[0].perWeek, l)} per week). That makes those goods more expensive for your people.`
+		);
+	}
+	return out;
+}
+
 /** Population: where people work, what is expensive for them, and what holds the country back. */
 export function peopleInsights(s: Snapshot, l: Locale, place: Place): string[] {
 	const people = s.people;

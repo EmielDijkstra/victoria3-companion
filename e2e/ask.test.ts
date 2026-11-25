@@ -57,6 +57,7 @@ test('ask about a Learn topic as a whole', async ({ page }) => {
 	await page.goto('/');
 	await page.locator('[data-tip]').click();
 	await page.locator('[data-learn-toggle]').click();
+	await page.locator('[data-topic="trade"]').click();
 	const topicAsk = page.locator('[data-topic-ask]');
 	await topicAsk.locator('[data-ask-open]').click();
 	await topicAsk.getByRole('button', { name: 'Wat doe ik als eerste?' }).click();

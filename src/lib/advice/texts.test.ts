@@ -165,6 +165,29 @@ const samples: Advice[] = [
 		country: 'France',
 		pro: true,
 		groups: ['Armed Forces', 'Intelligentsia']
+	},
+	{
+		id: 'expense-jump',
+		level: 'warn',
+		group: 'military',
+		increase: 1741,
+		since: '1848.8.1',
+		buildings: ['barrack']
+	},
+	{
+		id: 'military-heavy',
+		level: 'consider',
+		sharePct: 48,
+		perWeek: 7741,
+		buildings: [{ type: 'barrack', levels: 27 }],
+		guarantors: ['Great Britain', 'Prussia']
+	},
+	{
+		id: 'input-premium',
+		level: 'consider',
+		building: 'government_administration',
+		good: 'paper',
+		perWeek: 600
 	}
 ];
 
@@ -364,5 +387,44 @@ describe('diplomacy texts', () => {
 		);
 		expect(lobby.title).toBe('The lobby for France is unhappy');
 		expect(lobby.why).toContain('Armed Forces and Intelligentsia want closer ties with France');
+	});
+});
+
+describe('budget texts', () => {
+	const deficit = (extra: object) =>
+		adviceText(
+			{ id: 'deficit', level: 'urgent', balance: -2000, debtPct: 40, ...extra } as Advice,
+			'nl'
+		);
+
+	it('calls a deficit from construction an investment', () => {
+		const t = deficit({ construction: 5000, structuralBalance: 3000, weeksToCreditLimit: 120 });
+		expect(t.title).toBe('Je tekort komt door bouwen');
+		expect(t.why).toContain('Zonder bouw hou je £3K over');
+		expect(t.why).toContain('over ongeveer 120 weken je Credit Limit');
+	});
+
+	it('points at the largest fixed cost of a structural deficit, taxes last', () => {
+		const t = deficit({
+			construction: 0,
+			structuralBalance: -2000,
+			topGroup: { key: 'military', sharePct: 48, buildings: ['barrack'] },
+			taxOption: 'grain'
+		});
+		expect(t.title).toBe('Je vaste lasten zijn hoger dan je inkomsten');
+		expect(t.why).toContain(
+			'Je grootste vaste post is het leger: 48% van je vaste uitgaven (vooral Barracks)'
+		);
+		expect(t.how[0]).toContain('Military Wages');
+		expect(t.how.at(-1)).toContain('Consumption Tax op Grain');
+	});
+
+	it('explains what rose since the previous save', () => {
+		const jump = adviceText(
+			samples.find((x) => x.id === 'expense-jump')!,
+			'nl'
+		);
+		expect(jump.title).toBe('Het leger kost ineens meer');
+		expect(jump.why).toContain('Sinds je vorige save (1-8-1848)');
 	});
 });

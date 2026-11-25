@@ -1,7 +1,7 @@
 // Advice rules: Snapshot → ranked advice. Each rule returns a code plus the numbers that back it
 // up; the texts (Dutch/English) live in texts.ts. Ported and extended from spike S5
 // (spikes/advisor/rules.mjs, docs/spikes/s5-regels-vs-ai.md).
-import type { BuildingInfo, PriceInfo, Snapshot, StateInfo } from '../snapshot';
+import type { BuildingInfo, PriceInfo, Snapshot, StateInfo, BudgetGroupKey } from '../snapshot';
 
 export type AdviceLevel = 'urgent' | 'warn' | 'smart' | 'patience' | 'consider';
 
@@ -22,7 +22,44 @@ export type Advice =
 			costPerWeek: number;
 			balance: number;
 	  }
-	| { id: 'deficit'; level: 'urgent'; balance: number; debtPct: number }
+	| {
+			id: 'deficit';
+			level: 'urgent';
+			balance: number;
+			debtPct: number;
+			/** Construction goods per week; 0 when not building */
+			construction?: number;
+			/** Balance without construction */
+			structuralBalance?: number;
+			/** Largest fixed cost: group, share of fixed costs, main building types */
+			topGroup?: { key: BudgetGroupKey; sharePct: number; buildings: string[] };
+			weeksToCreditLimit?: number | null;
+			/** Untaxed good with the most consumption tax potential */
+			taxOption?: string;
+	  }
+	| {
+			id: 'expense-jump';
+			level: 'warn';
+			group: BudgetGroupKey;
+			increase: number;
+			since: string;
+			buildings: string[];
+	  }
+	| {
+			id: 'military-heavy';
+			level: 'consider';
+			sharePct: number;
+			perWeek: number;
+			buildings: { type: string; levels: number }[];
+			guarantors: string[];
+	  }
+	| {
+			id: 'input-premium';
+			level: 'consider';
+			building: string;
+			good: string;
+			perWeek: number;
+	  }
 	| {
 			id: 'debt-high';
 			level: 'urgent' | 'warn';
@@ -247,8 +284,37 @@ export function adviseFor(s: Snapshot): Advice[] {
 	}
 
 	// Budget and debt
+	const budget = s.budget;
+	// Fixed costs: everything except construction
+	const fixed = budget ? budget.groups.filter((g) => g.key !== 'construction') : [];
+	const fixedTotal = fixed.reduce((n, g) => n + g.perWeek, 0);
+	const shareOf = (perWeek: number) =>
+		fixedTotal > 0 ? Math.round((perWeek / fixedTotal) * 100) : 0;
+	const top = fixed[0];
 	if (e.weeklyBalance < 0) {
-		out.push({ id: 'deficit', level: 'urgent', balance: e.weeklyBalance, debtPct: e.debtPct });
+		out.push({
+			id: 'deficit',
+			level: 'urgent',
+			balance: e.weeklyBalance,
+			debtPct: e.debtPct,
+			...(budget
+				? {
+						construction: budget.construction,
+						structuralBalance: budget.structuralBalance,
+						weeksToCreditLimit: budget.weeksToCreditLimit,
+						taxOption: budget.consumptionTaxOptions[0]?.good,
+						...(top
+							? {
+									topGroup: {
+										key: top.key,
+										sharePct: shareOf(top.perWeek),
+										buildings: top.buildings.slice(0, 2).map((b) => b.type)
+									}
+								}
+							: {})
+					}
+				: {})
+		});
 	} else if (e.debtPct >= 40) {
 		out.push({
 			id: 'debt-high',
@@ -410,6 +476,47 @@ export function adviseFor(s: Snapshot): Advice[] {
 				staffingPct: empty.staffingPct,
 				stateUnemployed: empty.stateUnemployed
 			});
+		}
+	}
+
+	// Budget (#53): what changed since the previous save, the army as largest fixed cost, and
+	// expensive inputs for buildings the state pays for
+	if (budget) {
+		const prev = budget.previous;
+		if (prev) {
+			const jump = budget.groups
+				.filter((g) => g.key !== 'construction' && g.key !== 'other')
+				.map((g) => ({ g, increase: g.perWeek - (prev.groups[g.key] ?? 0) }))
+				.filter(({ g, increase }) => increase >= 500 && increase >= 0.2 * (g.perWeek - increase))
+				.sort((a, b) => b.increase - a.increase)[0];
+			if (jump) {
+				out.push({
+					id: 'expense-jump',
+					level: 'warn',
+					group: jump.g.key,
+					increase: round(jump.increase),
+					since: prev.date,
+					buildings: jump.g.buildings.slice(0, 2).map((b) => b.type)
+				});
+			}
+		}
+		const military = fixed.find((g) => g.key === 'military');
+		const deficitNamesArmy = e.weeklyBalance < 0 && top?.key === 'military';
+		if (military && shareOf(military.perWeek) >= 40 && !deficitNamesArmy) {
+			out.push({
+				id: 'military-heavy',
+				level: 'consider',
+				sharePct: shareOf(military.perWeek),
+				perWeek: military.perWeek,
+				buildings: military.buildings
+					.filter((b) => /barrack|naval_administration/.test(b.type))
+					.map((b) => ({ type: b.type, levels: b.levels })),
+				guarantors: (s.diplomacy?.guarantors ?? []).map((c) => c.name)
+			});
+		}
+		const dear = budget.pricePremium[0];
+		if (dear && dear.perWeek >= 250) {
+			out.push({ id: 'input-premium', level: 'consider', ...dear });
 		}
 	}
 

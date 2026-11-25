@@ -11,7 +11,20 @@ test.beforeEach(async ({ page }) => {
 	await page.locator('[data-learn-toggle]').click();
 });
 
+test('budget: the default topic explains construction and the largest fixed cost', async ({
+	page
+}) => {
+	await expect(page.locator('[data-learn-topic="budget"]')).toHaveText('Begroting');
+	const insights = page.locator('[data-insights]');
+	await expect(insights).toContainText('Zonder bouw is je saldo £13,8K');
+	await expect(insights).toContainText('Je grootste vaste post is het leger');
+	await expect(page.locator('[data-advice="expense-jump"]')).toContainText(
+		'Het leger kost ineens meer'
+	);
+});
+
 test('trade: concepts, what stands out and the trade advice', async ({ page }) => {
+	await page.locator('[data-topic="trade"]').click();
 	await expect(page.locator('[data-learn-topic="trade"]')).toHaveText('Handel');
 	// Only the trade advice, not the whole list
 	await expect(page.locator('[data-advice="construction-paused"]')).toHaveCount(0);

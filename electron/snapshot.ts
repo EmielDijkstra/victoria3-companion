@@ -7,6 +7,9 @@ import {
 	type LawGroupInfo,
 	type LawStance,
 	type NewProductionMethod,
+	type BudgetGroup,
+	type BudgetGroupKey,
+	type BudgetInfo,
 	type DiplomacyInfo,
 	type PeopleInfo,
 	type TechInfo,
@@ -508,6 +511,155 @@ export function buildDiplomacy(g: Json, playerId: number, names: GameNames | nul
 	};
 }
 
+/** Ring buffer of weekly samples, oldest first. */
+export function weeklySamples(trend: unknown): number[] {
+	const weekly = obj(obj(trend).weekly);
+	const samples = arr(weekly.samples).map(num);
+	const start = num(weekly.sample_index) % (samples.length || 1);
+	return [...samples.slice(start), ...samples.slice(0, start)];
+}
+
+/** Indexes in budget.weekly_expenses / weekly_income that are known for sure (checked, spike S6). */
+const EXPENSE_INTEREST = 10;
+const INCOME = { income: 1, poll: 2, tariffs: 9 } as const;
+
+const GROUP_OF: Record<string, BudgetGroupKey> = {
+	government_goods: 'government',
+	government_wages: 'government',
+	government_slaves: 'government',
+	military_goods: 'military',
+	military_wages: 'military',
+	military_slaves: 'military',
+	construction_goods: 'construction',
+	subsidies: 'subsidies',
+	subventions: 'subsidies'
+};
+const FIXED_COST_BUILDING =
+	/^building_(government_administration|university|barrack|naval_administration|army_logistics_center|naval_logistics_center|construction_sector|port)/;
+
+/**
+ * Where the money goes and why (#53): expense groups with the buildings behind them, construction
+ * versus fixed costs, extra cost of expensive inputs, the weekly trend, taxes and how long a
+ * deficit can last.
+ */
+export function buildBudget(
+	g: Json,
+	c: Json,
+	playerId: number,
+	myStates: number[],
+	goods: GoodDefinition[]
+): BudgetInfo {
+	const budget = obj(c.budget);
+	const incomeArr = arr(budget.weekly_income).map(num);
+	const expenseArr = arr(budget.weekly_expenses).map(num);
+	const income = sum(incomeArr);
+	const expenses = sum(expenseArr);
+	const balance = income - expenses;
+
+	const buildings = Object.values(obj(obj(g.building_manager).database))
+		.map(obj)
+		.filter((b) => myStates.includes(num(b.state)));
+	const levels: Record<string, number> = {};
+	for (const b of buildings)
+		levels[str(b.building)] = (levels[str(b.building)] ?? 0) + num(b.levels);
+
+	// Expense groups from the save's own split per building type
+	const perGroup = new Map<BudgetGroupKey, Map<string, number>>();
+	for (const [category, value] of Object.entries(
+		obj(obj(budget.country_building_budget).expenses)
+	)) {
+		const key = GROUP_OF[category];
+		if (!key) continue;
+		const map = perGroup.get(key) ?? new Map<string, number>();
+		for (const [building, amount] of Object.entries(obj(obj(value).values)))
+			map.set(building, (map.get(building) ?? 0) + num(amount));
+		perGroup.set(key, map);
+	}
+	const groups: BudgetGroup[] = [...perGroup.entries()].map(([key, map]) => ({
+		key,
+		perWeek: round([...map.values()].reduce((a, b) => a + b, 0)),
+		buildings: [...map.entries()]
+			.map(([type, perWeek]) => ({
+				type: strip(type, 'building_'),
+				perWeek: round(perWeek),
+				levels: levels[type] ?? 0
+			}))
+			.filter((b) => b.perWeek > 0)
+			.sort((a, b) => b.perWeek - a.perWeek)
+	}));
+	const interest = expenseArr[EXPENSE_INTEREST] ?? 0;
+	if (interest > 0) groups.push({ key: 'interest', perWeek: round(interest), buildings: [] });
+	const known = groups.reduce((a, gr) => a + gr.perWeek, 0);
+	if (expenses - known > 1)
+		groups.push({ key: 'other', perWeek: round(expenses - known), buildings: [] });
+	const sorted = groups.filter((gr) => gr.perWeek > 0).sort((a, b) => b.perWeek - a.perWeek);
+	const construction = sorted.find((gr) => gr.key === 'construction')?.perWeek ?? 0;
+
+	// Extra cost of inputs above their base price, for buildings the state pays for
+	const prices = obj(obj(budget.current_price_report).goods);
+	const premium = new Map<string, { building: string; good: string; perWeek: number }>();
+	for (const b of buildings) {
+		if (!FIXED_COST_BUILDING.test(str(b.building))) continue;
+		for (const [id, v] of Object.entries(obj(obj(b.input_goods).goods))) {
+			const good = goods[Number(id)];
+			const price = num(obj(prices[id]).value);
+			if (!good?.cost || !price || price <= good.cost) continue;
+			const k = `${str(b.building)}|${good.name}`;
+			const entry = premium.get(k) ?? {
+				building: strip(str(b.building), 'building_'),
+				good: good.name,
+				perWeek: 0
+			};
+			entry.perWeek += num(obj(v).value) * (price - good.cost);
+			premium.set(k, entry);
+		}
+	}
+
+	const taxed = new Set(arr(c.taxed_goods).map(str));
+	const ai = obj(
+		obj(
+			Object.values(obj(obj(g.ai).database))
+				.map(obj)
+				.find((a) => num(a.country) === playerId)
+		).spending_variables
+	);
+	const potential = arr(ai.potential_consumption_taxes).map(num);
+
+	const debt = num(budget.principal);
+	const credit = num(budget.credit);
+	const taxIncome = incomeArr[INCOME.income] ?? 0;
+	const taxPoll = incomeArr[INCOME.poll] ?? 0;
+	const taxTariffs = incomeArr[INCOME.tariffs] ?? 0;
+
+	return {
+		income: round(income),
+		expenses: round(expenses),
+		balance: round(balance),
+		construction,
+		structuralBalance: round(balance + construction),
+		groups: sorted,
+		taxes: {
+			income: round(taxIncome),
+			poll: round(taxPoll),
+			tariffs: round(taxTariffs),
+			other: round(Math.max(0, income - taxIncome - taxPoll - taxTariffs))
+		},
+		pricePremium: [...premium.values()]
+			.map((p) => ({ ...p, perWeek: round(p.perWeek) }))
+			.filter((p) => p.perWeek > 0)
+			.sort((a, b) => b.perWeek - a.perWeek)
+			.slice(0, 5),
+		trend: weeklySamples(budget.balance_trend).map((x) => round(x)),
+		weeksToCreditLimit:
+			balance < 0 && credit > debt ? Math.floor((credit - debt) / -balance) : null,
+		consumptionTaxOptions: potential
+			.map((perWeek, i) => ({ good: goods[i]?.name ?? '', perWeek: round(perWeek) }))
+			.filter((p) => p.good && p.perWeek > 0 && !taxed.has(p.good))
+			.sort((a, b) => b.perWeek - a.perWeek)
+			.slice(0, 3)
+	};
+}
+
 export function buildSnapshot(
 	save: unknown,
 	goods: GoodDefinition[] | null,
@@ -704,6 +856,7 @@ export function buildSnapshot(
 			? buildTech(g, playerId, myStates, names.technology, names.productionMethods ?? null)
 			: null,
 		diplomacy: buildDiplomacy(g, playerId, names),
+		budget: goods ? buildBudget(g, c, playerId, myStates, goods) : null,
 		journal: Object.values(obj(obj(g.journal_entry_manager).database))
 			.map(obj)
 			.filter((j) => num(j.country) === playerId && j.active === true)

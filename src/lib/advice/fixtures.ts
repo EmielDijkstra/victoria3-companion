@@ -205,6 +205,53 @@ export function belgium(patch: (s: Snapshot) => void = () => {}): Snapshot {
 				}
 			]
 		},
+		budget: {
+			income: 30000,
+			expenses: 27492,
+			balance: 2508,
+			construction: 11277,
+			structuralBalance: 13785,
+			groups: [
+				{ key: 'construction', perWeek: 11277, buildings: [] },
+				{
+					key: 'military',
+					perWeek: 7741,
+					buildings: [
+						{ type: 'barrack', perWeek: 3300, levels: 27 },
+						{ type: 'army_logistics_center', perWeek: 2321, levels: 4 },
+						{ type: 'naval_administration', perWeek: 2025, levels: 15 }
+					]
+				},
+				{
+					key: 'government',
+					perWeek: 5697,
+					buildings: [
+						{ type: 'government_administration', perWeek: 4518, levels: 5 },
+						{ type: 'university', perWeek: 668, levels: 2 }
+					]
+				},
+				{ key: 'other', perWeek: 1720, buildings: [] },
+				{ key: 'interest', perWeek: 757, buildings: [] },
+				{
+					key: 'subsidies',
+					perWeek: 300,
+					buildings: [{ type: 'trade_center', perWeek: 300, levels: 17 }]
+				}
+			],
+			taxes: { income: 6593, poll: 12421, tariffs: 1116, other: 9870 },
+			pricePremium: [{ building: 'army_logistics_center', good: 'artillery', perWeek: 158 }],
+			trend: [-3278, -2989, -3835, 10325, 10047, 2508],
+			weeksToCreditLimit: null,
+			consumptionTaxOptions: [
+				{ good: 'grain', perWeek: 2308 },
+				{ good: 'clothes', perWeek: 2284 }
+			],
+			previous: {
+				date: '1848.8.1',
+				balance: 4000,
+				groups: { military: 6000, government: 5600, construction: 11000, interest: 700 }
+			}
+		},
 		journal: [
 			{ type: 'je_tutorial_grow_gdp', value: 3916769, goal: 4895962, since: '1839.3.4' },
 			{ type: 'je_without_texts', value: 0, goal: 0, since: '1840.1.1' }

@@ -14,13 +14,15 @@ import {
 import {
 	buildLaws,
 	buildPeople,
+	buildBudget,
 	buildDiplomacy,
 	buildSnapshot,
 	buildTech,
 	indexedArray,
 	newestOfChannel,
 	newestOfWeekly,
-	newProductionMethods
+	newProductionMethods,
+	weeklySamples
 } from './snapshot';
 
 const goods = parseGoods(GOODS_TXT);
@@ -549,5 +551,27 @@ describe('diplomacy', () => {
 				}
 			]
 		});
+	});
+});
+
+describe('budget', () => {
+	it('groups expenses by the split in the save and separates construction', () => {
+		const g = makeGamestate();
+		const c = g.country_manager.database['25'];
+		const b = buildBudget(g, c, 25, [477, 476], parseGoods(GOODS_TXT));
+		expect(b.construction).toBe(11277);
+		expect(b.balance).toBe(2508);
+		expect(b.structuralBalance).toBe(13785);
+		expect(b.groups.find((gr) => gr.key === 'construction')).toEqual({
+			key: 'construction',
+			perWeek: 11277,
+			buildings: [{ type: 'construction_sector', perWeek: 11277, levels: 3 }]
+		});
+	});
+
+	it('orders ring buffer samples oldest first', () => {
+		expect(weeklySamples({ weekly: { sample_index: 2, samples: [3, 4, 1, 2] } })).toEqual([
+			1, 2, 3, 4
+		]);
 	});
 });
