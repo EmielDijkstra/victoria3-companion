@@ -1,6 +1,6 @@
 // Ties everything together: find folders, watch the save folder, copy a new save,
 // read it in a worker thread and publish the status to the overlay.
-import { existsSync, watch, type FSWatcher } from 'node:fs';
+import { appendFileSync, existsSync, statSync, watch, type FSWatcher } from 'node:fs';
 import path from 'node:path';
 import { Worker } from 'node:worker_threads';
 import type { GameKnowledge } from '../src/lib/knowledge';
@@ -32,11 +32,25 @@ export interface CompanionOptions {
 	onStatus: (status: AppStatus) => void;
 }
 
+const RAKALY_RETRY_MS = 5000;
+
+/** "ok", or the error code Windows gave when looking at the file (ENOENT, EPERM, EACCES …). */
+export function fileState(file: string): string {
+	try {
+		return statSync(file).isFile() ? 'ok' : 'not a file';
+	} catch (error) {
+		return (error as NodeJS.ErrnoException).code ?? 'error';
+	}
+}
+
 export class Companion {
 	private settings: Settings;
 	private status: AppStatus;
 	private watcher: FSWatcher | null = null;
 	private debounce: NodeJS.Timeout | null = null;
+	/** While rakaly.exe cannot be found: look again now and then (it may be briefly unreadable) */
+	private rakalyRetry: NodeJS.Timeout | null = null;
+	private rakalyMissingLogged = false;
 	private reading = false;
 	private pending = false;
 	private lastRead: { name: string; mtimeMs: number } | null = null;
@@ -45,6 +59,7 @@ export class Companion {
 	private knowledge: GameKnowledge | null | undefined = undefined;
 
 	constructor(private readonly opts: CompanionOptions) {
+		this.log(`start pid=${process.pid} cwd=${process.cwd()} appData=${opts.appDataDir}`);
 		this.settings = loadSettings(this.settingsFile);
 		this.status = {
 			paths: {
@@ -56,6 +71,18 @@ export class Companion {
 			lastPlayed: null,
 			save: { state: 'waiting', reason: 'starting' }
 		};
+	}
+
+	/** One line in startup.log in the app's own folder (local only, for diagnosing problems). */
+	private log(message: string) {
+		try {
+			appendFileSync(
+				path.join(this.opts.appDataDir, 'startup.log'),
+				`${new Date().toISOString()} ${message}\n`
+			);
+		} catch {
+			// logging must never break the app
+		}
 	}
 
 	private get settingsFile() {
@@ -94,10 +121,25 @@ export class Companion {
 			return;
 		}
 		if (!paths.rakaly.path) {
+			if (!this.rakalyMissingLogged) {
+				this.rakalyMissingLogged = true;
+				this.log(
+					`rakaly not found; tried: ${[this.settings.rakalyPath, ...this.opts.rakalyCandidates]
+						.filter(Boolean)
+						.map((p) => `${p} (${fileState(p as string)})`)
+						.join(', ')}`
+				);
+			}
 			this.setSave({ state: 'error', code: 'rakaly-missing' });
+			// Look again in a few seconds: a virus scanner or a slow start can hide the file briefly
+			this.rakalyRetry = setTimeout(() => this.start(), RAKALY_RETRY_MS);
 			return;
 		}
 
+		if (this.rakalyMissingLogged) {
+			this.rakalyMissingLogged = false;
+			this.log(`rakaly found after all: ${paths.rakaly.path}`);
+		}
 		this.watcher = watch(saveDir, (_event, name) => {
 			if (name && !String(name).toLowerCase().endsWith('.v3')) return;
 			// The game writes in bursts; wait a moment before looking.
@@ -122,6 +164,8 @@ export class Companion {
 	private stopWatching() {
 		this.watcher?.close();
 		this.watcher = null;
+		if (this.rakalyRetry) clearTimeout(this.rakalyRetry);
+		this.rakalyRetry = null;
 		if (this.debounce) clearTimeout(this.debounce);
 	}
 

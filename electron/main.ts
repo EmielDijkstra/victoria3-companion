@@ -295,6 +295,9 @@ function startCompanion() {
 		steamDirs: steamCandidates(),
 		rakalyCandidates: [
 			path.join(appDataDir, 'tools', 'rakaly.exe'),
+			// Next to the app, in its "tools" folder: also works when %APPDATA% was redirected for
+			// the process that put the file there (packaged Windows apps do that)
+			path.join(app.getAppPath(), 'tools', 'rakaly.exe'),
 			path.join(process.resourcesPath ?? '', 'rakaly.exe')
 		],
 		workerScript: path.join(__dirname, 'save-reader-worker.cjs'),

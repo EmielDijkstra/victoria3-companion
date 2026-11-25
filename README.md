@@ -50,7 +50,8 @@ There is no installer yet; you run it from the source. You need:
    included here):
    - Download `rakaly-…-x86_64-pc-windows-msvc.zip` from
      [github.com/rakaly/cli/releases](https://github.com/rakaly/cli/releases) and unzip `rakaly.exe`.
-   - Put it in `%APPDATA%\victoria3-companion\tools\rakaly.exe`, or choose it in the overlay under
+   - Put it in the `tools` folder of this repository (`tools\rakaly.exe`, ignored by git), or in
+     `%APPDATA%\victoria3-companion\tools\rakaly.exe`, or choose it in the overlay under
      **⚙ Settings → Folders → Rakaly → Choose…**.
 4. Start the overlay:
 

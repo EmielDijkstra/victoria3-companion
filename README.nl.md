@@ -50,7 +50,8 @@ Er is nog geen installer; je start hem vanaf de broncode. Nodig:
    in deze repo):
    - Download `rakaly-…-x86_64-pc-windows-msvc.zip` van
      [github.com/rakaly/cli/releases](https://github.com/rakaly/cli/releases) en pak `rakaly.exe` uit.
-   - Zet hem in `%APPDATA%\victoria3-companion\tools\rakaly.exe`, of kies hem in de overlay onder
+   - Zet hem in de map `tools` van deze repo (`tools\rakaly.exe`, genegeerd door git), of in
+     `%APPDATA%\victoria3-companion\tools\rakaly.exe`, of kies hem in de overlay onder
      **⚙ Instellingen → Mappen → Rakaly → Kies…**.
 4. Start de overlay:
 
