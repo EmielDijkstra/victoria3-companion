@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { belgium } from '../advice/fixtures';
 import {
+	budgetInsights,
 	diplomacyInsights,
 	lawInsights,
 	peopleInsights,
@@ -88,5 +89,29 @@ describe('diplomacyInsights', () => {
 			'Great Britain en Prussia garanderen je onafhankelijkheid. Wie jou bedreigt, krijgt met hen te maken.',
 			'Armed Forces en Intelligentsia vormen een lobby voor France. Goede relaties en verdragen met France houden hen tevreden.'
 		]);
+	});
+});
+
+describe('budgetInsights', () => {
+	it('explains construction, the largest fixed cost, a jump in the balance and tax options', () => {
+		const out = budgetInsights(belgium(), 'nl');
+		expect(out[0]).toBe(
+			'Van je uitgaven gaat £11,3K per week naar bouwen. Zonder bouw is je saldo £13,8K: je vaste lasten zijn gedekt.'
+		);
+		expect(out[1]).toBe(
+			'Je grootste vaste post is het leger: 48% van je vaste uitgaven (27 levels Barracks en 4 levels Army Logistics Center).'
+		);
+		expect(out[2]).toMatch(
+			/^Ongeveer 3 weken geleden steeg je saldo in één week van −£3,8K naar £10,3K\./
+		);
+		expect(out.at(-1)).toContain('Consumption Tax heffen op Grain en Clothes');
+	});
+
+	it('says how long a deficit lasts', () => {
+		const out = budgetInsights(
+			belgium((s) => (s.budget!.weeksToCreditLimit = 80)),
+			'en'
+		);
+		expect(out.join(' ')).toContain('reach your Credit Limit in about 80 weeks');
 	});
 });

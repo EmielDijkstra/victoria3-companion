@@ -1,6 +1,7 @@
 // Advice texts in Dutch and English. Game terms (building names, Construction, Tax Level …) stay
 // English, as in the game. Every rule must have a text in both languages (checked by a test).
 import type { Locale } from '../i18n/messages';
+import type { BudgetGroupKey } from '../snapshot';
 import type { Advice, AdviceId, AdviceLevel } from './rules';
 
 export interface AdviceText {
@@ -31,13 +32,57 @@ export const decimal = (n: number, l: Locale) =>
 	n.toLocaleString(numberLocale(l), { maximumFractionDigits: 1 });
 
 /** paper_mill → Paper Mill, flanders → Flanders, very_high → Very High */
+/** Keys whose game name is not simply the title-cased key. */
+const NAME_EXCEPTIONS: Record<string, string> = { barrack: 'Barracks' };
+
 export const gameName = (key: string) =>
+	NAME_EXCEPTIONS[key] ??
 	key
 		.split('_')
 		.map((w) => w.charAt(0).toUpperCase() + w.slice(1))
 		.join(' ');
 
 const unique = (items: string[]) => [...new Set(items)];
+
+/** Budget groups as the player knows them. */
+export const GROUP_NAME: Record<Locale, Record<BudgetGroupKey, string>> = {
+	nl: {
+		military: 'het leger',
+		government: 'overheidsgebouwen',
+		construction: 'bouwen',
+		interest: 'rente',
+		subsidies: 'subsidies',
+		other: 'overige posten'
+	},
+	en: {
+		military: 'the army',
+		government: 'government buildings',
+		construction: 'construction',
+		interest: 'interest',
+		subsidies: 'subsidies',
+		other: 'other items'
+	}
+};
+
+/** What the player can do about a fixed cost, per group. */
+const GROUP_ACTION: Record<Locale, Partial<Record<BudgetGroupKey, string>>> = {
+	nl: {
+		military:
+			'Verlaag Military Wages in het Budget-scherm, of verminder Barracks die je in vrede niet nodig hebt.',
+		government:
+			'Kijk of je alle Government Administration-levels nodig hebt voor je Bureaucracy, en of Government Wages lager kan.',
+		interest: 'Een positief saldo lost schuld af; de rente daalt dan vanzelf.',
+		subsidies: 'Kijk in het Market-scherm welke subsidies je echt nodig hebt.'
+	},
+	en: {
+		military:
+			'Lower Military Wages in the Budget screen, or reduce Barracks you do not need in peacetime.',
+		government:
+			'Check whether you need every Government Administration level for your Bureaucracy, and whether Government Wages can go down.',
+		interest: 'A positive balance pays off debt; the interest then falls by itself.',
+		subsidies: 'Check in the Market screen which subsidies you really need.'
+	}
+};
 
 const list = (items: string[], l: Locale) =>
 	items.length <= 1
@@ -67,15 +112,34 @@ const nl: Table = {
 			'Zet de minst nuttige projecten onderaan.'
 		]
 	}),
-	deficit: (a, l) => ({
-		title: 'Je begroting is negatief',
-		why: `Je verliest ${money(-a.balance, l)} per week. Je schuld groeit; die staat nu op ${a.debtPct}% van je Credit Limit.`,
-		caveat: 'minder bouwen remt je groei. Kijk eerst naar belasting en overheidsgebouwen.',
-		how: [
-			'Open het Budget-scherm.',
-			'Zet Tax Level een stap hoger, of verlaag de kosten van overheidsgebouwen.'
-		]
-	}),
+	deficit: (a, l) => {
+		const fromBuilding = (a.construction ?? 0) > 0 && (a.structuralBalance ?? -1) >= 0;
+		const weeks =
+			a.weeksToCreditLimit != null
+				? ` Bij dit tempo raak je over ongeveer ${a.weeksToCreditLimit} weken je Credit Limit.`
+				: '';
+		if (fromBuilding)
+			return {
+				title: 'Je tekort komt door bouwen',
+				why: `Je verliest ${money(-a.balance, l)} per week, maar je bouwmaterialen kosten ${money(a.construction ?? 0, l)} per week. Zonder bouw hou je ${money(a.structuralBalance ?? 0, l)} over: dit is een investering, geen lek.${weeks}`,
+				caveat: `je schuld groeit wel (${a.debtPct}% van je Credit Limit). Bouw rustiger als die snel oploopt; zet niet alles stil, want dan stopt je groei.`,
+				how: [
+					'Open het Budget-scherm en vergelijk Construction met je andere uitgaven.',
+					'Minder tekort: zet minder projecten tegelijk in de bouwlijst, of haal de minst nuttige eruit.'
+				]
+			};
+		const top = a.topGroup;
+		return {
+			title: 'Je vaste lasten zijn hoger dan je inkomsten',
+			why: `Je verliest ${money(-a.balance, l)} per week${(a.construction ?? 0) > 0 ? `, en ook zonder bouw blijft er ${money(-(a.structuralBalance ?? 0), l)} tekort` : ''}.${top ? ` Je grootste vaste post is ${GROUP_NAME.nl[top.key]}: ${top.sharePct}% van je vaste uitgaven${top.buildings.length ? ` (vooral ${list(top.buildings.map(gameName), 'nl')})` : ''}.` : ''}${weeks}`,
+			caveat:
+				'belasting verhogen helpt snel, maar je bevolking houdt minder over: de Standard of Living daalt en er komen Radicals bij. Kijk eerst of die grootste post nodig is.',
+			how: [
+				...(top && GROUP_ACTION.nl[top.key] ? [GROUP_ACTION.nl[top.key]!] : []),
+				`Pas daarna: zet Tax Level een stap hoger${a.taxOption ? `, of heffen Consumption Tax op ${gameName(a.taxOption)}` : ''}.`
+			]
+		};
+	},
 	'debt-high': (a, l) => ({
 		title: a.level === 'urgent' ? 'Je schuld is gevaarlijk hoog' : 'Houd je schuld in de gaten',
 		why: `Je schuld is ${money(a.debt, l)}: ${a.debtPct}% van je Credit Limit (${money(a.credit, l)}).${a.balance > 0 ? ` Je weeksaldo is positief (${money(a.balance, l)}), dus de schuld loopt langzaam terug.` : ''}`,
@@ -251,6 +315,42 @@ const nl: Table = {
 			`Kijk welke acties de lobby tevreden maken, ${a.pro ? 'zoals relaties verbeteren of een verdrag sluiten' : 'zoals een rivaliteit of minder verdragen'}.`
 		]
 	}),
+	'expense-jump': (a, l) => ({
+		title: `${GROUP_NAME.nl[a.group].charAt(0).toUpperCase() + GROUP_NAME.nl[a.group].slice(1)} kost ineens meer`,
+		why: `Sinds je vorige save (${a.since.split('.').slice(0, 3).reverse().join('-')}) kost ${GROUP_NAME.nl[a.group]} ${money(a.increase, l)} per week meer${a.buildings.length ? `, vooral ${list(a.buildings.map(gameName), 'nl')}` : ''}. Zo'n sprong is vaak de echte oorzaak van een slechter saldo.`,
+		caveat:
+			'was het een bewuste keuze, zoals een uitbreiding of hogere lonen? Dan is het geen probleem, zolang je saldo het draagt.',
+		how: [
+			'Open het Budget-scherm en kijk bij Expenses welke post gestegen is.',
+			'Kijk wat je sinds die datum hebt gebouwd of veranderd (lonen, wetten, levels).'
+		]
+	}),
+	'military-heavy': (a, l) => ({
+		title: `Je leger kost ${a.sharePct}% van je vaste uitgaven`,
+		why: `${
+			a.buildings.length
+				? `${list(
+						a.buildings.map((b) => `${b.levels} levels ${gameName(b.type)}`),
+						'nl'
+					)} kosten`
+				: 'Je leger kost'
+		} samen ${money(a.perWeek, l)} per week.${a.guarantors.length ? ` Tegelijk ${a.guarantors.length === 1 ? 'garandeert' : 'garanderen'} ${list(a.guarantors, 'nl')} je onafhankelijkheid.` : ''}`,
+		caveat:
+			'een kleiner leger maakt je kwetsbaarder in een Diplomatic Play. Krimp alleen wat je in vrede niet nodig hebt.',
+		how: [
+			'Open het Budget-scherm en kijk wat Military Wages je kost.',
+			'Verlaag Military Wages een stap, of verminder levels Barracks of Naval Administration.'
+		]
+	}),
+	'input-premium': (a, l) => ({
+		title: `Dure ${gameName(a.good)} maakt je ${gameName(a.building)} duurder`,
+		why: `Omdat ${gameName(a.good)} boven de basisprijs zit, kost je ${gameName(a.building)} ${money(a.perWeek, l)} per week extra. Die kosten draagt je begroting.`,
+		caveat: 'meer aanbod drukt de prijs voor iedereen in je markt, ook voor je bevolking.',
+		how: [
+			`Bouw of breid gebouwen uit die ${gameName(a.good)} maken.`,
+			'Of verlaag het importtarief op dat goed in het Market-scherm.'
+		]
+	}),
 	'new-production-methods': (a, _l, place) => ({
 		title:
 			a.methods.length === 1
@@ -320,15 +420,34 @@ const en: Table = {
 			'Move the least useful projects to the bottom.'
 		]
 	}),
-	deficit: (a, l) => ({
-		title: 'Your budget is negative',
-		why: `You lose ${money(-a.balance, l)} per week. Your debt is growing; it is now ${a.debtPct}% of your Credit Limit.`,
-		caveat: 'building less slows your growth. Look at taxes and government buildings first.',
-		how: [
-			'Open the Budget screen.',
-			'Raise Tax Level one step, or lower government building costs.'
-		]
-	}),
+	deficit: (a, l) => {
+		const fromBuilding = (a.construction ?? 0) > 0 && (a.structuralBalance ?? -1) >= 0;
+		const weeks =
+			a.weeksToCreditLimit != null
+				? ` At this pace you reach your Credit Limit in about ${a.weeksToCreditLimit} weeks.`
+				: '';
+		if (fromBuilding)
+			return {
+				title: 'Your deficit comes from construction',
+				why: `You lose ${money(-a.balance, l)} per week, but your construction goods cost ${money(a.construction ?? 0, l)} per week. Without construction you keep ${money(a.structuralBalance ?? 0, l)}: this is an investment, not a leak.${weeks}`,
+				caveat: `your debt does grow (${a.debtPct}% of your Credit Limit). Build more calmly if it rises fast; do not stop everything, or your growth stops too.`,
+				how: [
+					'Open the Budget screen and compare Construction with your other expenses.',
+					'Less deficit: queue fewer projects at once, or remove the least useful ones.'
+				]
+			};
+		const top = a.topGroup;
+		return {
+			title: 'Your fixed costs are higher than your income',
+			why: `You lose ${money(-a.balance, l)} per week${(a.construction ?? 0) > 0 ? `, and even without construction ${money(-(a.structuralBalance ?? 0), l)} is missing` : ''}.${top ? ` Your largest fixed cost is ${GROUP_NAME.en[top.key]}: ${top.sharePct}% of your fixed expenses${top.buildings.length ? ` (mainly ${list(top.buildings.map(gameName), 'en')})` : ''}.` : ''}${weeks}`,
+			caveat:
+				'raising taxes helps quickly, but your people keep less: Standard of Living falls and Radicals grow. First check whether that largest cost is needed.',
+			how: [
+				...(top && GROUP_ACTION.en[top.key] ? [GROUP_ACTION.en[top.key]!] : []),
+				`Only then: raise Tax Level one step${a.taxOption ? `, or add a Consumption Tax on ${gameName(a.taxOption)}` : ''}.`
+			]
+		};
+	},
 	'debt-high': (a, l) => ({
 		title: a.level === 'urgent' ? 'Your debt is dangerously high' : 'Keep an eye on your debt',
 		why: `Your debt is ${money(a.debt, l)}: ${a.debtPct}% of your Credit Limit (${money(a.credit, l)}).${a.balance > 0 ? ` Your weekly balance is positive (${money(a.balance, l)}), so the debt is slowly going down.` : ''}`,
@@ -502,6 +621,42 @@ const en: Table = {
 		how: [
 			'Open the Politics screen and choose the lobby.',
 			`See which actions please the lobby, ${a.pro ? 'such as improving relations or signing a treaty' : 'such as a rivalry or fewer treaties'}.`
+		]
+	}),
+	'expense-jump': (a, l) => ({
+		title: `${GROUP_NAME.en[a.group].charAt(0).toUpperCase() + GROUP_NAME.en[a.group].slice(1)} suddenly cost more`,
+		why: `Since your previous save (${a.since.split('.').slice(0, 3).join('-')}) ${GROUP_NAME.en[a.group]} cost ${money(a.increase, l)} per week more${a.buildings.length ? `, mainly ${list(a.buildings.map(gameName), 'en')}` : ''}. A jump like this is often the real cause of a worse balance.`,
+		caveat:
+			'was it a deliberate choice, such as an expansion or higher wages? Then it is fine, as long as your balance can carry it.',
+		how: [
+			'Open the Budget screen and check under Expenses which item rose.',
+			'Look at what you built or changed since that date (wages, laws, levels).'
+		]
+	}),
+	'military-heavy': (a, l) => ({
+		title: `Your army costs ${a.sharePct}% of your fixed expenses`,
+		why: `${
+			a.buildings.length
+				? `${list(
+						a.buildings.map((b) => `${b.levels} levels of ${gameName(b.type)}`),
+						'en'
+					)} cost`
+				: 'Your army costs'
+		} ${money(a.perWeek, l)} per week together.${a.guarantors.length ? ` Meanwhile ${list(a.guarantors, 'en')} ${a.guarantors.length === 1 ? 'guarantees' : 'guarantee'} your independence.` : ''}`,
+		caveat:
+			'a smaller army makes you more vulnerable in a Diplomatic Play. Only cut what you do not need in peacetime.',
+		how: [
+			'Open the Budget screen and see what Military Wages cost you.',
+			'Lower Military Wages one step, or reduce levels of Barracks or Naval Administration.'
+		]
+	}),
+	'input-premium': (a, l) => ({
+		title: `Expensive ${gameName(a.good)} makes your ${gameName(a.building)} cost more`,
+		why: `Because ${gameName(a.good)} is above its base price, your ${gameName(a.building)} costs ${money(a.perWeek, l)} per week extra. Your budget pays for that.`,
+		caveat: 'more supply lowers the price for everyone in your market, your people included.',
+		how: [
+			`Build or expand buildings that make ${gameName(a.good)}.`,
+			'Or lower the import tariff on that good in the Market screen.'
 		]
 	}),
 	'new-production-methods': (a, _l, place) => ({

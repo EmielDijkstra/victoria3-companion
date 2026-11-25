@@ -256,6 +256,58 @@ describe('adviseFor: other situations', () => {
 		});
 	});
 
+	it('says a deficit comes from construction when fixed costs are covered', () => {
+		const d = adviseFor(belgium((s) => (s.economy.weeklyBalance = -2000))).find(
+			(a) => a.id === 'deficit'
+		);
+		expect(d).toMatchObject({ construction: 11277, structuralBalance: 13785 });
+	});
+
+	it('names the largest fixed cost of a structural deficit, and skips the separate army advice', () => {
+		const advice = adviseFor(
+			belgium((s) => {
+				s.economy.weeklyBalance = -3000;
+				s.budget!.structuralBalance = -1500;
+			})
+		);
+		expect(advice.find((a) => a.id === 'deficit')).toMatchObject({
+			topGroup: { key: 'military', sharePct: 48, buildings: ['barrack', 'army_logistics_center'] },
+			taxOption: 'grain'
+		});
+		expect(ids(advice)).not.toContain('military-heavy');
+	});
+
+	it('finds the expense group that rose since the previous save', () => {
+		expect(adviseFor(belgium()).find((a) => a.id === 'expense-jump')).toMatchObject({
+			level: 'warn',
+			group: 'military',
+			increase: 1741,
+			since: '1848.8.1'
+		});
+		const steady = adviseFor(belgium((s) => (s.budget!.previous!.groups.military = 7600)));
+		expect(ids(steady)).not.toContain('expense-jump');
+	});
+
+	it('notes an army that costs almost half of the fixed expenses', () => {
+		expect(adviseFor(belgium()).find((a) => a.id === 'military-heavy')).toMatchObject({
+			sharePct: 48,
+			guarantors: ['Great Britain', 'Prussia'],
+			buildings: [
+				{ type: 'barrack', levels: 27 },
+				{ type: 'naval_administration', levels: 15 }
+			]
+		});
+	});
+
+	it('flags expensive inputs only when they matter', () => {
+		expect(ids(adviseFor(belgium()))).not.toContain('input-premium');
+		const dear = adviseFor(belgium((s) => (s.budget!.pricePremium[0].perWeek = 600)));
+		expect(dear.find((a) => a.id === 'input-premium')).toMatchObject({
+			good: 'artillery',
+			perWeek: 600
+		});
+	});
+
 	it('handles an empty country without crashing', () => {
 		const empty = belgium((s) => {
 			s.states = [];
@@ -276,6 +328,7 @@ describe('adviseFor: other situations', () => {
 			s.laws = null;
 			s.people = null;
 			s.technology = null;
+			s.budget = null;
 			s.diplomacy = {
 				friends: [],
 				hostile: [],

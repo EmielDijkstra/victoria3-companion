@@ -189,6 +189,48 @@ export interface DiplomacyInfo {
 	lobbies: { target: CountryRef; pro: boolean; appeasement: number; groups: string[] }[];
 }
 
+export type BudgetGroupKey =
+	'military' | 'government' | 'construction' | 'interest' | 'subsidies' | 'other';
+
+/** One group of weekly expenses and the building types behind it. */
+export interface BudgetGroup {
+	key: BudgetGroupKey;
+	perWeek: number;
+	/** Building types with their cost per week and levels, most expensive first */
+	buildings: { type: string; perWeek: number; levels: number }[];
+}
+
+/** One budget record per save, kept locally per campaign to see what changed (#12). */
+export interface BudgetRecord {
+	date: string;
+	balance: number;
+	groups: Partial<Record<BudgetGroupKey, number>>;
+}
+
+export interface BudgetInfo {
+	income: number;
+	expenses: number;
+	balance: number;
+	/** Construction goods per week (spending that stops when construction stops) */
+	construction: number;
+	/** Balance without construction: what the fixed costs leave */
+	structuralBalance: number;
+	/** Expense groups, largest first */
+	groups: BudgetGroup[];
+	/** Taxes per week */
+	taxes: { income: number; poll: number; tariffs: number; other: number };
+	/** Extra cost because inputs of government and military buildings cost more than base */
+	pricePremium: { building: string; good: string; perWeek: number }[];
+	/** Weekly balance, oldest first (about 30 weeks) */
+	trend: number[];
+	/** With a deficit: weeks until the debt reaches the credit limit; null otherwise */
+	weeksToCreditLimit: number | null;
+	/** Untaxed goods with the most consumption tax potential per week (max 3) */
+	consumptionTaxOptions: { good: string; perWeek: number }[];
+	/** The record of the previous save of this campaign, when the app has one */
+	previous?: BudgetRecord;
+}
+
 export interface Snapshot {
 	date: string;
 	gameVersion: string;
@@ -251,6 +293,8 @@ export interface Snapshot {
 	technology: TechInfo | null;
 	/** Relations, rivals, guarantees and lobbies */
 	diplomacy: DiplomacyInfo;
+	/** Budget diagnosis; null without the goods list from the game files */
+	budget: BudgetInfo | null;
 	/** Active journal entries, oldest first */
 	journal: JournalProgress[];
 }

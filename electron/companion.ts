@@ -7,6 +7,7 @@ import type { GameKnowledge } from '../src/lib/knowledge';
 import type { Snapshot } from '../src/lib/snapshot';
 import type { AppStatus, PathKind, PathStatus, SaveSummary } from '../src/lib/status';
 import { readGameNames, readGoods, type GameNames, type GoodDefinition } from './game-data';
+import { addRecord, loadHistory, recordOf, saveHistory } from './budget-history';
 import { readGameKnowledge } from './game-knowledge';
 import {
 	findGameDir,
@@ -218,9 +219,10 @@ export class Companion {
 			const copy = await copyToWorkDir(original, path.join(this.opts.appDataDir, 'work'));
 			const result = await this.readInWorker(copy, newest.name);
 			this.lastRead = { name: newest.name, mtimeMs: newest.mtimeMs };
-			if (result.ok)
+			if (result.ok) {
+				this.addBudgetHistory(result.summary, result.snapshot);
 				this.setSave({ state: 'ready', summary: result.summary, snapshot: result.snapshot });
-			else
+			} else
 				this.setSave({
 					state: 'error',
 					code: 'read-failed',
@@ -242,6 +244,18 @@ export class Companion {
 				this.readNewest(saveDir);
 			}
 		}
+	}
+
+	/** Keep one budget record per save and tell the snapshot about the previous one (#12, #53). */
+	private addBudgetHistory(summary: SaveSummary, snapshot: Snapshot) {
+		if (!snapshot.budget) return;
+		const campaign = summary.playthroughId || summary.country;
+		const { history, previous } = addRecord(
+			loadHistory(this.opts.appDataDir, campaign),
+			recordOf(snapshot.date, snapshot.budget)
+		);
+		saveHistory(this.opts.appDataDir, campaign, history);
+		if (previous) snapshot.budget.previous = previous;
 	}
 
 	private readInWorker(
